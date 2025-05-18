@@ -8,10 +8,13 @@ Item {
 
     property var devices: []
 
+    // Botón para buscar dispositivos Tuya
     Button {
         text: "Buscar dispositivos Tuya"
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.margins: 10
         onClicked: {
-            // Llama a discoverDevices en backend
             if (service) {
                 service.discoverDevices();
             } else {
@@ -20,8 +23,12 @@ Item {
         }
     }
 
+    // ListView que muestra los dispositivos descubiertos
     ListView {
         id: deviceList
+        anchors.top: parent.top
+        anchors.topMargin: 50
+        anchors.left: parent.left
         width: parent.width
         height: 200
         model: devices
@@ -29,44 +36,54 @@ Item {
         cacheBuffer: 100
 
         delegate: Rectangle {
+            width: parent.width
             height: 40
             border.width: 1
+            color: "transparent"
 
             Text {
+                anchors.centerIn: parent
                 text: "ID: " + (modelData.id !== undefined ? modelData.id : "N/A") + 
                       " | IP: " + (modelData.ip !== undefined ? modelData.ip : "N/A")
             }
         }
     }
 
-    // Esto lo debes conectar a backend, por ejemplo con SignalRGB service API
+    // Timer para refrescar la lista cada segundo (puedes ajustar el intervalo)
+    Timer {
+        id: refreshTimer
+        interval: 1000
+        running: true
+        repeat: true
+        onTriggered: {
+            if (service && typeof service.getDevices === "function") {
+                let found = service.getDevices();
+                if (found && found.length !== devices.length) {
+                    devices = found;
+                }
+            }
+        }
+    }
+
+    // ---- Esto es un MOCK para pruebas, reemplázalo por tu "service" real ----
     QtObject {
         id: service
 
-        // Mock implementation for SignalRGB service API
+        // Cuando tengas tu backend real, quita esto y expón discoverDevices/getDevices desde Node.js
         function discoverDevices() {
             console.log("Discovering devices...");
-            // Replace this with actual API call to discover devices
+            // Aquí llamas al backend real de Node.js (no necesitas nada más aquí si SignalRGB lo hace solo)
         }
 
         function getDevices() {
-            console.log("Fetching devices...");
-            // Replace this with actual API call to fetch devices
+            // Esta función debe devolver el array real del backend.
+            // Aquí está el mock. Quita esto cuando tengas la integración real.
             return [
                 { id: "Device1", ip: "192.168.1.2" },
                 { id: "Device2", ip: "192.168.1.3" }
             ];
         }
     }
+    // -----------------------------------------------------------------------
 
-    Connections {
-        onDevicesChanged: {
-            if (service && typeof service.getDevices === "function") {
-                devices = service.getDevices();
-            } else {
-                console.error("Service object is not defined or getDevices method is missing.");
-            }
-        }
-        }
-    }
 }
