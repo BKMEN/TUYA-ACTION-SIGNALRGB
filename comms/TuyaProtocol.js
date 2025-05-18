@@ -4,12 +4,7 @@ const TuyAPI = require('tuyapi');
 
 class TuyaDevice {
   constructor({ id, key, ip, version = '3.3' }) {
-    this.device = new TuyAPI({
-      id,
-      key,
-      ip,
-      version,
-    });
+    this.device = new TuyAPI({ id, key, ip, version });
     this.connected = false;
   }
 
@@ -53,7 +48,6 @@ class TuyaDevice {
   async setColor({ h, s, v }) {
     await this.connect();
     try {
-      // Convert HSV to Tuya's expected format
       const hsv = {
         h: Math.round(h),
         s: Math.round(s * 10),
