@@ -1,92 +1,157 @@
-// =====================
-// TUYA-ACTION-SIGNALRGB
-// =====================
-// index.js: Entry point for SignalRGB Tuya plugin
-// Versión basada en fu-raz/signalrgb-tuya-razer, con refactor para claridad y modularidad
+// =============================================
+// index.js - SignalRGB-Tuya
+// Plugin principal para controlar dispositivos Tuya desde SignalRGB
+// Basado en la estructura Cololight, adaptado para Tuya, preparado para escalabilidad y fácil depuración.
+// =============================================
 
-import TuyaController from "./TuyaController.js";
-import { logInfo, logWarn, logError } from "./utils/logger.js";
-
-// === Datos del plugin ===
-export function Name() { return "TUYA ACTION RGB"; }
+// --- Métadatos del plugin ---
+export function Name() { return "Tuya RGB"; }
 export function Version() { return "1.0.0"; }
 export function Type() { return "network"; }
-export function Publisher() { return "BKMEN"; }
-export function Size() { return [1, 60]; }
+export function Publisher() { return "SignalRGB"; }
+export function Size() { return [1, 60]; } // Cambia si necesitas un grid diferente
 export function DefaultPosition() { return [75, 70]; }
 export function DefaultScale() { return 1.0; }
 
-// === Parámetros configurables para la UI ===
+// --- Parámetros controlables desde la UI ---
 export function ControllableParameters() {
   return [
-    { property: "g_sMode", label: "Lighting Mode", type: "combobox", values: ["Canvas", "Unicorns", "Rainbow", "Static"], default: "Canvas" },
-    { property: "g_iBrightness", label: "Brightness", type: "number", min: 1, max: 100, default: 50 },
-    { property: "g_iLedCount", label: "LED Count", type: "number", min: 1, max: 100, default: 24 },
-    { property: "g_sColor", label: "Color", type: "color", default: "#FFFFFF" },
-    { property: "g_sDevice", label: "Device", type: "combobox", values: [], default: "" } // Dispositivos encontrados dinámicamente
+    {
+      "property": "g_sMode",
+      "label": "Lighting Mode",
+      "type": "combobox",
+      "values": [
+        "Canvas", "Canvas Multi", "Forced", "Rainbow", "Music", "Custom"
+      ],
+      "default": "Canvas"
+    },
+    {
+      "property": "g_iBrightness",
+      "label": "Brightness",
+      "type": "number",
+      "min": "1",
+      "max": "100",
+      "step": "1",
+      "default": "50"
+    },
+    {
+      "property": "g_ledCount",
+      "label": "LED Count",
+      "type": "number",
+      "min": "1",
+      "max": "120",
+      "step": "1",
+      "default": "24"
+    },
+    {
+      "property": "forcedColor",
+      "label": "Forced Color",
+      "type": "color",
+      "default": "#009bde"
+    }
   ];
 }
 
-// === Variables globales del plugin ===
-let tuyaController = null;
+// --- Variables internas ---
+let streamingAddress = "";
+let streamingPort = 6668; // Puerto estándar Tuya LAN
+let g_currentBrightness = 0;
+let g_sCurrentMode = "";
+let g_ledCount = 24;
+let g_sCurrentForced = "";
+let deviceConnected = false;
+let tuyaKey = "";
+let tuyaId = "";
 
-// === Inicialización principal ===
-export function Initialize(parameters, savedState) {
-  logInfo("Inicializando TUYA ACTION RGB...");
+// --- Inicialización del dispositivo ---
+export function Initialize() {
+  device.setName(controller.name || "Tuya Device");
+  streamingAddress = controller.ip || "0.0.0.0";
+  tuyaKey = controller.key || ""; // IMPORTANTE: Clave local de tu dispositivo
+  tuyaId = controller.id || "";   // ID local de tu dispositivo
 
-  // Inicia el controlador principal, con eventos para UI
-  tuyaController = new TuyaController({
-    onDevicesChanged: updateDevicesInUI,
-    onError: showErrorInUI,
-    onLog: logInfo,
-  });
+  device.setImageFromUrl(controller.image || "");
 
-  // Arranca el descubrimiento de dispositivos Tuya en red local
-  tuyaController.startDiscovery();
+  // Sincronizamos valores iniciales
+  SetBrightness(g_iBrightness);
+  g_sCurrentMode = g_sMode || "Canvas";
+  g_ledCount = g_ledCount || 24;
 }
 
-// === Sincronización con UI ===
-export function OnParameterChanged(parameter) {
-  if (!tuyaController) return;
-
-  switch (parameter) {
-    case "g_iLedCount":
-      tuyaController.setLedCount(global.g_iLedCount);
-      break;
-    case "g_sColor":
-      tuyaController.setColor(global.g_sColor);
-      break;
-    case "g_sDevice":
-      tuyaController.setCurrentDevice(global.g_sDevice);
-      break;
-    case "g_sMode":
-      tuyaController.setMode(global.g_sMode);
-      break;
-    case "g_iBrightness":
-      tuyaController.setBrightness(global.g_iBrightness);
-      break;
-    default:
-      logWarn(`Parámetro desconocido cambiado: ${parameter}`);
+// --- Sincronizaciones de parámetros ---
+function SyncBrightness() {
+  if (g_currentBrightness !== g_iBrightness) {
+    SetBrightness(g_iBrightness);
   }
 }
 
-// === Actualiza la lista de dispositivos en el comboBox de la UI ===
-function updateDevicesInUI(devices) {
-  let deviceNames = devices.map(dev => dev.name);
-  SetParameterValues("g_sDevice", deviceNames, devices[0]?.name || "");
-}
-
-// === Manejo de errores en la UI ===
-function showErrorInUI(message) {
-  logError(message);
-  // Aquí puedes añadir un evento para mostrar error en la interfaz si tu UI lo permite
-}
-
-// === Finalización/limpieza ===
-export function Terminate() {
-  if (tuyaController) {
-    tuyaController.terminate();
-    tuyaController = null;
+function SyncMode() {
+  if (g_sCurrentMode !== g_sMode) {
+    g_sCurrentMode = g_sMode;
+    SetMode(g_sCurrentMode);
   }
+}
+
+function SyncLedCount() {
+  if (g_ledCount !== g_ledCount) {
+    SetLedCount(g_ledCount);
+  }
+}
+
+// --- Comandos de control Tuya ---
+// NOTA: Aquí irían las llamadas a las funciones de la API/UDP/TCP de Tuya para enviar comandos reales.
+// Ejemplo:
+function SetBrightness(brightness) {
+  // Valida rango
+  brightness = Math.max(1, Math.min(brightness, 100));
+  g_currentBrightness = brightness;
+  // Aquí va el envío real a tu dispositivo Tuya (UDP o TCP, según la implementación)
+  device.log("SetBrightness: " + brightness);
+  // tuyaComms.sendBrightness(streamingAddress, streamingPort, tuyaId, tuyaKey, brightness);
+}
+
+function SetMode(mode) {
+  device.log("SetMode: " + mode);
+  // Según el modo, arma el paquete adecuado
+  // tuyaComms.sendMode(streamingAddress, streamingPort, tuyaId, tuyaKey, mode);
+}
+
+function SetLedCount(count) {
+  device.log("SetLedCount: " + count);
+  // tuyaComms.sendLedCount(streamingAddress, streamingPort, tuyaId, tuyaKey, count);
+}
+
+function SetColor(r, g, b) {
+  device.log("SetColor: " + r + ", " + g + ", " + b);
+  // tuyaComms.sendColor(streamingAddress, streamingPort, tuyaId, tuyaKey, r, g, b);
+}
+
+// --- Render principal: se llama cada frame/tick ---
+export function Render() {
+  SyncBrightness();
+  SyncMode();
+  SyncLedCount();
+
+  // Según el modo, envía comandos en tiempo real
+  if (g_sCurrentMode === "Canvas") {
+    // Modo canvas (ejemplo: todo un color)
+    let color = forcedColor || { r: 0, g: 155, b: 222 };
+    SetColor(color.r, color.g, color.b);
+  }
+  else if (g_sCurrentMode === "Canvas Multi") {
+    // Aquí va la lógica de varios colores/segmentos
+  }
+  else if (g_sCurrentMode === "Forced") {
+    // Color forzado
+    let color = forcedColor || { r: 0, g: 155, b: 222 };
+    SetColor(color.r, color.g, color.b);
+  }
+  // Añade más modos según necesidad
+}
+
+// --- Apagado del dispositivo ---
+export function Shutdown() {
+  device.log("Shutdown: Blackout command sent.");
+  // tuyaComms.sendBlackout(streamingAddress, streamingPort, tuyaId, tuyaKey);
 }
 
