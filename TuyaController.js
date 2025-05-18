@@ -6,14 +6,16 @@ class TuyaController {
         this.devices = [];
     }
 
-    discoverDevices() {
+    // Recibe callback cuando termina discovery
+    discoverDevices(callback) {
+        const TuyaDiscovery = require('./comms/Discovery.js');
         const discovery = new TuyaDiscovery({ timeout: 6000 });
+        this.devices = [];
         discovery.on('device', (dev) => {
-            console.log('Dispositivo encontrado:', dev);
             this.devices.push(dev);
         });
         discovery.on('done', (list) => {
-            console.log('Búsqueda finalizada, total:', list.length);
+            if (callback) callback(list);
         });
         discovery.on('error', (err) => {
             console.error('Discovery error:', err);
@@ -22,6 +24,8 @@ class TuyaController {
         discovery.discover();
     }
 }
+module.exports = TuyaController;
+
 
 module.exports = TuyaController;
 
