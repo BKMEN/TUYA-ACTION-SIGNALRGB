@@ -1,4 +1,4 @@
-// ui/service.js (o TuyaBattletron.service.js)
+// ui/service.js 
 const TuyaController = require("../TuyaController.js");
 
 module.exports = {

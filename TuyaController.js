@@ -1,37 +1,32 @@
 // TuyaController.js
-const TuyaDiscovery = require('./comms/Discovery.js');
+
+const TuyaProtocol = require('./TuyaProtocol');
+
+// Ensure TuyaProtocol is a constructor or adjust accordingly
+const TuyaDevice = typeof TuyaProtocol === 'function' ? TuyaProtocol : TuyaProtocol.TuyaDevice;
 
 class TuyaController {
-    constructor() {
-        this.devices = [];
-    }
+  constructor() {
+    // Array to store connected devices
+    this.devices = [];
+  }
 
-    // Recibe callback cuando termina discovery
-    discoverDevices(callback) {
-        const TuyaDiscovery = require('./comms/Discovery.js');
-        const discovery = new TuyaDiscovery({ timeout: 6000 });
-        this.devices = [];
-        discovery.on('device', (dev) => {
-            this.devices.push(dev);
-        });
-        discovery.on('done', (list) => {
-            if (callback) callback(list);
-        });
-        discovery.on('error', (err) => {
-            console.error('Discovery error:', err);
-        });
-
-        discovery.discover();
+  addDevice(deviceInfo) {
+    const device = new TuyaDevice(deviceInfo);
+    this.devices.push(device);
+  }
+      if (typeof device.setPower === 'function') {
+        await device.setPower(true);
+      } else {
+        console.warn(`Device does not support setPower:`, device);
+      }
+  async turnOnAll() {
+    for (const device of this.devices) {
+  // Implement additional methods as needed
     }
+  }
+
+  // Implementa métodos adicionales según sea necesario
 }
-module.exports = TuyaController;
-
 
 module.exports = TuyaController;
-
-/*
----- USO ----
-const TuyaController = require('./TuyaController.js');
-const controller = new TuyaController();
-controller.discoverDevices();
-*/
