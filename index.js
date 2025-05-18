@@ -11,9 +11,12 @@ controller.discoverDevices();
 // Removed redundant and incorrect ImageUrl function definitions
 
 // Function to return the image URL
-export function ImageUrl() {
-  return "https://github.com/BKMEN/signalrgb-tuya-battletron/blob/main/logo.png?raw=true";
+export class DiscoveryService {
+  constructor() {
+    this.IconUrl = "https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB/blob/main/assets/logo.png?raw=true";
+  }
 }
+
 export function Name() { 
   return "Tuya Razer"; 
 }
@@ -22,22 +25,19 @@ export function getPublisher() {
 }
 export function Version() { 
   return "0.0.1"; 
-}
-export function getName() { 
-  return "Tuya Razer"; 
+// Removed redundant getName function as it duplicates the Name function
 }
 export function Publisher() { 
   return "RickOfficial"; 
-}
-export function Size() { 
+// Removed redundant Publisher function as it duplicates getPublisher
+export function getSize() { 
   return [1, 1]; 
 }
-export function getDefaultPosition() { 
-  return [0, 70]; 
 }
-export function DefaultScale() { 
+export function getDefaultScale() { 
   return 1.0; 
 }
 export function getType() { 
+  // Returns the type of this module, which is "Plugin" indicating it is a plugin for the system.
   return "Plugin"; 
 }
