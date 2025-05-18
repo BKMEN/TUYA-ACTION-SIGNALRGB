@@ -22,7 +22,7 @@ export function Version() {
   return "0.0.1";
 }
 
-export function ImageUrl(https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB/blob/main/assets/logo.png) {
+export function ImageUrl() {
   return "https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB/blob/main/assets/logo.png?raw=true";
 }
 
