@@ -1,8 +1,10 @@
-import TuyaController from './TuyaController.js';
-import DeviceList from './DeviceList.js';
+// index.js
 
-// Arranca el controlador principal
-const controller = new TuyaController(DeviceList);
-controller.discoverDevices(); // Descubre dispositivos Tuya
+const TuyaController = require('./TuyaController.js');
 
-// Aquí iría la lógica para comunicar con la UI, etc.
+// Instancia el controlador principal
+const controller = new TuyaController();
+
+// Inicia el proceso de descubrimiento de dispositivos Tuya
+console.log('Buscando dispositivos Tuya en la red local...');
+controller.discoverDevices();
