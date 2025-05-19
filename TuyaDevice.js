@@ -2,16 +2,14 @@
  * TuyaDevice.js
  * Representa un dispositivo Tuya individual y maneja su comunicación
  */
-const crypto = require('../crypto');
-const dgram = require('dgram'); // Para UDP si usas UDP (o net para TCP)
-const { Socket } = require('net'); // Para TCP conexiones
+const dgram = require('dgram');
+const { EventEmitter } = require('events');
+const crypto = require('crypto');
 
-class TuyaDevice {
-    /**
-     * Constructor para un dispositivo Tuya
-     * @param {Object} deviceInfo - Información básica del dispositivo (id, ip, key, etc.)
-     */
+class TuyaDevice extends EventEmitter {
     constructor(deviceInfo) {
+        super();
+        
         this.id = deviceInfo.id || '';
         this.ip = deviceInfo.ip || '';
         this.key = deviceInfo.key || '';
@@ -22,272 +20,206 @@ class TuyaDevice {
         // Estado del dispositivo
         this.connected = false;
         this.online = false;
-        this.ledCount = 0;
-        this.maxLedCount = 300; // Valor predeterminado, se actualizará según el dispositivo
+        this.ledCount = deviceInfo.ledCount || 72;
+        this.maxLedCount = 300;
         this.currentColors = [];
+        this.brightness = 100;
         
-        // Opciones de configuración
+        // Opciones de comunicación
         this.port = deviceInfo.port || 6668;
-        this.socketTimeout = 15000; // 15 segundos de timeout para operaciones de socket
+        this.socketTimeout = 15000;
+        this.retryAttempts = 3;
+        this.retryDelay = 2000;
         
-        // Socket y buffer para comunicación
+        // Socket y buffer
         this.socket = null;
-        this.buffer = null;
+        this.buffer = Buffer.alloc(0);
         this.sequenceNumber = 0;
         
-        // Cola de comandos para evitar sobrecarga de la red
+        // Cola de comandos
         this.commandQueue = [];
         this.processingCommands = false;
-        this.commandQueueDelay = 50; // Configurable delay for processing commands
+        this.commandQueueDelay = 50;
     }
-    
-    /**
-     * Conectar al dispositivo
-     * @returns {Promise} Promesa que se resuelve cuando la conexión es exitosa
-     */
-    async _sendColorCommand(colors) {
-    return new Promise((resolve, reject) => {
-        try {
-            if (!this.socket) {
-                this.socket = dgram.createSocket('udp4');
-            }
-
-            // Crea el paquete Tuya con crypto
-            const colorPacket = crypto.createSetColorPacket({
-                color: colors,
-                gwId: this.id,
-                key: this.key,
-                ledCount: this.ledCount,
-                version: this.version
-            });
-
-            // Envía el paquete a la IP y puerto del dispositivo
-            this.socket.send(
-                colorPacket, 0, colorPacket.length,
-                this.port, this.ip, (err) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        // Puedes esperar confirmación si el dispositivo responde,
-                        // o simplemente resolver después de enviar (depende del modelo)
-                        resolve(true);
-                    }
-                }
-            );
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-// Removed duplicate _sendLedCountCommand method definition
 
     async connect() {
-        return new Promise((resolve, reject) => {
-            try {
-                // Si ya hay una conexión, cerrarla primero
-                if (this.socket) {
-                    this.disconnect();
-                }
-                
-                // Crear un nuevo socket TCP
-                this.socket = new Socket();
-                
-                this.socket.on('error', (error) => {
-                    console.error(`[${this.id}] Socket error:`, error);
-                    this.connected = false;
-                    this.online = false;
-                    reject(error);
-                });
-                
-                this.socket.on('close', () => {
-                    console.log(`[${this.id}] Connection closed`);
-                    this.connected = false;
-                    this.online = false;
-                });
-                
-                this.socket.on('data', (data) => {
-                    this._handleData(data);
-                });
-                };
-                
-                // Conectar al dispositivo
-                this.socket.connect(this.port, this.ip, () => {
-                    console.log(`[${this.id}] Connected to ${this.ip}:${this.port}`);
-                });
-                this.connected = true;
-                
-                // Enviar comando de handshake para verificar la conexión
-                this._sendHandshake()
-                    .then(() => {
-                        this.online = true;
-                        console.log(`[${this.id}] Successfully connected to device at ${this.ip}`);
-                        resolve();
-                    })
-                    .catch((error) => {
-                        console.error(`[${this.id}] Handshake failed:`, error);
-                        this.disconnect();
-                        reject(error);
-                    });
-                
-            } catch (error) {
-                console.error(`[${this.id}] Failed to connect:`, error);
-                this.connected = false;
-                this.online = false;
-                reject(error);
-            }
-        });
-    }
-    
-    /**
-     * Desconectar del dispositivo
-     */
-    disconnect() {
-        if (this.socket) {
-            try {
-                this.socket.close();
-            } catch (error) {
-                console.error(`[${this.id}] Error closing socket:`, error);
-            }
-            this.socket = null;
+        if (this.connected) return;
+
+        try {
+            // Crear socket UDP
+            this.socket = dgram.createSocket('udp4');
+            
+            this.socket.on('error', (error) => {
+                this.emit('error', error);
+                this._handleDisconnect();
+            });
+            
+            this.socket.on('message', (data) => {
+                this._handleData(data);
+            });
+            
+            this.socket.on('close', () => {
+                this._handleDisconnect();
+            });
+
+            this.connected = true;
+            this.emit('connected');
+            
+            // Enviar handshake
+            await this._sendHandshake();
+            this.online = true;
+            this.emit('ready');
+        } catch (error) {
+            this.emit('error', error);
+            throw error;
         }
-        this.connected = false;
-        this.online = false;
     }
-    
-    /**
-     * Envía un comando de handshake al dispositivo
-     * @private
+
     async _sendHandshake() {
         // Implementación del handshake según el protocolo Tuya
-        // En el protocolo Tuya, el handshake generalmente implica enviar un paquete inicial
-        // para establecer la conexión y recibir una respuesta del dispositivo.
-
-        return new Promise((resolve, reject) => {
-            try {
-                // Crear un paquete de handshake (esto puede variar según el protocolo exacto)
-                const handshakePacket = crypto.createHandshakePacket({
-                    gwId: this.id,
-                    key: this.key,
-                    version: this.version
-                });
-
-                // Enviar el paquete al dispositivo
-                this.socket.write(handshakePacket, (err) => {
-    _handleData(data) {
-        try {
-            // Parse the incoming data based on the Tuya protocol
-            const parsedData = crypto.parseResponse(data);
-
-            // Update device state based on the parsed data
-            if (parsedData && parsedData.dps) {
-                // Example: Update LED count or online status
-                if (parsedData.dps['ledCount']) {
-                    this.ledCount = parsedData.dps['ledCount'];
-                }
-                if (parsedData.dps['online'] !== undefined) {
-                    this.online = parsedData.dps['online'];
-                }
-            }
-
-            console.log(`[${this.id}] Data received and processed:`, parsedData);
-        } catch (error) {
-            console.error(`[${this.id}] Error handling data:`, error);
-        }
+        const packet = this._createPacket('handshake', null);
+        return this._sendPacket(packet);
     }
-                        resolve();
-                    }
-                });
-            } catch (error) {
-                reject(`Error during handshake: ${error.message}`);
-            }
-        });
-    }
-        });
-    }
-    
-    /**
-     * Maneja los datos recibidos del dispositivo
-     * @private
-     * @param {Buffer} data - Datos recibidos del socket
-     */
-    _handleData(data) {
-        // Procesar datos recibidos según el protocolo Tuya
-        // Parsear respuesta y actualizar estado del dispositivo
-    }
-    
-    /**
-     * Actualiza los colores del dispositivo
-     * @param {Array} colors - Array de objetos color en formato RGB
-     * @returns {Promise} Promesa que se resuelve cuando se aplican los colores
-     */
+
     async setColors(colors) {
-        if (!this.connected || !this.online) {
-            throw new Error('Device is not connected');
+        if (!this.connected) {
+            throw new Error('Device not connected');
         }
         
-        // Verificar y formatea el array de colores
-        if (!Array.isArray(colors)) {
-            throw new Error('Colors must be an array');
-        }
-        
-        const formattedColors = colors.slice(0, this.maxLedCount).map(color => {
-            return {
-                r: Math.max(0, Math.min(255, color.r || 0)),
-                g: Math.max(0, Math.min(255, color.g || 0)),
-                b: Math.max(0, Math.min(255, color.b || 0))
-            };
-        });
+        const formattedColors = colors.slice(0, this.ledCount).map(color => ({
+            r: Math.min(255, Math.max(0, color.r || 0)),
+            g: Math.min(255, Math.max(0, color.g || 0)),
+            b: Math.min(255, Math.max(0, color.b || 0))
+        }));
         
         this.currentColors = formattedColors;
         
-        // Añadir comando a la cola
         return this._queueCommand({
             type: 'setColors',
             colors: formattedColors
         });
     }
-    
-    /**
-     * Establece el número de LEDs del dispositivo
-     * @param {Number} count - Número de LEDs
-     * @returns {Promise} Promesa que se resuelve cuando se actualiza el número de LEDs
-     */
+
     async setLedCount(count) {
-        if (!this.connected || !this.online) {
-            throw new Error('Device is not connected');
+        if (!this.connected) {
+            throw new Error('Device not connected');
         }
         
         const ledCount = Math.max(1, Math.min(this.maxLedCount, count));
         this.ledCount = ledCount;
         
-        // Añadir comando a la cola
         return this._queueCommand({
             type: 'setLedCount',
             count: ledCount
         });
     }
-    
-    /**
-     * Obtiene el estado actual del dispositivo
-     * @returns {Promise} Promesa que se resuelve con el estado del dispositivo
-     */
+
     async getState() {
-        if (!this.connected || !this.online) {
-            throw new Error('Device is not connected');
+        if (!this.connected) {
+            throw new Error('Device not connected');
         }
         
-        // Añadir comando a la cola
         return this._queueCommand({
             type: 'getState'
         });
     }
-    
-    /**
-     * Añade un comando a la cola y procesa la cola si no está en proceso
-     * @private
-     * @param {Object} command - Comando a encolar
-     * @returns {Promise} Promesa que se resuelve cuando se procesa el comando
-     */
+
+    _createPacket(type, data) {
+        // Implementación para crear paquetes según el protocolo Tuya
+        // Este es un placeholder - implementar según documentación Tuya
+        let packetData;
+        
+        switch(type) {
+            case 'handshake':
+                packetData = { gwId: this.id, key: this.key };
+                break;
+            case 'setColors':
+                packetData = { 
+                    gwId: this.id, 
+                    key: this.key,
+                    colors: data.colors,
+                    ledCount: this.ledCount
+                };
+                break;
+            case 'setLedCount':
+                packetData = {
+                    gwId: this.id,
+                    key: this.key,
+                    ledCount: data.count
+                };
+                break;
+            case 'getState':
+                packetData = { gwId: this.id, key: this.key };
+                break;
+        }
+        
+        // Aquí iría la lógica real de formateo de paquetes
+        return Buffer.from(JSON.stringify(packetData));
+    }
+
+    async _sendPacket(packet) {
+        return new Promise((resolve, reject) => {
+            if (!this.socket) {
+                return reject(new Error('Socket not connected'));
+            }
+
+            this.socket.send(
+                packet, 0, packet.length,
+                this.port, this.ip, (err) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(true);
+                    }
+                }
+            );
+        });
+    }
+
+    _handleData(data) {
+        // Procesar respuesta del dispositivo
+        try {
+            // Aquí iría la lógica para parsear la respuesta
+            const parsedData = this._parseResponse(data);
+            
+            this.emit('data', parsedData);
+            
+            // Actualizar estado si es necesario
+            if (parsedData && parsedData.dps) {
+                if (parsedData.dps.ledCount) {
+                    this.ledCount = parsedData.dps.ledCount;
+                }
+                if (parsedData.dps.online !== undefined) {
+                    this.online = parsedData.dps.online;
+                }
+            }
+        } catch (error) {
+            this.emit('error', error);
+        }
+    }
+
+    _parseResponse(data) {
+        // Placeholder para parsear respuesta
+        // Implementar según documentación Tuya
+        return { dps: {} };
+    }
+
+    _handleDisconnect() {
+        this.connected = false;
+        this.online = false;
+        if (this.socket) {
+            this.socket.close();
+            this.socket = null;
+        }
+        this.buffer = Buffer.alloc(0);
+        this.emit('disconnected');
+    }
+
+    disconnect() {
+        this._handleDisconnect();
+    }
+
+    _queueCommand(command) {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 reject(new Error(`Command timed out: ${command.type}`));
@@ -305,18 +237,12 @@ class TuyaDevice {
                 }
             });
             
-            // Si no está procesando comandos, iniciar el proceso
             if (!this.processingCommands) {
                 this._processCommandQueue();
             }
         });
-        });
     }
-    
-    /**
-     * Procesa la cola de comandos
-     * @private
-     */
+
     async _processCommandQueue() {
         if (this.commandQueue.length === 0) {
             this.processingCommands = false;
@@ -327,17 +253,19 @@ class TuyaDevice {
         const item = this.commandQueue.shift();
         
         try {
-            // Procesar el comando según su tipo
             let result;
             switch (item.command.type) {
                 case 'setColors':
-                    result = await this._sendColorCommand(item.command.colors);
+                    const colorPacket = this._createPacket('setColors', { colors: item.command.colors });
+                    result = await this._sendPacket(colorPacket);
                     break;
-        setTimeout(() => this._processCommandQueue(), this.commandQueueDelay); // Pequeño retraso para no saturar
-                    result = await this._sendLedCountCommand(item.command.count);
+                case 'setLedCount':
+                    const ledPacket = this._createPacket('setLedCount', { count: item.command.count });
+                    result = await this._sendPacket(ledPacket);
                     break;
                 case 'getState':
-                    result = await this._sendStateCommand();
+                    const statePacket = this._createPacket('getState', null);
+                    result = await this._sendPacket(statePacket);
                     break;
                 default:
                     throw new Error(`Unknown command type: ${item.command.type}`);
@@ -345,41 +273,12 @@ class TuyaDevice {
             
             item.resolve(result);
         } catch (error) {
-            console.error(`[${this.id}] Command error:`, error);
             item.reject(error);
+        } finally {
+            setTimeout(() => this._processCommandQueue(), this.commandQueueDelay);
         }
-        
-        // Procesar el siguiente comando
-        setTimeout(() => this._processCommandQueue(), 50); // Pequeño retraso para no saturar
     }
-    
-    // Removed duplicate _sendColorCommand method definition
-    
-    /**
-     * Envía un comando para cambiar el número de LEDs
-     * @private
-     * @param {Number} count - Número de LEDs
-     * @returns {Promise} Promesa que se resuelve cuando se envía el comando
-     */
-    async _sendLedCountCommand(count) {
-        // Implementación para enviar comando de cambio de número de LEDs según protocolo Tuya
-        return new Promise((resolve, reject) => {
-            // Lógica específica para enviar el comando de LEDs
-            resolve();
-        });
-    }
-    
-    /**
-     * Envía un comando para obtener el estado del dispositivo
-     * @private
-     * @returns {Promise} Promesa que se resuelve con el estado del dispositivo
-     */
-    async _sendStateCommand() {
-        // Implementación para enviar comando de obtención de estado según protocolo Tuya
-        return new Promise((resolve, reject) => {
-     * Retorna un objeto con la información del dispositivo para serialización
-     * @returns {Object} Información del dispositivo
-     */
+
     toJSON() {
         return {
             id: this.id,
@@ -390,19 +289,32 @@ class TuyaDevice {
             online: this.online,
             ledCount: this.ledCount,
             maxLedCount: this.maxLedCount,
-            socketTimeout: this.socketTimeout,
             port: this.port
         };
     }
-            id: this.id,
-            ip: this.ip,
-            name: this.name,
-            productId: this.productId,
-            connected: this.connected,
-            online: this.online,
-            ledCount: this.ledCount,
-            maxLedCount: this.maxLedCount
-        };
+
+    rgbToHsv([r, g, b]) {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+        
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const d = max - min;
+        
+        let h;
+        if (d === 0) h = 0;
+        else if (max === r) h = ((g - b) / d) % 6;
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        
+        h = Math.round(h * 60);
+        if (h < 0) h += 360;
+        
+        const s = max === 0 ? 0 : d / max;
+        const v = max;
+        
+        return [h, s, v];
     }
 }
 

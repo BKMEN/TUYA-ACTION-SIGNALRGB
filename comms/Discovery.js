@@ -19,7 +19,7 @@ try {
         throw new Error('Crypto module is not loaded');
     }
     if (typeof crypto.createDiscoveryPacket !== 'function') {
-    console.error('Failed to load crypto module:', error.message, '- Using emergency fallback. Note: This fallback is not recommended for production as it may lack proper security and functionality.');
+        console.error('Failed to load crypto module: - Using emergency fallback. Note: This fallback is not recommended for production as it may lack proper security and functionality.');
         throw new Error('Invalid crypto module implementation: createDiscoveryPacket is not a function');
     }
     if (typeof crypto.parseDiscoveryResponse !== 'function') {
@@ -58,7 +58,7 @@ class TuyaDiscovery extends EventEmitter {
 
         // The `socket` property is used to manage the UDP socket for sending and receiving discovery packets.
         // It is initialized as `null` and created when discovery starts. It is closed and set back to `null` when discovery stops.
-                this.socket = null;
+        this.socket = null;
         this.devices = {};
         this.discoveryRunning = false;
         this.currentRetry = 0;
@@ -109,120 +109,89 @@ class TuyaDiscovery extends EventEmitter {
         return this.discover();
     }
 
-   _startDiscovery() {
-    if (this.socket) {
-        this._log('Closing existing socket before starting discovery');
-        this.socket.close();
-        this.socket = null;
-    }
-    try {
-        this.socket = dgram.createSocket('udp4');
-        this.socket.on('error', (err) => {
-            this._log(`Socket error: ${err.message}`);
-            this.emit('error', err);
-        });
-        this.socket.on('message', this._handleDiscoveryResponse.bind(this));
-        this.socket.bind((err) => {
-            if (err) {
-                this._log(`Error binding socket: ${err.message}`);
-                this.emit('error', err);
-                return; // Termina aquí si hay error al hacer bind
-            }
-            this.socket.setBroadcast(true);
-            this._sendDiscoveryPackets();
-            if (this.discoveryTimer) clearTimeout(this.discoveryTimer);
-            this.discoveryTimer = setTimeout(() => {
-                if (this.currentRetry < this.retries - 1) {
-                    this.currentRetry++;
-                    this._log(`Retry ${this.currentRetry}/${this.retries}`);
-                    this._sendDiscoveryPackets();
-                } else {
-                    this._finalizeDiscovery();
-                }
-            }, this.timeout);
-        });
-    } catch (err) {
-        this._log(`Error starting discovery: ${err.message}`);
-        this.emit('error', err);
-    }
-}
-
-
-        let discoveryPacket;
-        try {
-            discoveryPacket = crypto.createDiscoveryPacket();
-        } catch (err) {
-            this._log(`Error creating discovery packet: ${err.message}`);
-            this.emit('error', err);
-            const maxSendRetries = 3;
-            let sendAttempts = 0;
-
-            const sendWithRetry = (address) => {
-                this.socket.send(discoveryPacket, 0, discoveryPacket.length, this.port, address, (err) => {
-                    if (err) {
-                        this._log(`Error sending to ${address}: ${err.message}`);
-                        if (sendAttempts < maxSendRetries) {
-                            sendAttempts++;
-                            this._log(`Retrying send to ${address} (${sendAttempts}/${maxSendRetries})`);
-                            sendWithRetry(address);
-                        } else {
-                            this._log(`Failed to send to ${address} after ${maxSendRetries} attempts`);
-                        }
-                    }
-                });
-            };
-
-            addresses.forEach(address => {
-                this._log(`Sending discovery packet to ${address}:${this.port}`);
-                sendWithRetry(address);
-            });
+    _startDiscovery() {
+        if (this.socket) {
+            this._log('Closing existing socket before starting discovery');
+            this.socket.close();
+            this.socket = null;
         }
-    }
+        try {
+            this.socket = dgram.createSocket('udp4');
+            this.socket.on('error', (err) => {
+                this._log(`Socket error: ${err.message}`);
+                this.emit('error', err);
             });
-        });
+            this.socket.on('message', this._handleDiscoveryResponse.bind(this));
+            this.socket.bind((err) => {
+                if (err) {
+                    this._log(`Error binding socket: ${err.message}`);
+                    this.emit('error', err);
+                    return; // Termina aquí si hay error al hacer bind
+                }
+                this.socket.setBroadcast(true);
+                this._sendDiscoveryPackets();
+                if (this.discoveryTimer) clearTimeout(this.discoveryTimer);
+                this.discoveryTimer = setTimeout(() => {
+                    if (this.currentRetry < this.retries - 1) {
+                        this.currentRetry++;
+                        this._log(`Retry ${this.currentRetry}/${this.retries}`);
+                        this._sendDiscoveryPackets();
+                    } else {
+                        this._finalizeDiscovery();
+                    }
+                }, this.timeout);
             });
-        });
+        } catch (err) {
+            this._log(`Error starting discovery: ${err.message}`);
+            this.emit('error', err);
+        }
     }
 
     _handleDiscoveryResponse(msg, rinfo) {
-    try {
-        const deviceInfo = crypto.parseDiscoveryResponse(msg, rinfo);
-        if (deviceInfo && typeof deviceInfo === 'object' && deviceInfo.id && deviceInfo.ip) {
-            if (!this.devices[deviceInfo.id] ||
-                JSON.stringify(this.devices[deviceInfo.id]) !== JSON.stringify(deviceInfo)) {
-                this.devices[deviceInfo.id] = deviceInfo;
-                this._log(`Device found: ${deviceInfo.id} (${deviceInfo.ip})`);
-                this.emit('device', deviceInfo);
-            }
-        } else {
-            this._log('Invalid device information received, skipping.');
-        }
-    } catch (err) {
-        this._log(`Error processing response: ${err.message}`);
-    }
-}
-_sendDiscoveryPackets() {
-    const discoveryPacket = crypto.createDiscoveryPacket();
-    const addresses = Array.isArray(this.broadcastAddress) ? this.broadcastAddress : [this.broadcastAddress];
-    addresses.forEach(address => {
-        this._sendWithRetry(discoveryPacket, address, this.port);
-    });
-}
-
-_sendWithRetry(packet, address, port, attempt = 0, maxRetries = 3) {
-    this.socket.send(packet, 0, packet.length, port, address, (err) => {
-        if (err) {
-            this._log(`Error sending to ${address}: ${err.message}`);
-            if (attempt < maxRetries) {
-                this._log(`Retrying send to ${address} (${attempt + 1}/${maxRetries})`);
-                this._sendWithRetry(packet, address, port, attempt + 1, maxRetries);
+        try {
+            const deviceInfo = crypto.parseDiscoveryResponse(msg, rinfo);
+            if (deviceInfo && typeof deviceInfo === 'object' && deviceInfo.id && deviceInfo.ip) {
+                if (!this.devices[deviceInfo.id] ||
+                    JSON.stringify(this.devices[deviceInfo.id]) !== JSON.stringify(deviceInfo)) {
+                    this.devices[deviceInfo.id] = deviceInfo;
+                    this._log(`Device found: ${deviceInfo.id} (${deviceInfo.ip})`);
+                    this.emit('device', deviceInfo);
+                }
             } else {
-                this._log(`Failed to send to ${address} after ${maxRetries} attempts`);
+                this._log('Invalid device information received, skipping.');
             }
+        } catch (err) {
+            this._log(`Error processing response: ${err.message}`);
         }
-    });
-}
+    }
 
+    _sendDiscoveryPackets() {
+        try {
+            const discoveryPacket = crypto.createDiscoveryPacket();
+            const addresses = Array.isArray(this.broadcastAddress) ? this.broadcastAddress : [this.broadcastAddress];
+            addresses.forEach(address => {
+                this._log(`Sending discovery packet to ${address}:${this.port}`);
+                this._sendWithRetry(discoveryPacket, address, this.port);
+            });
+        } catch (err) {
+            this._log(`Error creating discovery packet: ${err.message}`);
+            this.emit('error', err);
+        }
+    }
+
+    _sendWithRetry(packet, address, port, attempt = 0, maxRetries = 3) {
+        this.socket.send(packet, 0, packet.length, port, address, (err) => {
+            if (err) {
+                this._log(`Error sending to ${address}: ${err.message}`);
+                if (attempt < maxRetries) {
+                    this._log(`Retrying send to ${address} (${attempt + 1}/${maxRetries})`);
+                    this._sendWithRetry(packet, address, port, attempt + 1, maxRetries);
+                } else {
+                    this._log(`Failed to send to ${address} after ${maxRetries} attempts`);
+                }
+            }
+        });
+    }
 
     _finalizeDiscovery() {
         this._log(`Discovery complete, found ${Object.keys(this.devices).length} devices`);
@@ -242,36 +211,44 @@ _sendWithRetry(packet, address, port, attempt = 0, maxRetries = 3) {
         const addresses = [];
         const interfaces = os.networkInterfaces();
         Object.keys(interfaces).forEach((ifaceName) => {
-                    interfaces[ifaceName].forEach((iface) => {
-                        if (iface.family === 'IPv4' && !iface.internal && iface.address && iface.netmask) {
-                        try {
-                            const ipParts = iface.address.split('.').map(Number);
-                    interfaces[ifaceName].forEach((iface) => {
-                        if (iface.family === 'IPv4' && !iface.internal && iface.address && iface.netmask) {
-                        try {
-                            const ipParts = iface.address.split('.').map(Number);
-                            const netmaskParts = iface.netmask.split('.').map(Number);
-                                    addresses.push(broadcastParts.join('.'));
-                                } else {
-                                    this._log(`Invalid IPv4 address or netmask: ${iface.address}, ${iface.netmask}`);
-                                }
-                            } catch (err) {
-                                this._log(`Error processing interface ${ifaceName}: ${err.message}`);
-                            }
+            interfaces[ifaceName].forEach((iface) => {
+                if (iface.family === 'IPv4' && !iface.internal && iface.address && iface.netmask) {
+                    try {
+                        const ipParts = iface.address.split('.').map(Number);
+                        const netmaskParts = iface.netmask.split('.').map(Number);
+                        
+                        // Calculate broadcast address
+                        if (ipParts.length === 4 && netmaskParts.length === 4) {
+                            const broadcastParts = ipParts.map((part, i) => {
+                                return (part & netmaskParts[i]) | (~netmaskParts[i] & 255);
+                            });
+                            addresses.push(broadcastParts.join('.'));
+                        } else {
+                            this._log(`Invalid IPv4 address or netmask: ${iface.address}, ${iface.netmask}`);
                         }
+                    } catch (err) {
+                        this._log(`Error processing interface ${ifaceName}: ${err.message}`);
                     }
-                        }
-                    }
-                        }
-                    });
+                }
+            });
+        });
+        
+        // If no valid addresses found, use default broadcast address
+        if (addresses.length === 0 && this.defaultBroadcastAddress) {
+            addresses.push(this.defaultBroadcastAddress);
         }
-    _log(message) {
-        if (this.debugMode && this.logger && typeof this.logger.log === 'function') {
-            const timestamp = new Date().toISOString();
-            this.logger.log(`[TuyaDiscovery ${timestamp}] ${message}`);
-        }
+        
+        return addresses;
     }
-            console.log(`[TuyaDiscovery] ${message}`);
+
+    _log(message) {
+        if (this.debugMode && this.logger) {
+            const timestamp = new Date().toISOString();
+            if (typeof this.logger.log === 'function') {
+                this.logger.log(`[TuyaDiscovery ${timestamp}] ${message}`);
+            } else {
+                console.log(`[TuyaDiscovery ${timestamp}] ${message}`);
+            }
         }
     }
 }
