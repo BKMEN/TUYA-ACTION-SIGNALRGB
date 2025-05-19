@@ -20,8 +20,17 @@ class TuyaController extends EventEmitter {
             discoveryTimeout: options.discoveryTimeout || 10000,
             autoReconnect: options.autoReconnect !== false,
             reconnectInterval: options.reconnectInterval || 30000,
-            ...options
+            // Aquí hay un error con el spread operator - reemplazarlo
         };
+        
+        // Añadir opciones adicionales manualmente en lugar de usar spread
+        if (options) {
+            Object.keys(options).forEach(key => {
+                if (!this.options[key]) {
+                    this.options[key] = options[key];
+                }
+            });
+        }
         
         // Estado del controlador
         this.isDiscovering = false;

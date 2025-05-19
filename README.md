@@ -21,6 +21,12 @@
 
 ## 📦 Estructura del proyecto
 
+- `index.js` - Archivo principal del plugin para SignalRGB
+- `TuyaController.js` - Controlador central para gestionar dispositivos
+- `TuyaDevice.js` - Clase que representa un dispositivo Tuya
+- `crypto.js` - Funciones para cifrado y comunicación con dispositivos Tuya
+- `comms/` - Módulos para comunicación (Discovery, TuyaProtocol)
+- `ui/` - Componentes de interfaz de usuario para el plugin
 
 ---
 
@@ -29,7 +35,6 @@
 - [SignalRGB](https://www.signalrgb.com/) instalado en tu PC (Windows).
 - Dispositivo(s) Tuya WiFi **en la misma red local**.
 - Node.js >= 14 (en entornos de desarrollo/test).
-- [TuyAPI](https://github.com/codetheweb/tuyapi) solo si usas funciones avanzadas, **NO es obligatorio** para la base.
 
 ---
 
@@ -38,3 +43,4 @@
 1. **Clona el repositorio** o descarga el ZIP y descomprímelo:
    ```bash
    git clone https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB.git
+   ```

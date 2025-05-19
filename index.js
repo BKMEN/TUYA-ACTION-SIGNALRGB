@@ -12,6 +12,7 @@ export function Size() { return [1, 1]; }
 export function DefaultPosition() { return [240, 80]; }
 export function DefaultScale() { return 8.0; }
 export function DefaultTint() { return "0x000000"; }
+export function ProductId() { return 0x0000; } // Puedes usar cualquier ID único
 export function ControllableParameters() {
     return [
         { "name": "IP", "type": "text", "default": "", "size": "medium", "tooltip": "IP address of your Tuya device" },

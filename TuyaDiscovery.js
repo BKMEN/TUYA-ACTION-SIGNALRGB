@@ -1,7 +1,10 @@
 /**
- * Wrapper para el módulo de Discovery de comunicaciones
+ * Clase wrapper para TuyaDiscovery
+ * Simplemente re-exporta la clase de Discovery.js
  */
+
+// Importar la clase original de comms/Discovery.js
 const Discovery = require('./comms/Discovery');
 
-// Re-exportar Discovery con el nombre TuyaDiscovery para mantener compatibilidad
+// Re-exportar
 module.exports = Discovery;
