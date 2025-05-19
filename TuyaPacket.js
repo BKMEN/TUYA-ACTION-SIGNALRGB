@@ -6,13 +6,9 @@
 const MAGIC_PREFIX = 0x000055aa;
 const MAGIC_SUFFIX = 0x0000aa55;
 
-// Crear una clase para manejar paquetes - Corregir error de sintaxis
-class TuyaPacket {
-  constructor() {
-    // Nada que inicializar aquí
-  }
-
-  static createPacket(command, payload, sequence) {
+// Crear un objeto con métodos estáticos en lugar de una clase
+const TuyaPacket = {
+  createPacket: function(command, payload, sequence) {
     // Implementación correcta sin errores de sintaxis
     const bodyBuffer = Buffer.from(payload || '');
     const headerLength = 16; // 4 bytes prefix, 4 bytes sequence, 4 bytes command, 4 bytes length
@@ -28,9 +24,9 @@ class TuyaPacket {
     bodyBuffer.copy(buffer, headerLength);
     
     return buffer;
-  }
+  },
 
-  static parsePacket(buffer) {
+  parsePacket: function(buffer) {
     if (buffer.length < 16) {
       return null;
     }
@@ -53,10 +49,6 @@ class TuyaPacket {
       payload
     };
   }
-}
-
-// Eliminar estas líneas para evitar conflictos
-// TuyaPacket.VendorId = VendorId;
-// TuyaPacket.ProductId = ProductId;
+};
 
 module.exports = TuyaPacket;

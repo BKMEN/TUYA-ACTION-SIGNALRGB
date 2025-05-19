@@ -5,14 +5,17 @@
 // Funciones básicas para el descubrimiento y comunicación Tuya
 const crypto = require('crypto');
 
+// Crear paquete de descubrimiento Tuya (para broadcast UDP)
 function createDiscoveryPacket() {
     return Buffer.from('000055aa00000000000000070000000100000000', 'hex');
 }
 
+// Parsear respuesta de descubrimiento
 function parseDiscoveryResponse(msg, rinfo) {
     try {
         if (msg && msg.length > 20) {
-            const idHex = msg.slice(20, 44).toString('hex');
+            // Esta es una implementación simplificada, ajustar según protocolo real de Tuya
+            const idHex = msg.toString('hex').substring(20, 44);
             return {
                 id: idHex,
                 ip: rinfo.address,
@@ -26,9 +29,12 @@ function parseDiscoveryResponse(msg, rinfo) {
     }
 }
 
+// Crear paquete para establecer colores en dispositivo Tuya
 function createSetColorPacket(options) {
     try {
-        const { color, gwId, key } = options;
+        const colorData = options.color || [255, 0, 0];
+        const gwId = options.gwId || '';
+        const key = options.key || '';
         
         const data = {
             devId: gwId,
@@ -36,9 +42,9 @@ function createSetColorPacket(options) {
             uid: '',
             t: Date.now().toString(),
             dps: {
-                '1': true,
-                '2': 'colour',
-                '5': `${color[0].toString(16).padStart(2,'0')}${color[1].toString(16).padStart(2,'0')}${color[2].toString(16).padStart(2,'0')}`
+                '1': true,  // Encendido
+                '2': 'colour',  // Modo color
+                '5': `${colorData[0].toString(16).padStart(2,'0')}${colorData[1].toString(16).padStart(2,'0')}${colorData[2].toString(16).padStart(2,'0')}` // Color RGB
             }
         };
         
@@ -53,6 +59,7 @@ function createSetColorPacket(options) {
     }
 }
 
+// Parsear respuesta a un paquete de control de color
 function parseSetColorResponse(msg) {
     return { success: true };
 }
