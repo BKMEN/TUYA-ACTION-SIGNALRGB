@@ -10,8 +10,9 @@ export function Version() { return "1.0.0"; }
 export function Type() { return "network"; }
 export function Publisher() { return "SignalRGB"; }
 export function Size() { return [1, 60]; } // Cambia si necesitas un grid diferente
-export function DefaultPosition() { return [75, 70]; }
+export function DefaultPosition() { return [0, 70]; }
 export function DefaultScale() { return 1.0; }
+export function ImageUrl() { return ""; } // Agrega la URL de la imagen si está disponible
 
 // --- Parámetros controlables desde la UI ---
 export function ControllableParameters() {
@@ -41,13 +42,19 @@ export function ControllableParameters() {
       "min": "1",
       "max": "120",
       "step": "1",
-      "default": "24"
+      "default": "4"
     },
     {
       "property": "forcedColor",
       "label": "Forced Color",
       "type": "color",
       "default": "#009bde"
+    },
+    {
+      "property": "shutdownColor",
+      "label": "Shutdown Color",
+      "type": "color",
+      "default": "#000000"
     }
   ];
 }
@@ -57,7 +64,7 @@ let streamingAddress = "";
 let streamingPort = 6668; // Puerto estándar Tuya LAN
 let g_currentBrightness = 0;
 let g_sCurrentMode = "";
-let g_ledCount = 24;
+let g_ledCount = 4;
 let g_sCurrentForced = "";
 let deviceConnected = false;
 let tuyaKey = "";
@@ -66,16 +73,16 @@ let tuyaId = "";
 // --- Inicialización del dispositivo ---
 export function Initialize() {
   device.setName(controller.name || "Tuya Device");
-  streamingAddress = controller.ip || "0.0.0.0";
-  tuyaKey = controller.key || ""; // IMPORTANTE: Clave local de tu dispositivo
-  tuyaId = controller.id || "";   // ID local de tu dispositivo
+  streamingAddress = controller.ip || "192.168.1.129";
+  tuyaKey = controller.key || "OE4lO]Id<-ws`d;9"; // IMPORTANTE: Clave local de tu dispositivo
+  tuyaId = controller.id || "bfafad43febddb888apxbj";   // ID local de tu dispositivo
 
   device.setImageFromUrl(controller.image || "");
 
   // Sincronizamos valores iniciales
   SetBrightness(g_iBrightness);
   g_sCurrentMode = g_sMode || "Canvas";
-  g_ledCount = g_ledCount || 24;
+  g_ledCount = g_ledCount || 4;
 }
 
 // --- Sincronizaciones de parámetros ---
@@ -155,3 +162,17 @@ export function Shutdown() {
   // tuyaComms.sendBlackout(streamingAddress, streamingPort, tuyaId, tuyaKey);
 }
 
+// --- Validación del dispositivo ---
+export function Validate(endpoint) {
+  return endpoint.interface === 0 && endpoint.usage === 0 && endpoint.usage_page === 0;
+}
+
+// --- Conversión de color hexadecimal a RGB ---
+function hexToRgb(hex) {
+  let result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  let colors = [];
+  colors[0] = parseInt(result[1], 16);
+  colors[1] = parseInt(result[2], 16);
+  colors[2] = parseInt(result[3], 16);
+  return colors;
+}
