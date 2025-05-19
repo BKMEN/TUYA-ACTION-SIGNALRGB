@@ -8,10 +8,6 @@ const EventEmitter = require('events');
 // Importa TuyaDevice correctamente
 const TuyaDevice = require('./TuyaDevice');
 
-// Evita que SignalRGB lo cargue como plugin
-function VendorId() { return null; }
-function ProductId() { return null; }
-
 class TuyaController extends EventEmitter {
     /**
      * Constructor del controlador Tuya
@@ -19,7 +15,6 @@ class TuyaController extends EventEmitter {
      */
     constructor(options = {}) {
         super();
-        this.constructor.name = "TuyaController"; // Evita que SignalRGB lo cargue como plugin
         
         // Evitar uso de spread y sintaxis avanzada
         this.options = {};
@@ -35,7 +30,7 @@ class TuyaController extends EventEmitter {
         this.devices = new Map();
         
         // Instancia del descubridor de dispositivos
-        this.discovery = new TuyaDiscovery();
+        this.discovery = null; // Inicializar en initialize()
         
         // Intervalo de reconexión
         this.reconnectInterval = null;
@@ -402,9 +397,5 @@ class TuyaController extends EventEmitter {
         }
     }
 }
-
-// Añadir propiedades para que SignalRGB lo ignore
-TuyaController.VendorId = VendorId;
-TuyaController.ProductId = ProductId;
 
 module.exports = TuyaController;

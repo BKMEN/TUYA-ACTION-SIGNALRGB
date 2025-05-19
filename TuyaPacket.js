@@ -2,18 +2,14 @@
  * Utilidades para manejar paquetes del protocolo Tuya
  */
 
-// Evita que SignalRGB lo cargue como plugin
-function VendorId() { return null; }
-function ProductId() { return null; }
-
 // Constantes
 const MAGIC_PREFIX = 0x000055aa;
 const MAGIC_SUFFIX = 0x0000aa55;
 
-// Crear una clase para manejar paquetes
+// Crear una clase para manejar paquetes - Corregir error de sintaxis
 class TuyaPacket {
   constructor() {
-    this.constructor.name = "TuyaPacket"; // Evita que SignalRGB lo cargue como plugin
+    // Nada que inicializar aquí
   }
 
   static createPacket(command, payload, sequence) {
@@ -59,8 +55,8 @@ class TuyaPacket {
   }
 }
 
-// Añadir propiedades para que SignalRGB lo ignore
-TuyaPacket.VendorId = VendorId;
-TuyaPacket.ProductId = ProductId;
+// Eliminar estas líneas para evitar conflictos
+// TuyaPacket.VendorId = VendorId;
+// TuyaPacket.ProductId = ProductId;
 
 module.exports = TuyaPacket;

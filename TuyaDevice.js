@@ -6,14 +6,9 @@
 const EventEmitter = require('events');
 const dgram = require('dgram');
 
-// Evita que SignalRGB lo cargue como plugin
-function VendorId() { return null; }
-function ProductId() { return null; }
-
 class TuyaDevice extends EventEmitter {
     constructor(deviceInfo) {
         super();
-        this.constructor.name = "TuyaDevice"; // Evita que SignalRGB lo cargue como plugin
         
         // Inicializa propiedades sin sintaxis avanzada
         this.id = deviceInfo.id || '';
@@ -323,9 +318,5 @@ class TuyaDevice extends EventEmitter {
         return [h, s, v];
     }
 }
-
-// Añadir propiedades para que SignalRGB lo ignore
-TuyaDevice.VendorId = VendorId;
-TuyaDevice.ProductId = ProductId;
 
 module.exports = TuyaDevice;

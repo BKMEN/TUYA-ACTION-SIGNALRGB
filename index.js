@@ -4,19 +4,34 @@
 // Version: 1.0.0
 // --------------------------------------------------- //
 
+// Define package.json inline for easy access
+const packageJson = {
+  "name": "tuya-action-signalrgb",
+  "version": "1.0.0",
+  "description": "Plugin para controlar dispositivos Tuya desde SignalRGB",
+  "main": "index.js",
+  "author": "BKMEN",
+  "license": "MIT",
+  "dependencies": {
+    "dgram": "^1.0.1",
+    "events": "^3.3.0",
+    "net": "^1.0.2",
+    "os": "^0.1.2"
+  }
+};
+
 // Define funciones requeridas por SignalRGB
 function Name() { return "Tuya Action"; }
-function Version() { return "1.0.0"; }
+function Version() { return packageJson.version; }
 function Type() { return "network"; }
-function Publisher() { return "BKMEN"; }
+function Publisher() { return packageJson.author; }
 function Size() { return [1, 1]; }
 function DefaultPosition() { return [240, 80]; }
 function DefaultScale() { return 8.0; }
 function DefaultTint() { return "0x000000"; }
-// ID del fabricante (requerido por SignalRGB)
-function VendorId() { return 0x2712; } // ID de ejemplo, puedes usar otro
-// ID del producto (requerido por SignalRGB)
-function ProductId() { return [0x1337]; } // Debe ser array de enteros o un entero
+// ESTO ES MUY IMPORTANTE: Solo index.js debe exportar estos métodos
+function VendorId() { return 0x2712; } // ID único para el fabricante
+function ProductId() { return 0x1337; } // ID único para el producto (valor entero)
 
 function ControllableParameters() {
     return [
@@ -696,8 +711,8 @@ module.exports = {
     DefaultPosition,
     DefaultScale,
     DefaultTint,
-    VendorId,        // Añadido
-    ProductId,       // Añadido
+    VendorId,        // Solo index.js debe tener estos
+    ProductId,       // Solo index.js debe tener estos
     ControllableParameters,
     Initialize,
     onParameterChange,
