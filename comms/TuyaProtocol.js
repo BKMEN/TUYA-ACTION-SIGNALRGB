@@ -1,5 +1,6 @@
 // TuyaProtocol.js
 
+// PROBLEMA: Depende de tuyapi que necesita ser instalado como dependencia externa
 const TuyAPI = require('tuyapi');
 
 class TuyaDevice {

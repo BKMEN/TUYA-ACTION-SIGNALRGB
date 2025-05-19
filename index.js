@@ -124,6 +124,7 @@ function connect() {
         
         updateConnectionStatus("Connecting...");
         
+        // PROBLEMA: La función createSocket() no está definida
         socket = createSocket(ipAddress, 6668);
         
         socket.onConnect = () => {
@@ -634,4 +635,57 @@ export function onStateChange(state) {
 export function Render() {
     // This function is called to render the device on the Signal RGB canvas
     // Since we're controlling external hardware, we don't need to render anything custom here
+}
+
+/**
+ * Create a socket connection to a Tuya device
+ * @param {string} ip - IP address of the device
+ * @param {number} port - Port number
+ * @returns {Object} Socket object with connection methods
+ */
+function createSocket(ip, port) {
+    const net = require('net');
+    const socket = new net.Socket();
+    
+    const socketWrapper = {
+        connect: () => {
+            socket.connect(port, ip);
+        },
+        disconnect: () => {
+            socket.end();
+            socket.destroy();
+        },
+        write: (data) => {
+            socket.write(data);
+        },
+        onConnect: null,
+        onDisconnect: null,
+        onData: null,
+        onError: null
+    };
+    
+    socket.on('connect', () => {
+        if (socketWrapper.onConnect) socketWrapper.onConnect();
+    });
+    
+    socket.on('close', () => {
+        if (socketWrapper.onDisconnect) socketWrapper.onDisconnect();
+    });
+    
+    socket.on('data', (data) => {
+        if (socketWrapper.onData) socketWrapper.onData(data);
+    });
+    
+    socket.on('error', (error) => {
+        if (socketWrapper.onError) socketWrapper.onError(error.message);
+    });
+    
+    return socketWrapper;
+}
+
+// Polyfill para TextEncoder/TextDecoder en Node.js
+if (typeof TextEncoder === 'undefined') {
+    const util = require('util');
+    global.TextEncoder = util.TextEncoder;
+    global.TextDecoder = util.TextDecoder;
 }

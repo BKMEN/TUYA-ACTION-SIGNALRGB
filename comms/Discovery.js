@@ -12,7 +12,7 @@ const EventEmitter = require('events');
 const os = require('os');
 let crypto;
 
-// INTENTA cargar tu módulo /crypto, con fallback
+// PROBLEMA: Intenta cargar un módulo personalizado de crypto
 try {
     crypto = require('../crypto');
     if (!crypto) {

@@ -51,11 +51,11 @@ export default class TuyaEncryptor extends BaseClass
 
     createAad(data, dataLength, type, crc)
     {
+        if (!crc) crc = this.crc;
+
         const sequence = this.getSequenceNumber();
         const totalLength = this.getW32FromHex( (this.dataLength + dataLength).toString(16), 4);
         const frameNum = this.getW32FromHex(data.length, 4);
-
-        if (!crc) crc = this.crc;
 
         let aad = '';
         aad += this.versionReserved;
