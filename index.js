@@ -31,6 +31,8 @@ const PROTOCOL_33_VERSION = 0x0003;
 const PROTOCOL_33_COMMAND_QUERY_DEVICE_STATE = 0x0a;
 const PROTOCOL_33_COMMAND_SEND_DEVICE_COMMAND = 0x07;
 const PROTOCOL_33_COMMAND_HANDSHAKE = 0x01;
+const TuyaController = require('./TuyaController');
+const controller = new TuyaController();
 
 let device = null;
 let ipAddress = "";
@@ -59,7 +61,13 @@ export function Initialize() {
         console.log("Tuya Action: Initializing...");
     }
 }
-
+// En tu main JS del plugin SignalRGB:
+global.service = {
+  discoverDevices: () => controller.startDiscovery(),
+  getDevices: () => controller.getAllDevices(),
+  setDeviceColor: (id, colors) => controller.setDeviceColors(id, colors),
+  setDeviceLedCount: (id, count) => controller.setDeviceLedCount(id, count)
+};
 /**
  * Handle parameter changes
  */

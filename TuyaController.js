@@ -333,7 +333,25 @@ class TuyaController extends EventEmitter {
             return false;
         }
     }
-    
+    const crypto = require('../crypto');
+
+const setColorPacket = crypto.createSetColorPacket({
+  color: [r, g, b],
+  gwId: dispositivo.gwId,
+  key: dispositivo.key,
+  ledCount: dispositivo.ledCount,
+  // ...otros datos necesarios
+});
+// Envíalo por TCP/UDP según corresponda:
+deviceSocket.send(
+  setColorPacket, 0, setColorPacket.length, 
+  port, deviceIp
+);
+deviceSocket.on('message', (msg, rinfo) => {
+  const result = crypto.parseSetColorResponse(msg);
+  // Actualiza UI o estado según result
+});
+
     /**
      * Maneja el evento de dispositivo descubierto
      * @private
