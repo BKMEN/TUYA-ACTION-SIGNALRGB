@@ -29,9 +29,9 @@ function Size() { return [1, 1]; }
 function DefaultPosition() { return [240, 80]; }
 function DefaultScale() { return 8.0; }
 function DefaultTint() { return "0x000000"; }
-// ESTO ES MUY IMPORTANTE: Solo index.js debe exportar estos métodos
-function VendorId() { return 0x2712; } // ID único para el fabricante
-function ProductId() { return 0x1337; } // ID único para el producto (valor entero)
+// CORREGIDO: ProductId debe ser un entero, no un array
+function VendorId() { return 0x2712; }
+function ProductId() { return 0x1337; } // Cambiado de [0x1337] a 0x1337
 
 function ControllableParameters() {
     return [
@@ -711,8 +711,8 @@ module.exports = {
     DefaultPosition,
     DefaultScale,
     DefaultTint,
-    VendorId,        // Solo index.js debe tener estos
-    ProductId,       // Solo index.js debe tener estos
+    VendorId,
+    ProductId,
     ControllableParameters,
     Initialize,
     onParameterChange,

@@ -2,47 +2,54 @@
  * Implementación del protocolo Tuya
  */
 
-// Evita que SignalRGB lo cargue como plugin
-function VendorId() { return null; }
-function ProductId() { return null; }
-
-class TuyaDevice {
-  constructor(config) {
-    this.constructor.name = "TuyaProtocolDevice"; // Evita que SignalRGB lo cargue como plugin
-    
-    this.id = config.id || '';
-    this.key = config.key || '';
-    this.ip = config.ip || '';
-    this.version = config.version || '3.3';
-    this.connected = false;
+// Función constructora en lugar de clase
+function TuyaProtocol(config) {
+  // Asegurar creación correcta
+  if (!(this instanceof TuyaProtocol)) {
+    return new TuyaProtocol(config);
   }
-
-  async connect() {
-    // Implementación simplificada 
-    this.connected = true;
-    return true;
-  }
-
-  async disconnect() {
-    this.connected = false;
-    return true;
-  }
-
-  async setPower(state) {
-    return true;
-  }
-
-  async setBrightness(value) {
-    return true;
-  }
-
-  async setColor(color) {
-    return true;
-  }
+  
+  config = config || {};
+  
+  this.id = config.id || '';
+  this.key = config.key || '';
+  this.ip = config.ip || '';
+  this.version = config.version || '3.3';
+  this.connected = false;
 }
 
-// Añadir propiedades para que SignalRGB lo ignore
-TuyaDevice.VendorId = VendorId;
-TuyaDevice.ProductId = ProductId;
+// Agregar métodos al prototipo
+TuyaProtocol.prototype.connect = function() {
+  var self = this;
+  return new Promise(function(resolve) {
+    console.log("Connecting to device: " + self.id);
+    self.connected = true;
+    resolve(true);
+  });
+};
 
-module.exports = TuyaDevice;
+TuyaProtocol.prototype.disconnect = function() {
+  var self = this;
+  return new Promise(function(resolve) {
+    self.connected = false;
+    resolve(true);
+  });
+};
+
+TuyaProtocol.prototype.setPower = function(state) {
+  var self = this;
+  return new Promise(function(resolve) {
+    console.log("Setting power: " + state + " for device: " + self.id);
+    resolve(true);
+  });
+};
+
+TuyaProtocol.prototype.setColor = function(color) {
+  var self = this;
+  return new Promise(function(resolve) {
+    console.log("Setting color for device: " + self.id);
+    resolve(true);
+  });
+};
+
+module.exports = TuyaProtocol;

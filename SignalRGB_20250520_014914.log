@@ -1,0 +1,632 @@
+05/20/25 01:49:14.258 [13448-] SignalRGB.root.INFO - Admin Status: False
+05/20/25 01:49:14.259 [13448-] SignalRGB.root.INFO - Working Memory Usage: 37MB, Private Memory Usage: 21MB
+05/20/25 01:49:14.260 [13448-] SignalRGB.root.INFO - Program Version: 2.4.57.0 @ 179293f5
+05/20/25 01:49:14.260 [13448-] SignalRGB.root.INFO - User Machine Id: {861a7d3b-53d7-4d8c-a398-f849aaf32ff0}
+05/20/25 01:49:14.260 [13448-] SignalRGB.root.INFO - Using OpenGL
+05/20/25 01:49:14.465 [13448-] SignalRGB.root.INFO - Thread Priority: high
+05/20/25 01:49:14.465 [13448-] SignalRGB.root.INFO - SignalIO: Installed Version: 1.2.0.0
+05/20/25 01:49:14.465 [13448-] SignalRGB.Signalio.INFO - Driver is open!
+05/20/25 01:49:14.465 [13448-] SignalRGB.Signalio.INFO - First Run detected. Checking Driver Status.
+05/20/25 01:49:14.466 [13448-] SignalRGB.system.memory.INFO - Total Physical Memory: 16310MB
+05/20/25 01:49:14.466 [13448-] SignalRGB.system.memory.INFO - Available Physical Memory: 7938MB
+05/20/25 01:49:14.466 [13448-] SignalRGB.system.memory.INFO - Total Page File: 23990MB
+05/20/25 01:49:14.466 [13448-] SignalRGB.system.memory.INFO - Available Page File: 10149MB
+05/20/25 01:49:14.466 [13448-] SignalRGB.system.memory.INFO - Page File Usage: 58%
+05/20/25 01:49:14.466 [13448-] SignalRGB.system.memory.INFO - System Memory Load: 51%
+05/20/25 01:49:14.472 [13448-] SignalRGB.root.INFO - "C:\\Users\\zorro\\AppData\\Local\\VortxEngine\\app-2.4.57\\Signal-x64"
+05/20/25 01:49:14.553 [13448-] SignalRGB.root.INFO - Invoking splash screen...
+05/20/25 01:49:14.862 [13448-] SignalRGB.root.INFO - Splash screen started...
+05/20/25 01:49:14.867 [13448-] SignalRGB.RemoteConfig.INFO - Loaded Cached RemoteConfig!
+05/20/25 01:49:14.867 [13448-] SignalRGB.RemoteConfig.INFO - Current Config fetch time: Mon May 19 23:43:53 2025
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [L-Connect 3.exe.bak]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [DCv2.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [LEDKeeper2.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [LightKeeperService.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [Mystic_Light_Service.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [MSI.CentralServer.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [MSI.TerminalServer.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [MSI_Central_Service.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [MSI Center.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [MSI Center SDK.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [HP.Omen.OmenCommandCenter.exe]
+05/20/25 01:49:15.330 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [OmenCommandCenterBackground.exe]
+05/20/25 01:49:15.331 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [NGenuity.exe]
+05/20/25 01:49:15.331 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [NGenuity2.exe]
+05/20/25 01:49:15.331 [13448-] SignalRGB.ConflictMitigator.INFO - Collaborative Process Added: [NGenuity2Helper.exe]
+05/20/25 01:49:15.499 [13448-] SignalRGB.ConflictMitigator.INFO - Running Processes:
+	AppleMobileDeviceProcess.exe
+	ApplicationFrameHost.exe
+	audiodg.exe
+	AUEPDU.exe
+	AUEPMaster.exe
+	brave.exe
+	BraveCrashHandler.exe
+	BraveCrashHandler64.exe
+	Code.exe
+	conhost.exe
+	crashpad_handler.exe
+	CrossDeviceService.exe
+	csrss.exe
+	ctfmon.exe
+	DataExchangeHost.exe
+	Discord.exe
+	dllhost.exe
+	dwm.exe
+	EABackgroundService.exe
+	explorer.exe
+	fontdrvhost.exe
+	GameBarFTServer.exe
+	GameInputSvc.exe
+	gamingservices.exe
+	gamingservicesnet.exe
+	LockApp.exe
+	logi_lamparray_service.exe
+	lsass.exe
+	mDNSResponder.exe
+	Memory Compression
+	MpDefenderCoreService.exe
+	msedgewebview2.exe
+	MSIAfterburner.exe
+	MsMpEng.exe
+	NisSrv.exe
+	Notepad.exe
+	nvcontainer.exe
+	NVDisplay.Container.exe
+	PhoneExperienceHost.exe
+	pwsh.exe
+	Registry
+	RiotClientCrashHandler.exe
+	RiotClientServices.exe
+	RtkAudUService64.exe
+	RuntimeBroker.exe
+	SearchHost.exe
+	SearchIndexer.exe
+	services.exe
+	ShellExperienceHost.exe
+	ShellHost.exe
+	SignalRgb.exe
+	SignalRgbLauncher.exe
+	SignalRgbSplash.exe
+	sihost.exe
+	smartscreen.exe
+	smss.exe
+	spoolsv.exe
+	StartMenuExperienceHost.exe
+	svchost.exe
+	System
+	System Idle Process
+	taskhostw.exe
+	TextInputHost.exe
+	vgtray.exe
+	wallpaper32.exe
+	wallpaperservice32.exe
+	WidgetService.exe
+	wininit.exe
+	winlogon.exe
+	WmiPrvSE.exe
+	WUDFHost.exe
+	XboxPcAppFT.exe
+05/20/25 01:49:15.499 [13448-] SignalRGB.root.INFO - Windows Dynamic Lighting - Enabled: false
+05/20/25 01:49:15.499 [13448-] SignalRGB.root.INFO - Windows Dynamic Lighting - Foreground app focus: true
+05/20/25 01:49:15.499 [13448-] SignalRGB.root.INFO - Windows Dynamic Lighting - Prioritized App: 
+05/20/25 01:49:15.521 [13448-] SignalRGB.root.INFO - Updating Usage Metric Restrictions...
+05/20/25 01:49:15.521 [13448-] SignalRGB.ConflictMitigator.INFO - Starting Process Monitoring loop...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.SMBus.INFO - Attempting to acquire SMBus mutex...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.SMBus.INFO - SMBus Mutex does not exist, creating...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.SMBus.INFO - Successfully Created SMBus mutex!
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.ISA.INFO - Attempting to acquire ISA mutex...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.ISA.INFO - ISA Mutex does not exist, creating...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.ISA.INFO - Successfully Created ISA mutex!
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.PCI.INFO - Attempting to acquire PCI mutex...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.PCI.INFO - PCI Mutex does not exist, creating...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.PCI.INFO - Successfully Created PCI mutex!
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.CorsairLink.INFO - Attempting to acquire CorsairLink mutex...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.CorsairLink.INFO - CorsairLink Mutex does not exist, creating...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.CorsairLink.INFO - Successfully Created CorsairLink mutex!
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.UsbSensor.INFO - Attempting to acquire UsbSensor mutex...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.UsbSensor.INFO - UsbSensor Mutex does not exist, creating...
+05/20/25 01:49:15.522 [13448-] SignalRGB.mutex.UsbSensor.INFO - Successfully Created UsbSensor mutex!
+05/20/25 01:49:15.523 [1732-Thread (pooled)] SignalRGB.motherboard.INFO - Motherboard control enabled: false
+05/20/25 01:49:15.523 [1732-Thread (pooled)] SignalRGB.motherboard.INFO - Motherboard temperature enabled: false
+05/20/25 01:49:15.523 [1732-Thread (pooled)] SignalRGB.motherboard.INFO - Motherboard voltage enabled: false
+05/20/25 01:49:15.523 [1732-Thread (pooled)] SignalRGB.motherboard.INFO - Motherboard fan speeds enabled: false
+05/20/25 01:49:15.523 [1732-Thread (pooled)] SignalRGB.motherboard.INFO - Motherboard fan loads enabled: false
+05/20/25 01:49:15.523 [1732-Thread (pooled)] SignalRGB.motherboard.INFO - Motherboard fan control enabled: false
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Scanning Low Pin Count Busses...
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Scanning port: 0x2e
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Checking for Nuvoton SuperIO
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Read Chip ID: 0x86, Chip Revision: 0x89
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Checking for ITE Chip
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Read Chip ID: 0x8689
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Found ITE Chip: ITE IT8689E
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Scanning port: 0x4e
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Checking for Nuvoton SuperIO
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Read Chip ID: 0xff, Chip Revision: 0xff
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Checking for ITE Chip
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - Read Chip ID: 0xffff
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.LpcIO.INFO - No chip found
+05/20/25 01:49:15.526 [1732-Thread (pooled)] SignalRGB.root.INFO - Motherboard user control: enabled
+05/20/25 01:49:15.528 [13448-] SignalRGB.root.INFO - System Session Monitor initialized, initial lock state: false
+05/20/25 01:49:15.529 [13448-] SignalRGB.root.INFO - Effect Timer Interval: 300000
+05/20/25 01:49:15.539 [13448-] SignalRGB.root.INFO - Loaded 0 playlists from settings
+05/20/25 01:49:15.539 [13448-] SignalRGB.root.INFO - Last active effect: Magma
+05/20/25 01:49:15.540 [13448-] SignalRGB.root.INFO - OCR Version: 322e6e8b
+05/20/25 01:49:15.540 [13448-] SignalRGB.root.INFO - Internals are Enabled!
+05/20/25 01:49:16.267 [13448-] SignalRGB.root.INFO - Found bus with Vendor 0x1022, and Device id 0x790b
+05/20/25 01:49:16.267 [13448-] SignalRGB.root.INFO - Internals Driver is OPEN!
+05/20/25 01:49:16.349 [13448-] SignalRGB.root.INFO - I2CBUS - Created PIIX4 Bus on Base Address: b00, with Vendor: 1022, Device: 790b
+05/20/25 01:49:16.349 [13448-] SignalRGB.root.INFO - I2CBUS - Created PIIX4 Bus on Base Address: b20, with Vendor: 1022, Device: 790b
+05/20/25 01:49:16.351 [13448-] SignalRGB.root.INFO - Opened NvApi!
+05/20/25 01:49:16.351 [13448-] SignalRGB.root.INFO - Opened NvApi Functions!
+05/20/25 01:49:16.351 [13448-] SignalRGB.root.INFO - Nvidia driver version: 576.28
+05/20/25 01:49:16.352 [13448-] SignalRGB.root.INFO - Adding NvGPU with PCI Identifiers 
+Name: NVIDIA GeForce RTX 3060 
+Vendor: 10de 
+SubVendor: 1043 
+Device: 2504 
+Sub Device: 881d
+05/20/25 01:49:16.359 [13448-] SignalRGB.translation.INFO - Failed to find supported Locale for: es_ES. Checking for: es
+05/20/25 01:49:16.359 [13448-] SignalRGB.translation.INFO - Using Language File :/i18n/SignalRgb_es
+05/20/25 01:49:16.360 [13448-] SignalRGB.translation.INFO - Loaded Language File for es_ES
+05/20/25 01:49:16.360 [13448-] SignalRGB.translation.INFO - Loaded language: es_ES from system
+05/20/25 01:49:16.360 [13448-] SignalRGB.translation.INFO - Translation initialized! BOM DIA!
+05/20/25 01:49:16.360 [13448-] SignalRGB.root.INFO - Initializing WDL Priority Notifier.
+05/20/25 01:49:16.362 [15996-Thread (pooled)] SignalRGB.root.INFO - Initializing Canvas Renderer: Ultralight
+05/20/25 01:49:16.363 [15996-Thread (pooled)] SignalRGB.root.INFO - UltraLight : Ultralight: Initializing Ultralight v1.4.0 (WebKit 615.1.18.100.1) with the following configuration
+    cache_path: C:/Users/zorro/AppData/Local/VortxEngine/app-2.4.57/Signal-x64
+    resource_path_prefix: C:/Users/zorro/AppData/Local/VortxEngine/app-2.4.57/Signal-x64/
+    face_winding: CounterClockwise
+    font_hinting: Normal
+    font_gamma: 1.8
+    force_repaint: disabled
+    animation_timer_delay: 16.7 ms
+    scroll_timer_delay: 16.7 ms
+    recycle_delay: 4.0 s
+    memory_cache_size: 64.00 MB
+    page_cache_size: 0 pages
+    override_ram_size: disabled
+    min_large_heap_size: 32.00 MB
+    min_small_heap_size: 1.00 MB
+    num_renderer_threads: 0
+    max_update_time: 5.0 ms
+    bitmap_alignment: 16
+
+05/20/25 01:49:16.363 [15996-Thread (pooled)] SignalRGB.root.INFO - UltraLight : Ultralight: Creating Session with the following configuration:
+    id: 2
+    is_persistent: 1
+    name: default
+    is_default: 1
+    disk_path: C:/Users/zorro/AppData/Local/VortxEngine/app-2.4.57/Signal-x64\default (you can adjust this location in Config::cache_path)
+05/20/25 01:49:16.363 [15996-Thread (pooled)] SignalRGB.root.INFO - UltraLight : Ultralight: Creating View with the following configuration:
+    width: 320
+    height: 200
+    device scale: 1
+    session id: 2
+    is_accelerated: 0
+05/20/25 01:49:16.382 [13448-] SignalRGB.motherboard.INFO - Motherboard control enabled: true
+05/20/25 01:49:16.382 [13448-] SignalRGB.motherboard.INFO - Motherboard temperature enabled: false
+05/20/25 01:49:16.382 [13448-] SignalRGB.motherboard.INFO - Motherboard voltage enabled: false
+05/20/25 01:49:16.382 [13448-] SignalRGB.motherboard.INFO - Motherboard fan speeds enabled: true
+05/20/25 01:49:16.382 [13448-] SignalRGB.motherboard.INFO - Motherboard fan loads enabled: true
+05/20/25 01:49:16.382 [13448-] SignalRGB.motherboard.INFO - Motherboard fan control enabled: true
+05/20/25 01:49:16.393 [13448-] SignalRGB.root.INFO - Updating Usage Metric Restrictions...
+05/20/25 01:49:16.411 [15996-Thread (pooled)] SignalRGB.root.INFO - UltraLight : Ultralight: Initializing Thread Pool with the following configuration:
+    physical processors (detected): 6
+    num threads: 5
+05/20/25 01:49:16.564 [2208-] SignalRGB.root.INFO - DEV - User Pro Status: false
+05/20/25 01:49:17.156 [18060-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://gitlab.com/signalrgb/cololight....
+05/20/25 01:49:17.156 [3296-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://gitlab.com/signalrgb/nanoleaf....
+05/20/25 01:49:17.156 [5972-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://gitlab.com/signalrgb/govee....
+05/20/25 01:49:17.156 [14480-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://gitlab.com/signalrgb/twinkly....
+05/20/25 01:49:17.156 [8508-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://gitlab.com/signalrgb/philipshue....
+05/20/25 01:49:17.158 [14580-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://gitlab.com/signalrgb/hotfix....
+05/20/25 01:49:17.158 [8852-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://github.com/SRGBmods/qmk-plugins....
+05/20/25 01:49:17.158 [4496-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://gitlab.com/signalrgb/LeetDesk....
+05/20/25 01:49:17.158 [4400-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://github.com/SRGBmods/plugins....
+05/20/25 01:49:17.158 [15752-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://gitlab.com/signalrgb/yeelight....
+05/20/25 01:49:17.158 [7520-Thread (pooled)] SignalRGB.root.INFO - Updating addon https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB....
+05/20/25 01:49:17.158 [14480-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://gitlab.com/signalrgb/twinkly
+05/20/25 01:49:17.159 [18060-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://gitlab.com/signalrgb/cololight
+05/20/25 01:49:17.159 [3296-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://gitlab.com/signalrgb/nanoleaf
+05/20/25 01:49:17.159 [5972-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://gitlab.com/signalrgb/govee
+05/20/25 01:49:17.159 [8508-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://gitlab.com/signalrgb/philipshue
+05/20/25 01:49:17.160 [14580-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://gitlab.com/signalrgb/hotfix
+05/20/25 01:49:17.161 [18060-Thread (pooled)] SignalRGB.root.INFO - Fetching https://gitlab.com/signalrgb/cololight
+05/20/25 01:49:17.161 [3296-Thread (pooled)] SignalRGB.root.INFO - Fetching https://gitlab.com/signalrgb/nanoleaf
+05/20/25 01:49:17.161 [14480-Thread (pooled)] SignalRGB.root.INFO - Fetching https://gitlab.com/signalrgb/twinkly
+05/20/25 01:49:17.161 [8508-Thread (pooled)] SignalRGB.root.INFO - Fetching https://gitlab.com/signalrgb/philipshue
+05/20/25 01:49:17.161 [4496-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://gitlab.com/signalrgb/LeetDesk
+05/20/25 01:49:17.161 [4400-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://github.com/SRGBmods/plugins
+05/20/25 01:49:17.161 [5972-Thread (pooled)] SignalRGB.root.INFO - Fetching https://gitlab.com/signalrgb/govee
+05/20/25 01:49:17.161 [8852-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://github.com/SRGBmods/qmk-plugins
+05/20/25 01:49:17.161 [15752-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://gitlab.com/signalrgb/yeelight
+05/20/25 01:49:17.161 [7520-Thread (pooled)] SignalRGB.root.INFO - Getting branches for https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB
+05/20/25 01:49:17.162 [14580-Thread (pooled)] SignalRGB.root.INFO - Fetching https://gitlab.com/signalrgb/hotfix
+05/20/25 01:49:17.162 [4496-Thread (pooled)] SignalRGB.root.INFO - Fetching https://gitlab.com/signalrgb/LeetDesk
+05/20/25 01:49:17.163 [4400-Thread (pooled)] SignalRGB.root.INFO - Fetching https://github.com/SRGBmods/plugins
+05/20/25 01:49:17.163 [7520-Thread (pooled)] SignalRGB.root.INFO - Fetching https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB
+05/20/25 01:49:17.163 [15752-Thread (pooled)] SignalRGB.root.INFO - Fetching https://gitlab.com/signalrgb/yeelight
+05/20/25 01:49:17.163 [8852-Thread (pooled)] SignalRGB.root.INFO - Fetching https://github.com/SRGBmods/qmk-plugins
+05/20/25 01:49:17.375 [8852-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://github.com/SRGBmods/qmk-plugins
+05/20/25 01:49:17.376 [8852-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://github.com/SRGBmods/qmk-plugins to main
+05/20/25 01:49:17.379 [4400-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://github.com/SRGBmods/plugins
+05/20/25 01:49:17.380 [4400-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://github.com/SRGBmods/plugins to main
+05/20/25 01:49:17.390 [7520-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB
+05/20/25 01:49:17.391 [7520-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB to main
+05/20/25 01:49:17.687 [14580-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://gitlab.com/signalrgb/hotfix
+05/20/25 01:49:17.688 [14580-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://gitlab.com/signalrgb/hotfix to main
+05/20/25 01:49:17.694 [15752-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://gitlab.com/signalrgb/yeelight
+05/20/25 01:49:17.695 [15752-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://gitlab.com/signalrgb/yeelight to main
+05/20/25 01:49:17.722 [3296-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://gitlab.com/signalrgb/nanoleaf
+05/20/25 01:49:17.723 [3296-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://gitlab.com/signalrgb/nanoleaf to main
+05/20/25 01:49:17.787 [14480-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://gitlab.com/signalrgb/twinkly
+05/20/25 01:49:17.788 [14480-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://gitlab.com/signalrgb/twinkly to main
+05/20/25 01:49:17.859 [8508-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://gitlab.com/signalrgb/philipshue
+05/20/25 01:49:17.860 [8508-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://gitlab.com/signalrgb/philipshue to main
+05/20/25 01:49:17.889 [4496-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://gitlab.com/signalrgb/LeetDesk
+05/20/25 01:49:17.890 [4496-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://gitlab.com/signalrgb/LeetDesk to main
+05/20/25 01:49:17.892 [5972-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://gitlab.com/signalrgb/govee
+05/20/25 01:49:17.893 [5972-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://gitlab.com/signalrgb/govee to main
+05/20/25 01:49:17.983 [18060-Thread (pooled)] SignalRGB.root.INFO - Fast-forward https://gitlab.com/signalrgb/cololight
+05/20/25 01:49:17.984 [18060-Thread (pooled)] SignalRGB.root.INFO - Set Branch for https://gitlab.com/signalrgb/cololight to main
+05/20/25 01:49:18.204 [13448-] SignalRGB.root.INFO - Motherboard Manufacturer: Gigabyte Technology Co., Ltd.
+05/20/25 01:49:18.204 [13448-] SignalRGB.root.INFO - Motherboard Model: B550M DS3H
+05/20/25 01:49:18.204 [13448-] SignalRGB.root.INFO - Motherboard Version: x.x
+05/20/25 01:49:18.207 [13448-] SignalRGB.root.INFO - Found Memoria física with 
+	Clock Speed: 3200Mhz, 
+	Manufacturer: Kingston, 
+	Serial Number: 7E3D51ED, 
+	Model: NULL, 
+	PartNumber: KF3200C16D4/8GX     , 
+	Capacity: 8,00 GiB
+05/20/25 01:49:18.207 [13448-] SignalRGB.root.INFO - Found Memoria física with 
+	Clock Speed: 3200Mhz, 
+	Manufacturer: Kingston, 
+	Serial Number: 88022B6A, 
+	Model: NULL, 
+	PartNumber: KF3200C16D4/8GX     , 
+	Capacity: 8,00 GiB
+05/20/25 01:49:18.221 [13448-] SignalRGB.system.INFO - System Language: 'es_ES'
+05/20/25 01:49:18.221 [13448-] SignalRGB.system.INFO - VC Runtime Version: 1941
+05/20/25 01:49:18.225 [4400-Thread (pooled)] SignalRGB.system.bios.INFO - BIOS Manufacturer: American Megatrends International, LLC.
+05/20/25 01:49:18.225 [4400-Thread (pooled)] SignalRGB.system.bios.INFO - BIOS Version: FC
+05/20/25 01:49:18.225 [4400-Thread (pooled)] SignalRGB.system.bios.INFO - BIOS Release Date: June 08, 2023
+05/20/25 01:49:18.225 [4400-Thread (pooled)] SignalRGB.system.bios.INFO - SMBIOS Version: 3.3 (5.17)
+05/20/25 01:49:18.225 [4400-Thread (pooled)] SignalRGB.system.bios.INFO - Embedded Controller Version: 255.255
+05/20/25 01:49:18.225 [4400-Thread (pooled)] SignalRGB.system.bios.INFO - BIOS Version Name: ALASKA - 1072009
+05/20/25 01:49:18.258 [13448-] SignalRGB.system.os.INFO - Operating System Name: Microsoft Windows 11 Pro
+05/20/25 01:49:18.258 [13448-] SignalRGB.system.os.INFO - Operating System Version: 10.0.26100
+05/20/25 01:49:18.258 [13448-] SignalRGB.system.os.INFO - Operating System BuildId: 26100
+05/20/25 01:49:18.258 [13448-] SignalRGB.system.gpu.INFO - NvAPI Version: NVidia Complete Version r495_00
+05/20/25 01:49:18.265 [14580-Thread (pooled)] SignalRGB.root.INFO - ----------- Component Scan Started -----------
+05/20/25 01:49:18.302 [13448-] SignalRGB.root.INFO - Window - Recalling Previous Window Position...
+05/20/25 01:49:18.307 [13448-] SignalRGB.catalog.INFO - Catalog fetched
+05/20/25 01:49:18.307 [13448-] SignalRGB.catalog.INFO - Found catalog with 348 effects. Updating...
+05/20/25 01:49:18.335 [13448-] SignalRGB.catalog.INFO - Catalog is up to date. No New Effects found.
+05/20/25 01:49:18.361 [14580-Thread (pooled)] SignalRGB.root.INFO - ----------- Component Scan Finished -----------
+05/20/25 01:49:18.648 [13448-] SignalRGB.motherboard.INFO - Motherboard control enabled: true
+05/20/25 01:49:18.648 [13448-] SignalRGB.motherboard.INFO - Motherboard temperature enabled: false
+05/20/25 01:49:18.648 [13448-] SignalRGB.motherboard.INFO - Motherboard voltage enabled: false
+05/20/25 01:49:18.648 [13448-] SignalRGB.motherboard.INFO - Motherboard fan speeds enabled: true
+05/20/25 01:49:18.648 [13448-] SignalRGB.motherboard.INFO - Motherboard fan loads enabled: true
+05/20/25 01:49:18.648 [13448-] SignalRGB.motherboard.INFO - Motherboard fan control enabled: true
+05/20/25 01:49:18.659 [13448-] SignalRGB.root.INFO - Updating Usage Metric Restrictions...
+05/20/25 01:49:19.032 [7520-Thread (pooled)] SignalRGB.system.chipset.INFO - Driver Check found AMD Special Tools Driver @ version 1.7.16.218
+05/20/25 01:49:19.032 [7520-Thread (pooled)] SignalRGB.system.chipset.INFO - Driver Check found AMD GPIO Controller @ version 3.0.3.0
+05/20/25 01:49:19.032 [7520-Thread (pooled)] SignalRGB.system.chipset.INFO - Driver Check found AMD Processor @ version 10.0.26100.3624
+05/20/25 01:49:19.032 [7520-Thread (pooled)] SignalRGB.system.chipset.INFO - Driver Check found AMD SMBUS @ version 2.0.0.21
+05/20/25 01:49:19.032 [7520-Thread (pooled)] SignalRGB.system.chipset.INFO - Driver Check found AMD PSP 11.0 Device @ version 5.37.0.0
+05/20/25 01:49:19.032 [7520-Thread (pooled)] SignalRGB.system.chipset.INFO - Driver Check found AMD PCI @ version 1.0.0.90
+05/20/25 01:49:19.078 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/comms/Discovery.js
+05/20/25 01:49:19.079 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin from file: TuyaProtocol.js:20 SyntaxError: Unexpected token `identifier'
+05/20/25 01:49:19.088 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/crypto.js
+05/20/25 01:49:19.089 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/DeviceList.js
+05/20/25 01:49:19.091 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/index.js
+05/20/25 01:49:19.092 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin from file: TuyaController.js:47 SyntaxError: Expected token `,'
+05/20/25 01:49:19.093 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/TuyaDevice.js
+05/20/25 01:49:19.094 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/TuyaDiscovery.js
+05/20/25 01:49:19.094 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/TuyaPacket.js
+05/20/25 01:49:19.095 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/TuyaVirtualDevice.js
+05/20/25 01:49:19.096 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/ui/service.js
+05/20/25 01:49:19.097 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/utils/ColorUtils.js
+05/20/25 01:49:19.097 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/76caaf48c818bd5f4377bbfd64b714f9/utils/Logger.js
+05/20/25 01:49:19.098 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin from file: TuyaPacket.js:16 SyntaxError: Expected token `('
+05/20/25 01:49:19.142 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - Failed to load plugin as ProductId() must be of type int, or int[]. File path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/db96a7d88f5b77cb2217d656c1356d4e/KBDCraft/KBDCraft_Adam0110_QMK_Keyboard.js
+05/20/25 01:49:19.250 [8852-Thread (pooled)] SignalRGB.system.cpu.INFO - Cpu: AMD Ryzen 5 5600 6-Core Processor
+05/20/25 01:49:19.250 [8852-Thread (pooled)] SignalRGB.system.cpu.INFO - Cpu Clock: 4501mhz
+05/20/25 01:49:19.250 [8852-Thread (pooled)] SignalRGB.system.cpu.INFO - Cpu Cores: 6 physical, 12 logical
+05/20/25 01:49:19.288 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - HID plugin with id 0x3434:0x0A50 already exists. Overwriting with new path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/db96a7d88f5b77cb2217d656c1356d4e/Keychron/V Series/Max/Keychron_V5_Max_ANSI_QMK_Keyboard.js
+05/20/25 01:49:19.290 [14580-Thread (pooled)] SignalRGB.PluginCrawler.WARNING - HID plugin with id 0x3434:0x0A51 already exists. Overwriting with new path: C:/Users/zorro/AppData/Local/WhirlwindFX/SignalRgb/cache/addons/db96a7d88f5b77cb2217d656c1356d4e/Keychron/V Series/Max/Keychron_V5_Max_ISO_QMK_Keyboard.js
+05/20/25 01:49:19.385 [14580-Thread (pooled)] SignalRGB.PluginCrawler.INFO - Plugin Scan Summary: Total Processed: 1154, USB Plugins Found: 1155, SMBUS Plugins Found: 23, Network Services Found: 9
+05/20/25 01:49:19.442 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Failed Quick Write test on Address: 0x77
+05/20/25 01:49:19.444 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Failed Quick Write test on Address: 0x77
+05/20/25 01:49:19.496 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Address [119] is unpopulated. Avoiding Ram address remap.
+05/20/25 01:49:19.531 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.566 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.601 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.636 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.671 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.706 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.741 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.776 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.811 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.870 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Address [119] is unpopulated. Avoiding Ram address remap.
+05/20/25 01:49:19.905 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.940 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:19.975 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:20.011 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:20.046 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:20.081 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:20.116 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:20.151 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:20.186 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Check 1 Failed! Returned value: 65535, Expected: 0x0000
+05/20/25 01:49:20.214 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Address [79] has something on it
+05/20/25 01:49:20.750 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Address: [79], Found Invalid Device Model: []
+05/20/25 01:49:20.914 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Address: [79], Found Device Model: []
+05/20/25 01:49:21.079 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Failed Quick Write test on Address: 0x77
+05/20/25 01:49:21.081 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Failed Quick Write test on Address: 0x77
+05/20/25 01:49:21.163 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Address 96 passed quick write test with result 0
+05/20/25 01:49:21.293 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Fury Identifier Return: 1,230,255,249
+05/20/25 01:49:21.325 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Model Byte: false
+05/20/25 01:49:21.348 [13448-] SignalRGB.root.INFO - Connected Windows Dynamic Lighting Visibility Checker!
+05/20/25 01:49:21.452 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Fury Identifier Return: 1,230,255,249
+05/20/25 01:49:21.483 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Model Byte: false
+05/20/25 01:49:21.611 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Fury Identifier Return: 1,230,255,249
+05/20/25 01:49:21.643 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Model Byte: false
+05/20/25 01:49:21.771 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Fury Identifier Return: 1,230,255,249
+05/20/25 01:49:21.802 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Model Byte: false
+05/20/25 01:49:21.930 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Fury Identifier Return: 1,230,255,249
+05/20/25 01:49:21.962 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b00 - Model Byte: false
+05/20/25 01:49:22.250 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Address 97 passed quick write test with result 0
+05/20/25 01:49:22.381 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Fury Identifier Return: 255,255,193,255
+05/20/25 01:49:22.412 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Model Byte: false
+05/20/25 01:49:22.540 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Fury Identifier Return: 255,255,193,255
+05/20/25 01:49:22.572 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Model Byte: false
+05/20/25 01:49:22.699 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Fury Identifier Return: 255,255,193,255
+05/20/25 01:49:22.731 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Model Byte: false
+05/20/25 01:49:22.858 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Fury Identifier Return: 255,255,193,255
+05/20/25 01:49:22.890 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Model Byte: false
+05/20/25 01:49:23.018 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Fury Identifier Return: 255,255,193,255
+05/20/25 01:49:23.049 [14580-Thread (pooled)] SignalRGB.root.INFO - AMD PIIX4 Bus - 0x0b20 - Model Byte: false
+05/20/25 01:49:23.246 [14580-Thread (pooled)] SignalRGB.root.INFO - ----------- [DEPRECATED] I2C Device Scan Started -----------
+05/20/25 01:49:23.249 [14580-Thread (pooled)] SignalRGB.root.INFO - ----------- [DEPRECATED] I2C Device Scan Finished -----------
+05/20/25 01:49:23.250 [13448-] SignalRGB.root.INFO - USB - ----------- Initial USB Scan Started -----------
+05/20/25 01:49:23.250 [13448-] SignalRGB.root.INFO - Enumerating USB Devices...
+05/20/25 01:49:23.276 [13448-] SignalRGB.root.INFO - USB - Enumerating USB Parent Devices...
+05/20/25 01:49:23.276 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_0A67&PID_FFFF\20200508V100]
+05/20/25 01:49:23.277 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_1038&PID_1626\7&680D773&0&2]
+05/20/25 01:49:23.277 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_2109&PID_8886\0000000000000001]
+05/20/25 01:49:23.278 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_1462&PID_3FA4\A02019093000]
+05/20/25 01:49:23.278 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_046D&PID_C547\6&28CF390B&0&10]
+05/20/25 01:49:23.278 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT00]
+05/20/25 01:49:23.278 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT01]
+05/20/25 01:49:23.278 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT02]
+05/20/25 01:49:23.279 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT03]
+05/20/25 01:49:23.279 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT04]
+05/20/25 01:49:23.279 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT05]
+05/20/25 01:49:23.279 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT06]
+05/20/25 01:49:23.279 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_090C&PID_1000\0304719110007433]
+05/20/25 01:49:23.279 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_048D&PID_5702\6&28CF390B&0&14]
+05/20/25 01:49:23.281 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_30DE&PID_1000\MSFT30Z2FFC1INFPH4]
+05/20/25 01:49:23.282 [13448-] SignalRGB.root.INFO - USB - Found USB Parent Device: [USB\VID_1038&PID_12E0\6&2838F1DC&0&2]
+05/20/25 01:49:23.283 [13448-] SignalRGB.root.INFO - USB - Associating Hid Paths with Parent Devices...
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Skipping Orphan HID Path: [HID\{00001124-0000-1000-8000-00805F9B34FB}_VID&0002054C_PID&0CE6\9&11F5FA7A&1&0000]
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT00]
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.WARNING - Skipping blacklisted HID path: USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT00
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT01]
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.WARNING - Skipping blacklisted HID path: USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT01
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT02]
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.WARNING - Skipping blacklisted HID path: USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT02
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT03]
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.WARNING - Skipping blacklisted HID path: USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT03
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT04]
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.WARNING - Skipping blacklisted HID path: USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT04
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT05]
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.WARNING - Skipping blacklisted HID path: USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT05
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT06]
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.WARNING - Skipping blacklisted HID path: USB\VID_046D&PID_C547&LAMPARRAY\7&B145C5B&0&10_SLOT06
+05/20/25 01:49:23.285 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_046D&PID_C547\6&28CF390B&0&10]
+05/20/25 01:49:23.321 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.321 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_046D&PID_C547\6&28CF390B&0&10]
+05/20/25 01:49:23.321 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [Logitech]
+05/20/25 01:49:23.321 [13448-] SignalRGB.root.INFO - USB - 	 Product: [USB Receiver]
+05/20/25 01:49:23.321 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_048D&PID_5702\6&28CF390B&0&14]
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_048D&PID_5702\6&28CF390B&0&14]
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [ITE Tech. Inc.]
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - 	 Product: [ITE Device]
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_090C&PID_1000\0304719110007433]
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_090C&PID_1000\0304719110007433]
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [UNKNOWN]
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - 	 Product: [Flash Drive]
+05/20/25 01:49:23.336 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_0A67&PID_FFFF\20200508V100]
+05/20/25 01:49:23.385 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.385 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_0A67&PID_FFFF\20200508V100]
+05/20/25 01:49:23.385 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [RG6818]
+05/20/25 01:49:23.385 [13448-] SignalRGB.root.INFO - USB - 	 Product: [RG6818]
+05/20/25 01:49:23.385 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_1038&PID_12E0\6&2838F1DC&0&2]
+05/20/25 01:49:23.402 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.402 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_1038&PID_12E0\6&2838F1DC&0&2]
+05/20/25 01:49:23.402 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [SteelSeries]
+05/20/25 01:49:23.402 [13448-] SignalRGB.root.INFO - USB - 	 Product: [Arctis Nova Pro Wireless]
+05/20/25 01:49:23.402 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_1038&PID_1626\7&680D773&0&2]
+05/20/25 01:49:23.464 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.464 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_1038&PID_1626\7&680D773&0&2]
+05/20/25 01:49:23.464 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [SteelSeries]
+05/20/25 01:49:23.464 [13448-] SignalRGB.root.INFO - USB - 	 Product: [Apex Pro Mini Wireless]
+05/20/25 01:49:23.464 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_1462&PID_3FA4\A02019093000]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_1462&PID_3FA4\A02019093000]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [MS]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Product: [MSI Gaming Controller]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_2109&PID_8886\0000000000000001]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_2109&PID_8886\0000000000000001]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [UNKNOWN]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Product: [USB Billboard Device   ]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - Detected Connection of device: [USB\VID_30DE&PID_1000\MSFT30Z2FFC1INFPH4]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - USB - Attempting to Initialize Potential Device:
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Path: [USB\VID_30DE&PID_1000\MSFT30Z2FFC1INFPH4]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Manufacturer: [UNKNOWN]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - 	 Product: [EXCERIA PLUS]
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - USB - WMI Scan Took: [249]ms!
+05/20/25 01:49:23.499 [13448-] SignalRGB.root.INFO - ----------- Initial USB Scan Finished -----------
+05/20/25 01:49:23.695 [4664-1038:1626:7-680D773-0-2 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [SteelSeriesGG.exe] with watcher: [1038:1626:7-680D773-0-2]
+05/20/25 01:49:23.695 [4664-1038:1626:7-680D773-0-2 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [SteelSeriesPrism.exe] with watcher: [1038:1626:7-680D773-0-2]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Conflict: [MSI.CentralServer.exe] is already registered as a collaborative process
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Conflict: [MSI.TerminalServer.exe] is already registered as a collaborative process
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [MSI.True Color.exe] with watcher: [1462:3fa4:A02019093000]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Added Watcher: [1462:3fa4:A02019093000] to Conflict: [MSI.True Color.exe]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Conflict: [LightKeeperService.exe] is already registered as a collaborative process
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [LightKeeperService2.exe] with watcher: [1462:3fa4:A02019093000]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [LedKeeper.exe] with watcher: [1462:3fa4:A02019093000]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Conflict: [DCv2.exe] is already registered as a collaborative process
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Conflict: [LEDKeeper2.exe] is already registered as a collaborative process
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Added Watcher: [1462:3fa4:A02019093000] to Conflict: [MSI.True Color.exe]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Added Watcher: [1462:3fa4:A02019093000] to Conflict: [MSI.True Color.exe]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Conflict: [MSI_Central_Service.exe] is already registered as a collaborative process
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [MSI_Companion_Service.exe] with watcher: [1462:3fa4:A02019093000]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [MSI_GamebarTool.exe] with watcher: [1462:3fa4:A02019093000]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [MSI_Super_Charger_Service.exe] with watcher: [1462:3fa4:A02019093000]
+05/20/25 01:49:23.718 [5416-1462:3fa4:A02019093000 Engine Thread] SignalRGB.ConflictMitigator.INFO - Conflict: [Mystic_Light_Service.exe] is already registered as a collaborative process
+05/20/25 01:49:23.724 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [lghub.exe] with watcher: [046d:c547:6-28CF390B-0-10]
+05/20/25 01:49:23.724 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [RGBFusion.exe] with watcher: [048d:5702:6-28CF390B-0-14]
+05/20/25 01:49:23.724 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [ControlCenter.exe] with watcher: [048d:5702:6-28CF390B-0-14]
+05/20/25 01:49:23.724 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.ConflictMitigator.INFO - Registering New Conflict: [GCC.exe] with watcher: [048d:5702:6-28CF390B-0-14]
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Firmware Version 2.0.10.0
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Device Description: IT5702-GIGABYTE V2.0.10.0   
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Config Table
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - [204, 1, 0, 7, 2, 0, 10, 0]
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - [0, 0, 0, 0, 73, 84, 53, 55]
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - [48, 50, 45, 71, 73, 71, 65, 66]
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - [89, 84, 69, 32, 86, 50, 46, 48]
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - [46, 49, 48, 46, 48, 0, 0, 0]
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - [0, 1, 2, 0, 2, 0, 1, 0]
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - [2, 0, 1, 0, 0, 1, 2, 0]
+05/20/25 01:49:23.920 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - [0, 1, 2, 87, 0, 0, 0, 0]
+05/20/25 01:49:23.927 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding zone [Led 1], Id: 32
+05/20/25 01:49:23.927 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Created Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 1
+05/20/25 01:49:23.929 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding zone [12v Header 1], Id: 33
+05/20/25 01:49:23.929 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Created Sub device with uid: 048d:5702:6-28CF390B-0-14:12v Header 1
+05/20/25 01:49:23.931 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding zone [Led 2], Id: 34
+05/20/25 01:49:23.931 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Created Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 2
+05/20/25 01:49:23.934 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding zone [Led 3], Id: 35
+05/20/25 01:49:23.935 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Created Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 3
+05/20/25 01:49:23.937 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding zone [12v Header 2], Id: 36
+05/20/25 01:49:23.937 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Created Sub device with uid: 048d:5702:6-28CF390B-0-14:12v Header 2
+05/20/25 01:49:23.938 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding zone [Led 4], Id: 37
+05/20/25 01:49:23.938 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Created Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 4
+05/20/25 01:49:23.940 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding zone [Led 5], Id: 38
+05/20/25 01:49:23.941 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Created Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 5
+05/20/25 01:49:23.942 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding zone [Led 6], Id: 39
+05/20/25 01:49:23.943 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Created Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 6
+05/20/25 01:49:23.944 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding ARGB Header [5v ARGB Header 1], Id: 88
+05/20/25 01:49:23.944 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Adding ARGB Header [5v ARGB Header 2], Id: 89
+05/20/25 01:49:24.066 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Channel 1 Led Counts: 6 [0]
+05/20/25 01:49:24.066 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Channel 2 Led Counts: 6 [0]
+05/20/25 01:49:24.066 [3172-048d:5702:6-28CF390B-0-14 Engine Thread] SignalRGB.root.INFO - Gigabyte B550M DS3H Controller - Led Enum Mask: 0
+05/20/25 01:49:24.216 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - FeatureSet FeatureID: 1
+05/20/25 01:49:24.249 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - DeviceInfo FeatureID: 2
+05/20/25 01:49:24.283 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - DeviceName FeatureID: 3
+05/20/25 01:49:24.365 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Reset FeatureID: 5
+05/20/25 01:49:24.445 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - UnifiedBattery FeatureID: 6
+05/20/25 01:49:24.523 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - WirelessStatus FeatureID: 4
+05/20/25 01:49:24.595 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - DPI FeatureID: 10
+05/20/25 01:49:24.628 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - PollingRate FeatureID: 9
+05/20/25 01:49:24.661 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - OnboardProfiles FeatureID: 7
+05/20/25 01:49:24.701 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - ButtonSpy FeatureID: 8
+05/20/25 01:49:25.262 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Total Entities: 4
+05/20/25 01:49:25.262 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Unique Device Identifier: 83,234,254,193
+05/20/25 01:49:25.262 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Transport 1 Model ID: 4093
+05/20/25 01:49:25.262 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Transport 2 Model ID: c094
+05/20/25 01:49:25.262 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Transport 3 Model ID: 00
+05/20/25 01:49:25.262 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Serial Number Support:1
+05/20/25 01:49:25.369 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Firmware Type: Main Application
+05/20/25 01:49:25.369 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Firmware Prefix: MPM37
+05/20/25 01:49:25.369 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Firmware Revision: 2
+05/20/25 01:49:25.369 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Firmware Build: 0,35
+05/20/25 01:49:25.369 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Active Firmware Flag: 35
+05/20/25 01:49:25.369 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Transport ID: 4093
+05/20/25 01:49:25.369 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.WARNING - Logitech Device - Invalid Size set: [0, 0]. Width and Height must be atleast 1
+05/20/25 01:49:25.369 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.WARNING - Logitech Device - Invalid Size set: [1, 0]. Width and Height must be atleast 1
+05/20/25 01:49:25.442 [16696-046d:c547:6-28CF390B-0-10 Engine Thread] SignalRGB.root.INFO - Logitech Device - Internal Device Name: PRO X Wireless  
+05/20/25 01:49:31.349 [13448-] SignalRGB.root.INFO - Working Memory Usage: 558MB, Private Memory Usage: 762MB
+05/20/25 01:49:31.952 [13448-] SignalRGB.root.INFO - Window - Visibility Changed to 0
+05/20/25 01:49:31.952 [13448-] SignalRGB.canvas_player.INFO - Closing Mini Player
+05/20/25 01:49:49.272 [13448-] SignalRGB.canvas_player.INFO - Closing Mini Player
+05/20/25 01:49:49.272 [13448-] SignalRGB.canvas_player.INFO - Closing Mini Player
+05/20/25 01:49:49.272 [13448-] SignalRGB.root.INFO - Shutting down SystemSessionMonitor
+05/20/25 01:49:49.276 [13448-] SignalRGB.root.WARNING - Aborting Local Network Lookups...
+05/20/25 01:49:49.276 [13448-] SignalRGB.root.WARNING - Unhooking System Power State Hooks...
+05/20/25 01:49:49.276 [13448-] SignalRGB.root.WARNING - Uninstalling Macro Hooks...
+05/20/25 01:49:49.276 [13448-] SignalRGB.root.WARNING - Shutting down Monitoring...
+05/20/25 01:49:49.560 [13448-] SignalRGB.root.WARNING - Shutting down devices...
+05/20/25 01:49:49.560 [13448-] SignalRGB.root.WARNING - Shutting down PRO X Wireless
+05/20/25 01:49:49.562 [14580-Thread (pooled)] SignalRGB.root.WARNING - Finished shutting down PRO X Wireless
+05/20/25 01:49:49.578 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [046d:c547:6-28CF390B-0-10] from Conflict: [lghub.exe]
+05/20/25 01:49:49.578 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [lghub.exe]
+05/20/25 01:49:49.578 [13448-] SignalRGB.root.WARNING - Shutting down Gigabyte B550M DS3H Controller
+05/20/25 01:49:49.644 [14480-Thread (pooled)] SignalRGB.root.WARNING - Finished shutting down Gigabyte B550M DS3H Controller
+05/20/25 01:49:49.644 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [048d:5702:6-28CF390B-0-14] from Conflict: [RGBFusion.exe]
+05/20/25 01:49:49.644 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [RGBFusion.exe]
+05/20/25 01:49:49.644 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [048d:5702:6-28CF390B-0-14] from Conflict: [ControlCenter.exe]
+05/20/25 01:49:49.644 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [ControlCenter.exe]
+05/20/25 01:49:49.644 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [048d:5702:6-28CF390B-0-14] from Conflict: [GCC.exe]
+05/20/25 01:49:49.644 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [GCC.exe]
+05/20/25 01:49:49.644 [13448-] SignalRGB.root.WARNING - Shutting down SteelSeries Apex Pro Mini
+05/20/25 01:49:49.671 [8508-Thread (pooled)] SignalRGB.root.WARNING - Finished shutting down SteelSeries Apex Pro Mini
+05/20/25 01:49:49.671 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [1038:1626:7-680D773-0-2] from Conflict: [SteelSeriesGG.exe]
+05/20/25 01:49:49.671 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [SteelSeriesGG.exe]
+05/20/25 01:49:49.671 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [1038:1626:7-680D773-0-2] from Conflict: [SteelSeriesPrism.exe]
+05/20/25 01:49:49.671 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [SteelSeriesPrism.exe]
+05/20/25 01:49:49.671 [13448-] SignalRGB.root.WARNING - Shutting down MSI Monitor Controller
+05/20/25 01:49:49.673 [4496-Thread (pooled)] SignalRGB.root.WARNING - Finished shutting down MSI Monitor Controller
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.WARNING - Tried to remove Conflict: [MSI.CentralServer.exe] that doesn't exist!
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.WARNING - Tried to remove Conflict: [MSI.TerminalServer.exe] that doesn't exist!
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [1462:3fa4:A02019093000] from Conflict: [MSI.True Color.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [MSI.True Color.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.WARNING - Tried to remove Conflict: [LightKeeperService.exe] that doesn't exist!
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [1462:3fa4:A02019093000] from Conflict: [LightKeeperService2.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [LightKeeperService2.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [1462:3fa4:A02019093000] from Conflict: [LedKeeper.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [LedKeeper.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.WARNING - Tried to remove Conflict: [DCv2.exe] that doesn't exist!
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.WARNING - Tried to remove Conflict: [LEDKeeper2.exe] that doesn't exist!
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.WARNING - Tried to remove Conflict: [MSI.True Color.exe] that doesn't exist!
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.WARNING - Tried to remove Conflict: [MSI_Central_Service.exe] that doesn't exist!
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [1462:3fa4:A02019093000] from Conflict: [MSI_Companion_Service.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [MSI_Companion_Service.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [1462:3fa4:A02019093000] from Conflict: [MSI_GamebarTool.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [MSI_GamebarTool.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Watcher: [1462:3fa4:A02019093000] from Conflict: [MSI_Super_Charger_Service.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.INFO - Removing Conflict: [MSI_Super_Charger_Service.exe]
+05/20/25 01:49:49.673 [13448-] SignalRGB.ConflictMitigator.WARNING - Tried to remove Conflict: [Mystic_Light_Service.exe] that doesn't exist!
+05/20/25 01:49:49.673 [13448-] SignalRGB.root.WARNING - Stopping multimedia timers...
+05/20/25 01:49:49.673 [13448-] SignalRGB.root.WARNING - Stopping InputManager...
+05/20/25 01:49:49.681 [13448-] SignalRGB.root.WARNING - Stopping Macro Layers...
+05/20/25 01:49:49.681 [13448-] SignalRGB.root.WARNING - Stopping conflict listener...
+05/20/25 01:49:49.681 [13448-] SignalRGB.ConflictMitigator.INFO - Stopping Process Monitoring...
+05/20/25 01:49:49.681 [3280-QThread] SignalRGB.ProcessMonitor.INFO - ProcessMonitor stopped!
+05/20/25 01:49:49.682 [13448-] SignalRGB.root.WARNING - Stopping Signal Api...
+05/20/25 01:49:49.682 [13448-] SignalRGB.root.WARNING - Stopping lighting manager...
+05/20/25 01:49:49.900 [13448-] SignalRGB.root.WARNING - Shutting down audio listener...
+05/20/25 01:49:49.915 [13448-] SignalRGB.root.WARNING - Stopping capture engine...
+05/20/25 01:49:50.089 [13448-] SignalRGB.root.WARNING - Clearing Effect Catalog...
+05/20/25 01:49:50.090 [13448-] SignalRGB.root.WARNING - Closing cloud connections...
+05/20/25 01:49:50.096 [13448-] SignalRGB.root.WARNING - Known service shutdown complete.
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 98480e5b-b333-47f0-b679-afb198a5d0d6
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 92deea48-51a4-46c0-aa0a-f8c44c854585
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 048d:5702:6-28CF390B-0-14:12v Header 1
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 048d:5702:6-28CF390B-0-14:12v Header 2
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 1
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 2
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 3
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 4
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 5
+05/20/25 01:49:50.097 [13448-] SignalRGB.root.INFO - Destroying Sub device with uid: 048d:5702:6-28CF390B-0-14:Led 6
+05/20/25 01:49:50.121 [13448-] SignalRGB.mutex.SMBus.ERROR - Released SMBus mutex!
+05/20/25 01:49:50.121 [13448-] SignalRGB.mutex.ISA.ERROR - Released ISA mutex!
+05/20/25 01:49:50.121 [13448-] SignalRGB.mutex.PCI.ERROR - Released PCI mutex!
+05/20/25 01:49:50.121 [13448-] SignalRGB.mutex.CorsairLink.ERROR - Released CorsairLink mutex!
+05/20/25 01:49:50.121 [13448-] SignalRGB.mutex.UsbSensor.ERROR - Released UsbSensor mutex!
