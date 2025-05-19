@@ -1,4 +1,8 @@
-export default [
+// Añadir función ProductId
+function ProductId() { return 0x0004; }
+
+// Lista de dispositivos predefinidos
+const deviceList = [
     // Lista tus dispositivos aquí
     {
         id: 'xxx',
@@ -8,3 +12,7 @@ export default [
     },
     // ...
 ];
+
+deviceList.ProductId = ProductId;
+
+module.exports = deviceList;

@@ -2,14 +2,20 @@
  * TuyaDevice.js
  * Representa un dispositivo Tuya individual y maneja su comunicación
  */
+
+const EventEmitter = require('events');
 const dgram = require('dgram');
-const { EventEmitter } = require('events');
-const crypto = require('crypto');
+
+// Evita que SignalRGB lo cargue como plugin
+function VendorId() { return null; }
+function ProductId() { return null; }
 
 class TuyaDevice extends EventEmitter {
     constructor(deviceInfo) {
         super();
+        this.constructor.name = "TuyaDevice"; // Evita que SignalRGB lo cargue como plugin
         
+        // Inicializa propiedades sin sintaxis avanzada
         this.id = deviceInfo.id || '';
         this.ip = deviceInfo.ip || '';
         this.key = deviceInfo.key || '';
@@ -317,5 +323,9 @@ class TuyaDevice extends EventEmitter {
         return [h, s, v];
     }
 }
+
+// Añadir propiedades para que SignalRGB lo ignore
+TuyaDevice.VendorId = VendorId;
+TuyaDevice.ProductId = ProductId;
 
 module.exports = TuyaDevice;

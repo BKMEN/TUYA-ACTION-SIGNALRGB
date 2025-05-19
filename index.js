@@ -4,16 +4,21 @@
 // Version: 1.0.0
 // --------------------------------------------------- //
 
-export function Name() { return "Tuya Action"; }
-export function Version() { return "1.0.0"; }
-export function Type() { return "network"; }
-export function Publisher() { return "BKMEN"; }
-export function Size() { return [1, 1]; }
-export function DefaultPosition() { return [240, 80]; }
-export function DefaultScale() { return 8.0; }
-export function DefaultTint() { return "0x000000"; }
-export function ProductId() { return 0x0000; } // Puedes usar cualquier ID único
-export function ControllableParameters() {
+// Define funciones requeridas por SignalRGB
+function Name() { return "Tuya Action"; }
+function Version() { return "1.0.0"; }
+function Type() { return "network"; }
+function Publisher() { return "BKMEN"; }
+function Size() { return [1, 1]; }
+function DefaultPosition() { return [240, 80]; }
+function DefaultScale() { return 8.0; }
+function DefaultTint() { return "0x000000"; }
+// ID del fabricante (requerido por SignalRGB)
+function VendorId() { return 0x2712; } // ID de ejemplo, puedes usar otro
+// ID del producto (requerido por SignalRGB)
+function ProductId() { return [0x1337]; } // Debe ser array de enteros o un entero
+
+function ControllableParameters() {
     return [
         { "name": "IP", "type": "text", "default": "", "size": "medium", "tooltip": "IP address of your Tuya device" },
         { "name": "Key", "type": "text", "default": "", "size": "medium", "tooltip": "Local key of your Tuya device" },
@@ -32,10 +37,14 @@ const PROTOCOL_33_VERSION = 0x0003;
 const PROTOCOL_33_COMMAND_QUERY_DEVICE_STATE = 0x0a;
 const PROTOCOL_33_COMMAND_SEND_DEVICE_COMMAND = 0x07;
 const PROTOCOL_33_COMMAND_HANDSHAKE = 0x01;
-const TuyaController = require('./TuyaController');
-const controller = new TuyaController();
 
+// Usa require en lugar de import para compatibilidad con Node.js
+const net = require('net');
+const os = require('os');
+const dgram = require('dgram');
 let device = null;
+
+// Variables para el plugin
 let ipAddress = "";
 let localKey = "";
 let deviceId = "";
@@ -48,7 +57,6 @@ let sequence = 0;
 let socket = null;
 let connected = false;
 let lastSentColors = [];
-let discoveryInterval = null;
 let deviceInfoInterval = null;
 let reconnectInterval = null;
 let reconnectAttempts = 0;
@@ -57,22 +65,78 @@ let maxReconnectAttempts = 5;
 /** 
  * Initialize the plugin
  */
-export function Initialize() {
+function Initialize() {
     if (debugMode) {
         console.log("Tuya Action: Initializing...");
     }
 }
-// En tu main JS del plugin SignalRGB:
-global.service = {
-  discoverDevices: () => controller.startDiscovery(),
-  getDevices: () => controller.getAllDevices(),
-  setDeviceColor: (id, colors) => controller.setDeviceColors(id, colors),
-  setDeviceLedCount: (id, count) => controller.setDeviceLedCount(id, count)
-};
+
+/**
+ * Called when the plugin is launched
+ */
+function onStart(dev) {
+    device = dev;
+    ipAddress = device.getParameter("IP");
+    localKey = device.getParameter("Key");
+    deviceId = device.getParameter("Device ID");
+    ledCount = device.getParameter("LED Count");
+    brightness = device.getParameter("Brightness");
+    autoConnect = device.getParameter("Auto Connect");
+    debugMode = device.getParameter("Debug Mode");
+    
+    if (debugMode) {
+        console.log("Tuya Action: Starting...");
+        console.log(`Tuya Action: IP=${ipAddress}, DeviceID=${deviceId}, LEDs=${ledCount}`);
+    }
+    
+    // Auto-connect if all parameters are set
+    if (autoConnect && ipAddress && localKey && deviceId) {
+        connect();
+    }
+}
+
+/**
+ * Called when the plugin is stopped
+ */
+function onStop() {
+    if (debugMode) {
+        console.log("Tuya Action: Stopping...");
+    }
+    
+    // Clean up
+    disconnect();
+}
+
+/**
+ * Called when a new frame is available
+ */
+function onFrame() {
+    if (connected) {
+        updateDeviceColor();
+    }
+}
+
+/**
+ * Called when a device changes state
+ */
+function onStateChange(state) {
+    if (debugMode) {
+        console.log(`Tuya Action: State changed to ${state}`);
+    }
+}
+
+/**
+ * Called when a device should be rendered
+ */
+function Render() {
+    // This function is called to render the device on the Signal RGB canvas
+    // Since we're controlling external hardware, we don't need to render anything custom here
+}
+
 /**
  * Handle parameter changes
  */
-export function onParameterChange(parameter, value) {
+function onParameterChange(parameter, value) {
     if (parameter === "IP") {
         ipAddress = value;
         if (socket && connected) {
@@ -102,6 +166,7 @@ export function onParameterChange(parameter, value) {
     }
 }
 
+// Funciones internas
 /**
  * Connect to the Tuya device
  */
@@ -574,78 +639,8 @@ function colorsEqual(colors1, colors2) {
     return true;
 }
 
-/**
- * Called when the plugin is launched
- */
-export function onStart(dev) {
-    device = dev;
-    ipAddress = device.getParameter("IP");
-    localKey = device.getParameter("Key");
-    deviceId = device.getParameter("Device ID");
-    ledCount = device.getParameter("LED Count");
-    brightness = device.getParameter("Brightness");
-    autoConnect = device.getParameter("Auto Connect");
-    debugMode = device.getParameter("Debug Mode");
-    
-    if (debugMode) {
-        console.log("Tuya Action: Starting...");
-        console.log(`Tuya Action: IP=${ipAddress}, DeviceID=${deviceId}, LEDs=${ledCount}`);
-    }
-    
-    // Auto-connect if all parameters are set
-    if (autoConnect && ipAddress && localKey && deviceId) {
-        connect();
-    }
-}
-
-/**
- * Called when the plugin is stopped
- */
-export function onStop() {
-    if (debugMode) {
-        console.log("Tuya Action: Stopping...");
-    }
-    
-    // Clean up
-    disconnect();
-}
-
-/**
- * Called when a new frame is available
- */
-export function onFrame() {
-    updateDeviceColor();
-}
-
-/**
- * Called when a device changes state
- */
-export function onStateChange(state) {
-    if (debugMode) {
-        console.log(`Tuya Action: State changed to ${state}`);
-    }
-    
-    if (state === "paused") {
-        // Optionally handle pause state
-    }
-}
-
-/**
- * Called when a device should be rendered
- */
-export function Render() {
-    // This function is called to render the device on the Signal RGB canvas
-    // Since we're controlling external hardware, we don't need to render anything custom here
-}
-
-/**
- * Create a socket connection to a Tuya device
- * @param {string} ip - IP address of the device
- * @param {number} port - Port number
- * @returns {Object} Socket object with connection methods
- */
+// Socket function
 function createSocket(ip, port) {
-    const net = require('net');
     const socket = new net.Socket();
     
     const socketWrapper = {
@@ -690,3 +685,25 @@ if (typeof TextEncoder === 'undefined') {
     global.TextEncoder = util.TextEncoder;
     global.TextDecoder = util.TextDecoder;
 }
+
+// Exportación en formato compatible con SignalRGB
+module.exports = {
+    Name,
+    Version,
+    Type,
+    Publisher,
+    Size,
+    DefaultPosition,
+    DefaultScale,
+    DefaultTint,
+    VendorId,        // Añadido
+    ProductId,       // Añadido
+    ControllableParameters,
+    Initialize,
+    onParameterChange,
+    onStart,
+    onStop,
+    onFrame,
+    onStateChange,
+    Render
+};

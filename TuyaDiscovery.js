@@ -1,10 +1,16 @@
 /**
- * Clase wrapper para TuyaDiscovery
- * Simplemente re-exporta la clase de Discovery.js
+ * Wrapper para el módulo de Discovery
  */
 
-// Importar la clase original de comms/Discovery.js
+// Importa la clase Discovery original
 const Discovery = require('./comms/Discovery');
 
-// Re-exportar
+// Añade estas funciones para evitar que SignalRGB lo intente cargar como plugin
+function VendorId() { return null; }
+function ProductId() { return null; }
+
+// Añade estas propiedades al objeto exportado para que SignalRGB lo ignore
+Discovery.VendorId = VendorId;
+Discovery.ProductId = ProductId;
+
 module.exports = Discovery;

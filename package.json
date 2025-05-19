@@ -1,0 +1,8 @@
+{
+  "name": "tuya-action-signalrgb",
+  "version": "1.0.0",
+  "description": "Plugin para controlar dispositivos Tuya desde SignalRGB",
+  "main": "index.js",
+  "author": "BKMEN",
+  "license": "MIT"
+}

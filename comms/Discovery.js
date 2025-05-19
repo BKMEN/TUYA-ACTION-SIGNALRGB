@@ -41,9 +41,11 @@ try {
     };
 }
 
+// Añade nombre a la clase para evitar cargar como plugin
 class TuyaDiscovery extends EventEmitter {
     constructor(options = {}) {
         super();
+        this.constructor.name = "TuyaDiscovery"; // Evita que SignalRGB lo cargue como plugin
         this.port = options.port !== undefined ? options.port : 6667;
         this.timeout = options.timeout || 5000;
         this.broadcastAddress = Array.isArray(options.broadcastAddress) 
@@ -252,5 +254,9 @@ class TuyaDiscovery extends EventEmitter {
         }
     }
 }
+
+// Añadir estas propiedades para que SignalRGB lo ignore
+TuyaDiscovery.VendorId = () => null;
+TuyaDiscovery.ProductId = () => null;
 
 module.exports = TuyaDiscovery;

@@ -1,11 +1,16 @@
 /**
  * TuyaController.js
- * Controlador central para gestionar todos los dispositivos Tuya
+ * Controlador central para gestionar dispositivos Tuya
  */
 
-const TuyaDevice = require('./TuyaDevice');
-const TuyaDiscovery = require('./TuyaDiscovery');
 const EventEmitter = require('events');
+
+// Importa TuyaDevice correctamente
+const TuyaDevice = require('./TuyaDevice');
+
+// Evita que SignalRGB lo cargue como plugin
+function VendorId() { return null; }
+function ProductId() { return null; }
 
 class TuyaController extends EventEmitter {
     /**
@@ -14,23 +19,13 @@ class TuyaController extends EventEmitter {
      */
     constructor(options = {}) {
         super();
+        this.constructor.name = "TuyaController"; // Evita que SignalRGB lo cargue como plugin
         
-        // Opciones de configuración
-        this.options = {
-            discoveryTimeout: options.discoveryTimeout || 10000,
-            autoReconnect: options.autoReconnect !== false,
-            reconnectInterval: options.reconnectInterval || 30000,
-            // Aquí hay un error con el spread operator - reemplazarlo
-        };
-        
-        // Añadir opciones adicionales manualmente en lugar de usar spread
-        if (options) {
-            Object.keys(options).forEach(key => {
-                if (!this.options[key]) {
-                    this.options[key] = options[key];
-                }
-            });
-        }
+        // Evitar uso de spread y sintaxis avanzada
+        this.options = {};
+        this.options.discoveryTimeout = options.discoveryTimeout || 10000;
+        this.options.autoReconnect = options.autoReconnect !== false;
+        this.options.reconnectInterval = options.reconnectInterval || 30000;
         
         // Estado del controlador
         this.isDiscovering = false;
@@ -407,5 +402,9 @@ class TuyaController extends EventEmitter {
         }
     }
 }
+
+// Añadir propiedades para que SignalRGB lo ignore
+TuyaController.VendorId = VendorId;
+TuyaController.ProductId = ProductId;
 
 module.exports = TuyaController;
