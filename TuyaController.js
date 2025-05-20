@@ -51,6 +51,7 @@ TuyaController.prototype._processDiscoveredDevice = function(deviceInfo) {
   return device;
 };
 
+// Inicialización
 TuyaController.prototype.initialize = function() {
   var self = this;
   
@@ -66,25 +67,33 @@ TuyaController.prototype.initialize = function() {
   return Promise.resolve(this);
 };
 
-TuyaController.prototype.shutdown = async function() {
-    // Detener reconexión automática
-    this._stopReconnectInterval();
-    
-    // Desconectar todos los dispositivos
-    for (const device of this.devices.values()) {
-        device.disconnect();
-    }
-    
-    // Detener discovery
-    if (this.isDiscovering) {
-        await this.stopDiscovery();
-    }
-    
-    // Remover listeners
+// Shutdown
+TuyaController.prototype.shutdown = function() {
+  if (this.reconnectInterval) {
+    clearInterval(this.reconnectInterval);
+    this.reconnectInterval = null;
+  }
+  
+  // Desconectar todos los dispositivos
+  var devices = this.devices.values();
+  for (var device of devices) {
+    device.disconnect();
+  }
+  
+  // Detener discovery
+  if (this.isDiscovering && this.discovery) {
+    this.discovery.stop();
+  }
+  
+  // Remover listeners
+  if (this.discovery) {
     this.discovery.removeAllListeners();
-    
-    this.isInitialized = false;
-    this.emit('shutdown');
+  }
+  
+  this.isInitialized = false;
+  this.emit('shutdown');
+  
+  return Promise.resolve();
 };
 
 TuyaController.prototype.startDiscovery = async function(options = {}) {
