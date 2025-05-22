@@ -1,0 +1,63 @@
+{
+  "name": "Tuya RGB Controller",
+  "version": "1.0.0",
+  "author": "Your Name",
+  "description": "Control Tuya RGB devices with SignalRGB",
+  "main": "index.js",
+  "type": "network",
+  "parameters": [
+    {
+      "name": "Device IP",
+      "type": "string",
+      "default": "",
+      "description": "IP address of the Tuya device"
+    },
+    {
+      "name": "Local Key",
+      "type": "string",
+      "default": "",
+      "description": "Local key for the Tuya device (from Tuya IoT)"
+    },
+    {
+      "name": "Device ID",
+      "type": "string",
+      "default": "",
+      "description": "Device ID (gwId) for the Tuya device"
+    },
+    {
+      "name": "LED Count",
+      "type": "number",
+      "default": 1,
+      "min": 1,
+      "max": 300,
+      "description": "Number of LEDs in the device"
+    },
+    {
+      "name": "Brightness",
+      "type": "number",
+      "default": 100,
+      "min": 1,
+      "max": 100,
+      "description": "Brightness level (1-100)"
+    },
+    {
+      "name": "Auto Connect",
+      "type": "boolean",
+      "default": true,
+      "description": "Automatically connect on startup"
+    },
+    {
+      "name": "Debug Mode",
+      "type": "boolean",
+      "default": false,
+      "description": "Enable verbose logging"
+    },
+    {
+      "name": "Connection Status",
+      "type": "string",
+      "default": "Disconnected",
+      "readOnly": true,
+      "description": "Current connection status"
+    }
+  ]
+}

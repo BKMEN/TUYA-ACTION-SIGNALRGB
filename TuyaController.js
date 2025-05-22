@@ -5,11 +5,15 @@
 
 var EventEmitter = require('events');
 var util = require('util');
+var dgram = require('dgram');
+var crypto = require('crypto');
 
-// Importa TuyaDevice correctamente
+// Importaciones de módulos locales
 var TuyaDevice = require('./TuyaDevice');
+var TuyaPacket = require('./TuyaPacket');
+var TuyaEncryption = require('./utils/TuyaEncryption');
 
-// Función constructora para TuyaController (versión más simple)
+// Función constructora para TuyaController
 function TuyaController(options) {
   // Verificar instancia
   if (!(this instanceof TuyaController)) {
@@ -25,7 +29,9 @@ function TuyaController(options) {
   this.options = {
     discoveryTimeout: options.discoveryTimeout || 10000,
     autoReconnect: options.autoReconnect !== false,
-    reconnectInterval: options.reconnectInterval || 30000
+    reconnectInterval: options.reconnectInterval || 30000,
+    commandPort: options.commandPort || 40001,
+    discoveryPort: options.discoveryPort || 6667
   };
   
   this.isDiscovering = false;
@@ -33,6 +39,7 @@ function TuyaController(options) {
   this.devices = new Map();
   this.discovery = null;
   this.reconnectInterval = null;
+  this.broadcastSocket = null;
   
   // Bindear métodos con sintaxis compatible
   var self = this;
@@ -59,12 +66,67 @@ TuyaController.prototype.initialize = function() {
     return Promise.resolve(this);
   }
   
+  // Inicializar el socket de broadcast
+  this.broadcastSocket = dgram.createSocket('udp4');
+  
+  this.broadcastSocket.on('error', (error) => {
+    this.emit('error', error);
+    console.error('Broadcast socket error:', error);
+  });
+  
+  this.broadcastSocket.on('message', (msg, rinfo) => {
+    this._handleBroadcastResponse(msg, rinfo);
+  });
+  
   // Código simplificado para evitar errores
   if (this.discovery) {
     this.discovery.on('device-discovered', this._handleDeviceDiscovered);
   }
   
+  this.isInitialized = true;
+  
+  // Si está configurado el reconectar automáticamente, iniciar el intervalo
+  if (this.options.autoReconnect) {
+    this._startReconnectionLoop();
+  }
+  
   return Promise.resolve(this);
+};
+
+// Método para manejar respuestas de broadcast
+TuyaController.prototype._handleBroadcastResponse = function(msg, rinfo) {
+  try {
+    const deviceId = TuyaPacket.parseDeviceId(msg);
+    const device = this.getDevice(deviceId);
+    
+    if (device) {
+      device.handleResponse(msg, rinfo);
+    } else {
+      console.log('Received message for unknown device:', deviceId);
+    }
+  } catch (error) {
+    console.error('Error handling broadcast response:', error);
+    this.emit('error', error);
+  }
+};
+
+// Iniciar loop de reconexión
+TuyaController.prototype._startReconnectionLoop = function() {
+  if (this.reconnectInterval) {
+    clearInterval(this.reconnectInterval);
+  }
+  
+  var self = this;
+  this.reconnectInterval = setInterval(function() {
+    const devices = Array.from(self.devices.values());
+    devices.forEach(device => {
+      if (!device.isConnected) {
+        device.connect().catch(error => {
+          console.error(`Reconnection attempt failed for ${device.id}:`, error);
+        });
+      }
+    });
+  }, this.options.reconnectInterval);
 };
 
 // Shutdown
@@ -75,7 +137,7 @@ TuyaController.prototype.shutdown = function() {
   }
   
   // Desconectar todos los dispositivos
-  var devices = this.devices.values();
+  var devices = Array.from(this.devices.values());
   for (var device of devices) {
     device.disconnect();
   }
@@ -83,6 +145,12 @@ TuyaController.prototype.shutdown = function() {
   // Detener discovery
   if (this.isDiscovering && this.discovery) {
     this.discovery.stop();
+  }
+  
+  // Cerrar socket de broadcast
+  if (this.broadcastSocket) {
+    this.broadcastSocket.close();
+    this.broadcastSocket = null;
   }
   
   // Remover listeners
@@ -154,14 +222,40 @@ TuyaController.prototype.addDevice = function(deviceInfo) {
     }
     
     // Crear nuevo dispositivo
-    const device = new TuyaDevice(deviceInfo);
+    const device = new TuyaDevice({
+        id: deviceInfo.id,
+        ip: deviceInfo.ip,
+        key: deviceInfo.key,
+        name: deviceInfo.name,
+        version: deviceInfo.version || '3.5',
+        port: this.options.commandPort,
+        controller: this
+    });
+    
     this.devices.set(device.id, device);
+    
+    // Escuchar eventos del dispositivo
+    device.on('connected', () => {
+        this.emit('device-connected', device);
+    });
+    
+    device.on('disconnected', () => {
+        this.emit('device-disconnected', device);
+    });
+    
+    device.on('error', (error) => {
+        this.emit('device-error', device, error);
+    });
+    
+    device.on('data', (data) => {
+        this.emit('device-data', device, data);
+    });
     
     // Emitir evento de dispositivo añadido
     this.emit('device-added', device);
     
     // Intentar conectar el dispositivo
-    this._connectDevice(device).catch(error => {
+    device.connect().catch(error => {
         console.error(`Failed to connect device ${device.id}:`, error);
     });
     
@@ -224,6 +318,31 @@ TuyaController.prototype.setDeviceLedCount = async function(deviceId, count) {
         this.emit('error', error);
         throw error;
     }
+};
+
+// Método para enviar un paquete por broadcast a un dispositivo
+TuyaController.prototype.sendUdpPacket = function(packet, ip, port) {
+    if (!this.broadcastSocket) {
+        throw new Error('Broadcast socket not initialized');
+    }
+    
+    return new Promise((resolve, reject) => {
+        this.broadcastSocket.send(packet, 0, packet.length, port || this.options.commandPort, ip, (error) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            resolve();
+        });
+    });
+};
+
+// Método para obtener la dirección IP de broadcast
+TuyaController.prototype.getBroadcastAddress = function(ipAddress) {
+    // Convertir la dirección IP a broadcast (cambiar el último octeto a 255)
+    const ipParts = ipAddress.split('.');
+    ipParts[3] = '255';
+    return ipParts.join('.');
 };
 
 module.exports = TuyaController;

@@ -1,68 +1,466 @@
 /**
  * TuyaDevice.js
- * Representa un dispositivo Tuya individual y maneja su comunicación
+ * Representa un dispositivo Tuya conectado
  */
 
 const EventEmitter = require('events');
-const dgram = require('dgram');
+const crypto = require('crypto');
+const TuyaPacket = require('./TuyaPacket');
 
-// Crear clase TuyaDevice que extiende EventEmitter usando patrón compatible
-function TuyaDevice(deviceInfo) {
-    // Llamar al constructor de EventEmitter (padre)
-    EventEmitter.call(this);
-    
-    // Asegurarse de que deviceInfo esté definido
-    deviceInfo = deviceInfo || {};
-    
-    // Inicializa propiedades sin sintaxis avanzada
-    this.id = deviceInfo.id || '';
-    this.ip = deviceInfo.ip || '';
-    this.key = deviceInfo.key || '';
-    this.version = deviceInfo.version || '3.3';
-    this.name = deviceInfo.name || 'Tuya Device';
-    this.productId = deviceInfo.productId || '';
-    
-    // Estado del dispositivo
-    this.connected = false;
-    this.online = false;
-    this.ledCount = deviceInfo.ledCount || 72;
-    this.maxLedCount = 300;
-    this.currentColors = [];
-    this.brightness = 100;
-}
-
-// Heredar de EventEmitter
-TuyaDevice.prototype = Object.create(EventEmitter.prototype);
-TuyaDevice.prototype.constructor = TuyaDevice;
-
-// Métodos de la clase
-TuyaDevice.prototype.connect = function() {
-    this.connected = true;
-    this.emit('connected');
-    return Promise.resolve();
-};
-
-TuyaDevice.prototype.disconnect = function() {
-    this.connected = false;
-    this.emit('disconnected');
-    return Promise.resolve();
-};
-
-TuyaDevice.prototype.setColors = function(colors) {
-    // Implementación simplificada
-    this.currentColors = colors;
-    this.emit('colors-changed', colors);
-    return Promise.resolve();
-};
-
-TuyaDevice.prototype.setLedCount = function(count) {
-    if (count < 1 || count > this.maxLedCount) {
-        return Promise.reject(new Error(`Invalid LED count: ${count}. Must be between 1 and ${this.maxLedCount}`));
+class TuyaDevice extends EventEmitter {
+    constructor(options) {
+        super();
+        
+        if (!options.id) {
+            throw new Error('Device ID is required');
+        }
+        
+        this.id = options.id;
+        this.ip = options.ip;
+        this.key = options.key;
+        this.name = options.name || `Tuya Device ${this.id.substring(0, 8)}`;
+        this.version = options.version || '3.5';
+        this.port = options.port || 40001;
+        this.controller = options.controller;
+        
+        this.isConnected = false;
+        this.sessionKey = null;
+        this.lastSequence = 0;
+        this.reconnectAttempts = 0;
+        this.maxReconnectAttempts = options.maxReconnectAttempts || 5;
+        this.reconnectDelay = options.reconnectDelay || 5000;
+        this.connectionTimeout = options.connectionTimeout || 10000;
+        this.ledCount = options.ledCount || 1;
+        
+        this.lastColors = null;
+        this.pendingCommands = new Map();
+        this.commandTimeouts = new Map();
     }
     
-    this.ledCount = count;
-    this.emit('led-count-changed', count);
-    return Promise.resolve();
-};
+    /**
+     * Conecta al dispositivo iniciando el handshake
+     * @returns {Promise<TuyaDevice>} - Promesa que se resuelve cuando la conexión es exitosa
+     */
+    connect() {
+        if (this.isConnected) {
+            return Promise.resolve(this);
+        }
+        
+        if (!this.ip || !this.key) {
+            return Promise.reject(new Error('Device IP and key are required'));
+        }
+        
+        return new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                reject(new Error('Connection timeout'));
+            }, this.connectionTimeout);
+            
+            this._startHandshake()
+                .then(() => {
+                    clearTimeout(timeoutId);
+                    this.isConnected = true;
+                    this.reconnectAttempts = 0;
+                    this.emit('connected', this);
+                    resolve(this);
+                })
+                .catch(error => {
+                    clearTimeout(timeoutId);
+                    
+                    // Incrementar intentos de reconexión
+                    this.reconnectAttempts++;
+                    
+                    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                        console.log(`Connection attempt ${this.reconnectAttempts} failed, retrying in ${this.reconnectDelay}ms...`);
+                        setTimeout(() => {
+                            this.connect()
+                                .then(resolve)
+                                .catch(reject);
+                        }, this.reconnectDelay);
+                    } else {
+                        this.reconnectAttempts = 0;
+                        reject(error);
+                    }
+                });
+        });
+    }
+    
+    /**
+     * Inicia el proceso de handshake para negociar la clave de sesión
+     * @returns {Promise<void>}
+     * @private
+     */
+    _startHandshake() {
+        return new Promise((resolve, reject) => {
+            if (this.version === '3.1') {
+                // Para dispositivos v3.1 no hay handshake
+                resolve();
+                return;
+            }
+            
+            // Generar clientRandom para el handshake
+            const clientRandom = crypto.randomBytes(16).toString('hex');
+            
+            // Crear payload para solicitud de handshake
+            const payload = JSON.stringify({
+                uuid: crypto.randomUUID(),
+                t: Math.floor(Date.now() / 1000),
+                gwId: this.id,
+                random: clientRandom
+            });
+            
+            try {
+                // Construir paquete de solicitud handshake (0x05)
+                const packet = TuyaPacket.buildV35Packet(
+                    payload,
+                    TuyaPacket.TYPES.SESS_KEY_NEG_REQ,
+                    this.id,
+                    this.key,
+                    true // Es handshake, almacenar el nonce
+                );
+                
+                // Crear promesa para esperar respuesta
+                const responsePromise = this._waitForResponse(TuyaPacket.TYPES.SESS_KEY_NEG_RESP);
+                
+                // Enviar paquete
+                const broadcastIp = this.controller.getBroadcastAddress(this.ip);
+                this.controller.sendUdpPacket(packet, broadcastIp, this.port)
+                    .then(() => {
+                        // Esperar respuesta
+                        responsePromise
+                            .then(response => {
+                                // Procesar respuesta y derivar sessionKey
+                                this.sessionKey = this._deriveSessionKey(response, clientRandom);
+                                resolve();
+                            })
+                            .catch(reject);
+                    })
+                    .catch(reject);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    /**
+     * Deriva la clave de sesión a partir de la respuesta del dispositivo
+     * @param {Object} response - Respuesta parseada del dispositivo
+     * @param {string} clientRandom - Random del cliente enviado en la solicitud
+     * @returns {string} - Clave de sesión en formato hex
+     * @private
+     */
+    _deriveSessionKey(response, clientRandom) {
+        // Extraer deviceRandom de la respuesta
+        // Esto es un placeholder - la implementación real depende del formato exacto de la respuesta
+        const deviceRandom = response.random || '';
+        
+        // Derivar sessionKey usando MD5(localKey + clientRandom + deviceRandom)
+        const md5Input = this.key + clientRandom + deviceRandom;
+        return crypto.createHash('md5').update(Buffer.from(md5Input, 'hex')).digest('hex');
+    }
+    
+    /**
+     * Espera por un tipo específico de respuesta
+     * @param {number} messageType - Tipo de mensaje a esperar
+     * @param {number} timeout - Tiempo de espera en ms
+     * @returns {Promise<Object>} - Promesa que se resuelve con la respuesta
+     * @private
+     */
+    _waitForResponse(messageType, timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                this.removeListener('response', handler);
+                reject(new Error(`Timeout waiting for response type ${messageType.toString(16)}`));
+            }, timeout);
+            
+            const handler = (response) => {
+                if (response.messageType === messageType) {
+                    clearTimeout(timeoutId);
+                    this.removeListener('response', handler);
+                    resolve(response);
+                }
+            };
+            
+            this.on('response', handler);
+        });
+    }
+    
+    /**
+     * Maneja una respuesta recibida del dispositivo
+     * @param {Buffer} message - Mensaje recibido
+     * @param {Object} rinfo - Información del remitente
+     */
+    handleResponse(message, rinfo) {
+        try {
+            // Verificar que la respuesta viene del dispositivo correcto
+            if (rinfo.address !== this.ip) {
+                return;
+            }
+            
+            // Parsear el paquete
+            const key = this.sessionKey || this.key;
+            const response = TuyaPacket.parsePacket(message, key);
+            
+            // Actualizar estado de conexión si no estaba conectado
+            if (!this.isConnected && response.messageType === TuyaPacket.TYPES.SESS_KEY_NEG_RESP) {
+                this.isConnected = true;
+                this.emit('connected', this);
+            }
+            
+            // Emitir evento de respuesta
+            this.emit('response', response);
+            
+            // Emitir data si hay datos
+            if (response.data) {
+                this.emit('data', response.data);
+            }
+            
+        } catch (error) {
+            console.error('Error handling device response:', error);
+            this.emit('error', error);
+        }
+    }
+    
+    /**
+     * Desconecta el dispositivo
+     */
+    disconnect() {
+        this.isConnected = false;
+        this.sessionKey = null;
+        this.emit('disconnected', this);
+    }
+    
+    /**
+     * Envía un comando al dispositivo
+     * @param {Object|string} command - Comando a enviar (objeto o string JSON)
+     * @param {number} timeout - Tiempo de espera para respuesta en ms
+     * @returns {Promise<Object>} - Promesa que se resuelve con la respuesta
+     */
+    sendCommand(command, timeout = 5000) {
+        if (!this.isConnected) {
+            return this.connect().then(() => this.sendCommand(command, timeout));
+        }
+        
+        const commandStr = typeof command === 'string' ? command : JSON.stringify(command);
+        
+        return new Promise((resolve, reject) => {
+            try {
+                // Generar ID único para este comando
+                const commandId = Date.now().toString();
+                
+                // Registrar promesa pendiente
+                this.pendingCommands.set(commandId, { resolve, reject });
+                
+                // Configurar timeout
+                const timeoutId = setTimeout(() => {
+                    if (this.pendingCommands.has(commandId)) {
+                        const pendingCommand = this.pendingCommands.get(commandId);
+                        this.pendingCommands.delete(commandId);
+                        pendingCommand.reject(new Error('Command timeout'));
+                    }
+                }, timeout);
+                
+                this.commandTimeouts.set(commandId, timeoutId);
+                
+                // Construir y enviar paquete
+                let packet;
+                if (this.version === '3.1') {
+                    packet = TuyaPacket.buildV31Packet(
+                        commandStr,
+                        TuyaPacket.TYPES.CONTROL_NEW,
+                        this.key
+                    );
+                } else {
+                    packet = TuyaPacket.buildV35Packet(
+                        commandStr,
+                        TuyaPacket.TYPES.SESS_KEY_CMD,
+                        this.id,
+                        this.sessionKey || this.key
+                    );
+                }
+                
+                // Enviar paquete
+                const broadcastIp = this.controller.getBroadcastAddress(this.ip);
+                this.controller.sendUdpPacket(packet, broadcastIp, this.port)
+                    .catch(error => {
+                        clearTimeout(timeoutId);
+                        this.commandTimeouts.delete(commandId);
+                        this.pendingCommands.delete(commandId);
+                        reject(error);
+                    });
+                
+                // Esperar respuesta (la promesa se resolverá en handleResponse)
+                this._waitForResponse(TuyaPacket.TYPES.SESS_KEY_CMD, timeout)
+                    .then(response => {
+                        clearTimeout(timeoutId);
+                        this.commandTimeouts.delete(commandId);
+                        
+                        if (this.pendingCommands.has(commandId)) {
+                            const pendingCommand = this.pendingCommands.get(commandId);
+                            this.pendingCommands.delete(commandId);
+                            pendingCommand.resolve(response);
+                        }
+                    })
+                    .catch(error => {
+                        clearTimeout(timeoutId);
+                        this.commandTimeouts.delete(commandId);
+                        
+                        if (this.pendingCommands.has(commandId)) {
+                            const pendingCommand = this.pendingCommands.get(commandId);
+                            this.pendingCommands.delete(commandId);
+                            pendingCommand.reject(error);
+                        }
+                    });
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    /**
+     * Establece los colores de los LEDs del dispositivo
+     * @param {Array<{r: number, g: number, b: number}>} colors - Array de colores RGB
+     * @returns {Promise<Object>} - Promesa que se resuelve con la respuesta
+     */
+    async setColors(colors) {
+        if (!Array.isArray(colors)) {
+            throw new Error('Colors must be an array');
+        }
+        
+        // Guardar los colores actuales
+        this.lastColors = colors;
+        
+        // Implementación simplificada para un solo color (promedio)
+        // En una implementación real, se procesarían todos los colores
+        const avgColor = this._calculateAverageColor(colors);
+        
+        // Convertir a formato HSV que usan los dispositivos Tuya
+        const tuyaColor = this._convertRgbToTuyaColor(avgColor.r, avgColor.g, avgColor.b);
+        
+        // Crear comando con valores DPS (datapoints)
+        const command = {
+            devId: this.id,
+            gwId: this.id,
+            uid: '',
+            t: Math.floor(Date.now() / 1000),
+            dps: {
+                '1': true,        // Encendido
+                '2': 'colour',    // Modo color (no blanco)
+                '5': tuyaColor    // Valor de color en formato HSV
+            }
+        };
+        
+        // Enviar comando
+        return this.sendCommand(command);
+    }
+    
+    /**
+     * Calcula el color promedio de un array de colores
+     * @param {Array<{r: number, g: number, b: number}>} colors - Array de colores RGB
+     * @returns {{r: number, g: number, b: number}} - Color promedio
+     * @private
+     */
+    _calculateAverageColor(colors) {
+        if (colors.length === 0) {
+            return { r: 0, g: 0, b: 0 };
+        }
+        
+        const sum = colors.reduce((acc, color) => {
+            return {
+                r: acc.r + color.r,
+                g: acc.g + color.g,
+                b: acc.b + color.b
+            };
+        }, { r: 0, g: 0, b: 0 });
+        
+        return {
+            r: Math.round(sum.r / colors.length),
+            g: Math.round(sum.g / colors.length),
+            b: Math.round(sum.b / colors.length)
+        };
+    }
+    
+    /**
+     * Convierte un color RGB a formato HSV de Tuya
+     * @param {number} r - Componente rojo (0-255)
+     * @param {number} g - Componente verde (0-255)
+     * @param {number} b - Componente azul (0-255)
+     * @returns {string} - Color en formato Tuya HSV hexadecimal
+     * @private
+     */
+    _convertRgbToTuyaColor(r, g, b) {
+        // Esta es una implementación simplificada, la real debe adaptarse al formato específico de Tuya
+        
+        // Normalizar RGB a [0,1]
+        const rf = r / 255;
+        const gf = g / 255;
+        const bf = b / 255;
+        
+        // Calcular valores para HSV
+        const max = Math.max(rf, gf, bf);
+        const min = Math.min(rf, gf, bf);
+        const delta = max - min;
+        
+        // Calcular matiz (H)
+        let h = 0;
+        if (delta !== 0) {
+            if (max === rf) {
+                h = ((gf - bf) / delta) % 6;
+            } else if (max === gf) {
+                h = (bf - rf) / delta + 2;
+            } else {
+                h = (rf - gf) / delta + 4;
+            }
+        }
+        h = Math.round(h * 60);
+        if (h < 0) h += 360;
+        
+        // Calcular saturación (S)
+        const s = max === 0 ? 0 : Math.round((delta / max) * 100);
+        
+        // Calcular valor (V)
+        const v = Math.round(max * 100);
+        
+        // Convertir a formato Tuya: "h,s,v"
+        // Luego codificar a hexadecimal
+        const hsvStr = `${h},${s},${v}`;
+        const hex = Buffer.from(hsvStr).toString('hex');
+        
+        return hex;
+    }
+    
+    /**
+     * Establece la cantidad de LEDs del dispositivo
+     * @param {number} count - Cantidad de LEDs
+     * @returns {Promise<void>}
+     */
+    async setLedCount(count) {
+        if (!Number.isInteger(count) || count <= 0) {
+            throw new Error('LED count must be a positive integer');
+        }
+        
+        this.ledCount = count;
+        
+        // Algunos dispositivos requieren configurar la cantidad de LEDs
+        // Esta es una implementación genérica que podría necesitar adaptación
+        
+        const command = {
+            devId: this.id,
+            gwId: this.id,
+            uid: '',
+            t: Math.floor(Date.now() / 1000),
+            dps: {
+                // Algunos dispositivos usan datapoints específicos para la cantidad de LEDs
+                // Por ejemplo: '25': count
+            }
+        };
+        
+        // Solo enviar si hay un datapoint específico para el conteo de LEDs
+        // De lo contrario, simplemente actualizar el valor local
+        // return this.sendCommand(command);
+        
+        return Promise.resolve();
+    }
+}
 
 module.exports = TuyaDevice;
