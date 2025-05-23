@@ -1,211 +1,198 @@
 /**
- * Servicio de descubrimiento basado en TuyaBroadcast del plugin FU-RAZ
+ * Servicio de descubrimiento de dispositivos Tuya
  */
 
-import crypto from 'crypto';
-import TuyaPacket from '../utils/TuyaPacket.js';
 import udp from "@SignalRGB/udp";
-import EventEmitter from 'events';
-
-const DISCOVERY_PORT = 6667;
-const BROADCAST_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn').digest(); // Clave fija del protocolo Tuya
+const EventEmitter = require('../utils/EventEmitter.js');
 
 class TuyaDiscovery extends EventEmitter {
-    constructor(options = {}) {
+    constructor(config = {}) {
         super();
-        this.constructor.name = "TuyaDiscovery";
-        this.port = DISCOVERY_PORT;
-        this.timeout = options.timeout || 5000;
+        this.isRunning = false;
+        this.discoveryPort = config.port || 6666;
+        this.broadcastPort = config.broadcastPort || 6667;
+        this.devices = new Map();
         this.socket = null;
-        this.discoveredDevices = new Map();
-        this.isDiscovering = false;
-        this.debugMode = options.debugMode || false;
+        this.config = config;
     }
 
-    startDiscovery() {
-        if (this.isDiscovering) {
-            this._log('Discovery already in progress');
-            return;
+    /**
+     * Inicia el proceso de descubrimiento
+     */
+    start() {
+        if (this.isRunning) {
+            return Promise.resolve();
         }
 
-        try {
-            this.isDiscovering = true;
-            this.discoveredDevices.clear();
-            
-            this.socket = udp.createSocket('udp4');
-            
-            this.socket.on('message', (data, rinfo) => {
-                this.handleBroadcastMessage(data, rinfo);
-            });
-            
-            this.socket.on('error', (error) => {
-                this._log('Discovery socket error: ' + error.message);
-                this.emit('error', error);
-                this.stopDiscovery();
-            });
-            
-            this.socket.bind(this.port, () => {
-                this._log('Discovery started on port ' + this.port);
+        return new Promise((resolve, reject) => {
+            try {
+                // Crear socket UDP usando SignalRGB UDP
+                this.socket = udp.createSocket('udp4');
                 
-                setTimeout(() => {
-                    this.stopDiscovery();
-                }, this.timeout);
-            });
-            
-        } catch (error) {
-            this._log('Error starting discovery: ' + error.message);
-            this.emit('error', error);
-            this.isDiscovering = false;
+                this.socket.on('message', (msg, rinfo) => {
+                    this.handleDiscoveryMessage(msg, rinfo);
+                });
+
+                this.socket.on('error', (err) => {
+                    console.error('Discovery socket error:', err);
+                    this.emit('error', err);
+                });
+
+                this.socket.bind(this.discoveryPort, () => {
+                    this.socket.setBroadcast(true);
+                    this.isRunning = true;
+                    this.emit('started');
+                    resolve();
+                });
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Detiene el descubrimiento
+     */
+    stop() {
+        if (!this.isRunning) {
+            return Promise.resolve();
         }
-    }
 
-    handleBroadcastMessage(data, rinfo) {
-        try {
-            // Verificar CRC del paquete antes de descifrar
-            if (!this.verifyCRC(data)) {
-                return;
-            }
-            
-            const deviceInfo = this.decryptBroadcast(data, rinfo);
-            
-            if (deviceInfo && deviceInfo.gwId) {
-                const deviceId = deviceInfo.gwId;
-                
-                if (this.discoveredDevices.has(deviceId)) {
-                    return;
-                }
-                
-                deviceInfo.ip = rinfo.address;
-                deviceInfo.discoveryPort = rinfo.port;
-                deviceInfo.id = deviceId;
-                
-                this.discoveredDevices.set(deviceId, deviceInfo);
-                
-                this._log('Device discovered: ' + deviceId + ' at ' + rinfo.address);
-                this.emit('deviceDiscovered', deviceInfo);
-            }
-            
-        } catch (error) {
-            this._log('Failed to process broadcast: ' + error.message);
-        }
-    }
-
-    verifyCRC(data) {
-        try {
-            if (data.length < 20) return false;
-            
-            const receivedCRC = data.readUInt32BE(data.length - 8);
-            const calculatedCRC = TuyaPacket.calculateCRC(data.slice(0, data.length - 8));
-            
-            return receivedCRC === calculatedCRC;
-            
-        } catch (error) {
-            return false;
-        }
-    }
-
-    decryptBroadcast(data, rinfo) {
-        try {
-            if (data.length < 20) {
-                return null;
-            }
-
-            const header = data.slice(0, 4);
-            if (!header.equals(Buffer.from('000055aa', 'hex'))) {
-                return null;
-            }
-
-            const command = data.readUInt32BE(8);
-            const dataLength = data.readUInt32BE(12);
-            
-            if (dataLength === 0) {
-                return null;
-            }
-
-            const encryptedData = data.slice(16, 16 + dataLength - 8);
-            
-            // Para protocolo 3.4+, usar AES-GCM
-            if (encryptedData.length >= 28) {
-                // Offsets corregidos basados en FU-RAZ
-                const iv = encryptedData.slice(0, 12);
-                const ciphertext = encryptedData.slice(12, -16);
-                const tag = encryptedData.slice(-16);
-                
-                try {
-                    // Crear AAD para broadcast
-                    const aad = this.createBroadcastAAD(data.slice(4, 16));
-                    
-                    const decipher = crypto.createDecipheriv('aes-128-gcm', BROADCAST_KEY, iv);
-                    decipher.setAAD(aad);
-                    decipher.setAuthTag(tag);
-                    
-                    let decrypted = decipher.update(ciphertext);
-                    decipher.final();
-                    
-                    const deviceData = JSON.parse(decrypted.toString());
-                    return deviceData;
-                    
-                } catch (decryptError) {
-                    // Fallback a texto plano (protocolo 3.3)
-                    try {
-                        const deviceData = JSON.parse(encryptedData.toString());
-                        return deviceData;
-                    } catch (jsonError) {
-                        return null;
-                    }
-                }
-            }
-
-            return null;
-            
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    createBroadcastAAD(headerData) {
-        // AAD para broadcast basado en FU-RAZ
-        const aad = Buffer.alloc(16);
-        
-        // Copiar seqNo, command, length del header
-        headerData.copy(aad, 0, 0, 12);
-        
-        // Padding con ceros
-        aad.fill(0, 12);
-        
-        return aad;
-    }
-
-    stopDiscovery() {
-        if (!this.isDiscovering) return;
-        
-        try {
+        return new Promise((resolve) => {
             if (this.socket) {
-                this.socket.close();
-                this.socket = null;
+                this.socket.close(() => {
+                    this.isRunning = false;
+                    this.socket = null;
+                    this.emit('stopped');
+                    resolve();
+                });
+            } else {
+                this.isRunning = false;
+                resolve();
             }
-            
-            this.isDiscovering = false;
-            this._log('Discovery stopped. Found ' + this.discoveredDevices.size + ' devices');
-            
-            // Emitir evento para index.js
-            this.emit('discoveryStopped');
-            
+        });
+    }
+
+    /**
+     * Maneja mensajes de descubrimiento recibidos
+     */
+    handleDiscoveryMessage(message, rinfo) {
+        try {
+            // Procesar mensaje de descubrimiento
+            const deviceInfo = this.parseDiscoveryMessage(message, rinfo);
+            if (deviceInfo) {
+                this.devices.set(deviceInfo.id, deviceInfo);
+                this.emit('device_found', deviceInfo);
+            }
         } catch (error) {
-            this._log('Error stopping discovery: ' + error.message);
+            console.error('Error processing discovery message:', error);
         }
     }
 
-    _log(message) {
-        if (this.debugMode) {
-            const timestamp = new Date().toISOString();
-            console.log(`[TuyaDiscovery ${timestamp}] ${message}`);
+    /**
+     * Parsea mensaje de descubrimiento
+     */
+    parseDiscoveryMessage(message, rinfo) {
+        try {
+            // Intentar parsear como JSON
+            const data = JSON.parse(message.toString());
+            
+            return {
+                id: data.gwId || data.devId,
+                ip: rinfo.address,
+                port: rinfo.port,
+                productKey: data.productKey,
+                version: data.version || '3.3',
+                timestamp: Date.now(),
+                raw: data
+            };
+        } catch (error) {
+            // Si no es JSON, intentar parsear como paquete binario Tuya
+            return this.parseBinaryDiscovery(message, rinfo);
         }
+    }
+
+    /**
+     * Parsea mensaje binario de descubrimiento
+     */
+    parseBinaryDiscovery(message, rinfo) {
+        // Implementación básica para paquetes binarios
+        if (message.length < 20) {
+            return null;
+        }
+
+        // Verificar prefijo Tuya
+        const prefix = message.slice(0, 4).toString('hex');
+        if (prefix !== '000055aa') {
+            return null;
+        }
+
+        return {
+            id: `tuya_${rinfo.address}_${rinfo.port}`,
+            ip: rinfo.address,
+            port: rinfo.port,
+            version: '3.3',
+            timestamp: Date.now(),
+            binary: true
+        };
+    }
+
+    /**
+     * Envía solicitud de descubrimiento por broadcast
+     */
+    sendDiscoveryRequest() {
+        if (!this.isRunning || !this.socket) {
+            return Promise.reject(new Error('Discovery not running'));
+        }
+
+        return new Promise((resolve, reject) => {
+            try {
+                // Crear mensaje de descubrimiento simple
+                const discoveryMessage = JSON.stringify({
+                    cmd: 'discovery',
+                    t: Math.floor(Date.now() / 1000)
+                });
+
+                const broadcastAddress = '255.255.255.255';
+                
+                this.socket.send(
+                    discoveryMessage,
+                    this.broadcastPort,
+                    broadcastAddress,
+                    (error) => {
+                        if (error) {
+                            reject(error);
+                        } else {
+                            resolve();
+                        }
+                    }
+                );
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Obtiene lista de dispositivos encontrados
+     */
+    getDevices() {
+        return Array.from(this.devices.values());
+    }
+
+    /**
+     * Limpia lista de dispositivos
+     */
+    clearDevices() {
+        this.devices.clear();
+        this.emit('devices_cleared');
     }
 }
 
-// Añadir estas propiedades para que SignalRGB lo ignore
-TuyaDiscovery.VendorId = () => null;
-TuyaDiscovery.ProductId = () => null;
-
 module.exports = TuyaDiscovery;
+
+// Para compatibilidad con ES6
+if (typeof exports !== 'undefined') {
+    exports.default = TuyaDiscovery;
+}

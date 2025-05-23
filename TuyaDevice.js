@@ -7,7 +7,7 @@
 // const EventEmitter = require('events'); // ELIMINAR
 // const crypto = require('crypto'); // ELIMINAR
 const EventEmitter = require('./utils/EventEmitter.js'); // AGREGAR
-const TuyaPacket = require('./utils/TuyaPacket.js'); // RUTA CORREGIDA
+const TuyaPacket = require('./utils/TuyaPacket'); // CORREGIR RUTA
 
 class TuyaDevice extends EventEmitter {
     constructor(options) {

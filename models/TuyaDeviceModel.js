@@ -50,29 +50,39 @@ class TuyaDeviceModel {
     saveSettings() {
         try {
             const config = this.getCurrentConfig();
-            service.saveSetting(this.id, 'configData', JSON.stringify(config));
-            service.log('Settings saved for device: ' + this.id);
+            // Usar servicio global si está disponible
+            if (typeof service !== 'undefined') {
+                service.saveSetting(this.id, 'configData', JSON.stringify(config));
+                service.log('Settings saved for device: ' + this.id);
+            }
             return true;
         } catch (error) {
-            service.log('Error saving settings for device ' + this.id + ': ' + error.message);
+            if (typeof service !== 'undefined') {
+                service.log('Error saving settings for device ' + this.id + ': ' + error.message);
+            }
             return false;
         }
     }
 
     loadSettings() {
         try {
-            const configData = service.getSetting(this.id, 'configData', '{}');
-            const config = JSON.parse(configData);
-            
-            if (config.localKey) {
-                this.localKey = config.localKey;
-                this.enabled = config.enabled || false;
-                this.deviceType = config.deviceType || 'LED Strip';
-                service.log('Settings loaded for device: ' + this.id);
-                return true;
+            // Usar servicio global si está disponible
+            if (typeof service !== 'undefined') {
+                const configData = service.getSetting(this.id, 'configData', '{}');
+                const config = JSON.parse(configData);
+                
+                if (config.localKey) {
+                    this.localKey = config.localKey;
+                    this.enabled = config.enabled || false;
+                    this.deviceType = config.deviceType || 'LED Strip';
+                    service.log('Settings loaded for device: ' + this.id);
+                    return true;
+                }
             }
         } catch (error) {
-            service.log('Error loading settings for device ' + this.id + ': ' + error.message);
+            if (typeof service !== 'undefined') {
+                service.log('Error loading settings for device ' + this.id + ': ' + error.message);
+            }
         }
         return false;
     }
@@ -100,4 +110,10 @@ class TuyaDeviceModel {
     }
 }
 
-export default TuyaDeviceModel;
+// SOLO exportar la clase, SIN ProductId
+module.exports = TuyaDeviceModel;
+
+// Para compatibilidad con ES6
+if (typeof exports !== 'undefined') {
+    exports.default = TuyaDeviceModel;
+}
