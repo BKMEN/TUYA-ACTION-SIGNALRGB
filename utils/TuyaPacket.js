@@ -1,4 +1,3 @@
-
 // utils/TuyaPacket.js
 /**
  * Utilidad para analizar, crear y validar paquetes del protocolo Tuya
@@ -241,12 +240,21 @@ class TuyaPacket {
      * @returns {number} - Valor CRC calculado
      */
     static calculateCRC(buffer) {
-        // Implementación básica del CRC32 usado por Tuya
-        // En una implementación real, consideraría usar la librería crc32 o similar
-        return crypto.createHash('md5')
-                    .update(buffer)
-                    .digest()
-                    .readUInt32BE(0);
+        // CORREGIDO: CRC32 estándar en lugar de MD5
+        let crc = 0xFFFFFFFF;
+        
+        for (let i = 0; i < buffer.length; i++) {
+            crc = crc ^ buffer[i];
+            for (let j = 0; j < 8; j++) {
+                if (crc & 1) {
+                    crc = (crc >>> 1) ^ 0xEDB88320;
+                } else {
+                    crc = crc >>> 1;
+                }
+            }
+        }
+        
+        return (~crc) >>> 0;
     }
     
     /**

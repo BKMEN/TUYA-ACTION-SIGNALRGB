@@ -17,8 +17,8 @@ class TuyaCommandEncryptor {
             // Crear AAD (Additional Authenticated Data)
             const aad = this.createAAD(sequenceNumber, payload.length);
             
-            // Crear cipher AES-GCM
-            const cipher = crypto.createCipherGCM('aes-128-gcm', this.sessionKey);
+            // CORREGIDO: Crear cipher AES-GCM con nonce
+            const cipher = crypto.createCipheriv('aes-128-gcm', this.sessionKey, nonce);
             cipher.setAAD(aad);
             
             // Cifrar payload

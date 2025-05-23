@@ -6,12 +6,14 @@
 import TuyaDeviceModel from './models/TuyaDeviceModel.js';
 import TuyaSessionNegotiator from './negotiators/TuyaSessionNegotiator.js';
 import TuyaCommandEncryptor from './crypto/TuyaCommandEncryptor.js';
+import udp from "@SignalRGB/udp";
 
 class TuyaController {
     constructor(device) {
         this.device = device instanceof TuyaDeviceModel ? device : new TuyaDeviceModel(device);
         this.negotiator = null;
         this.encryptor = null;
+        this.socket = null; // Socket persistente para comandos
     }
 
     // Método llamado desde QML para actualizar configuración
@@ -104,7 +106,7 @@ class TuyaController {
         }
 
         try {
-            // Construir comando usando TuyaPacket
+            // Construir comando usando buildColorPayload mejorado
             const colorPayload = this.buildColorPayload(rgbArray);
             
             // Cifrar comando
@@ -125,29 +127,99 @@ class TuyaController {
     }
 
     buildColorPayload(rgbArray) {
-        // Usar TuyaPacket existente para construir el payload
-        // Esta función debería integrar con tu utils/TuyaPacket.js
-        const payload = {
-            "1": true,  // Encender
-            "5": "colour",  // Modo color
-            "24": rgbArray.map(rgb => ({
-                r: rgb.r,
-                g: rgb.g,
-                b: rgb.b
-            }))
-        };
+        try {
+            // Implementación completa del formato de color Tuya
+            if (!rgbArray || rgbArray.length === 0) {
+                throw new Error('Invalid RGB array');
+            }
+
+            const rgb = rgbArray[0]; // Usar primer color
+            
+            // Convertir RGB a HSV para formato Tuya
+            const hsv = this.rgbToHsv(rgb.r, rgb.g, rgb.b);
+            
+            // Crear string de color en formato hexadecimal HSV (12 dígitos)
+            const h = Math.round(hsv.h * 360).toString(16).padStart(4, '0');
+            const s = Math.round(hsv.s * 1000).toString(16).padStart(4, '0');
+            const v = Math.round(hsv.v * 1000).toString(16).padStart(4, '0');
+            
+            const colorString = h + s + v;
+            
+            // Payload DPS según protocolo Tuya
+            const payload = {
+                "1": true,          // Encender dispositivo
+                "2": "colour",      // Modo color
+                "5": colorString,   // Datos de color HSV
+                "3": 255           // Brillo (0-255)
+            };
+            
+            return JSON.stringify(payload);
+            
+        } catch (error) {
+            service.log('Error building color payload: ' + error.message);
+            throw error;
+        }
+    }
+
+    rgbToHsv(r, g, b) {
+        r /= 255;
+        g /= 255;
+        b /= 255;
         
-        return JSON.stringify(payload);
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const diff = max - min;
+        
+        let h = 0;
+        let s = max === 0 ? 0 : diff / max;
+        let v = max;
+        
+        if (diff !== 0) {
+            switch (max) {
+                case r: h = (g - b) / diff + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / diff + 2; break;
+                case b: h = (r - g) / diff + 4; break;
+            }
+            h /= 6;
+        }
+        
+        return { h, s, v };
     }
 
     sendCommand(encryptedData) {
         try {
-            const socket = udp.createSocket();
-            socket.send(encryptedData, this.device.port, this.device.ip);
-            socket.close();
+            // Crear socket si no existe (reutilizar)
+            if (!this.socket) {
+                this.socket = udp.createSocket();
+                
+                this.socket.on('error', (error) => {
+                    service.log('Command socket error: ' + error.message);
+                    this.socket = null; // Recrear en próximo uso
+                });
+            }
+            
+            this.socket.send(encryptedData, this.device.port, this.device.ip, (error) => {
+                if (error) {
+                    service.log('Error sending command to ' + this.device.id + ': ' + error.message);
+                    throw error;
+                }
+            });
+            
         } catch (error) {
-            service.log('Error sending command: ' + error.message);
+            service.log('Error in sendCommand: ' + error.message);
             throw error;
+        }
+    }
+
+    cleanup() {
+        if (this.socket) {
+            this.socket.close();
+            this.socket = null;
+        }
+        
+        if (this.negotiator) {
+            this.negotiator.cleanup();
+            this.negotiator = null;
         }
     }
 }

@@ -3,7 +3,8 @@
  */
 
 import crypto from 'crypto';
-import dgram from 'dgram';
+import TuyaPacket from '../utils/TuyaPacket.js';
+import udp from "@SignalRGB/udp";
 import EventEmitter from 'events';
 import os from 'os';
 
@@ -32,8 +33,8 @@ class TuyaDiscovery extends EventEmitter {
             this.isDiscovering = true;
             this.discoveredDevices.clear();
             
-            // Crear socket UDP para escuchar broadcasts
-            this.socket = dgram.createSocket('udp4');
+            // Usar UDP de SignalRGB
+            this.socket = udp.createSocket();
             
             this.socket.on('message', (data, rinfo) => {
                 this.handleBroadcastMessage(data, rinfo);
@@ -64,7 +65,12 @@ class TuyaDiscovery extends EventEmitter {
 
     handleBroadcastMessage(data, rinfo) {
         try {
-            // Intentar descifrar el mensaje de broadcast usando el protocolo FU-RAZ
+            // Verificar CRC del paquete antes de descifrar
+            if (!this.verifyCRC(data)) {
+                return; // Ignorar paquetes con CRC inválido
+            }
+            
+            // Intentar descifrar el mensaje de broadcast
             const deviceInfo = this.decryptBroadcast(data, rinfo);
             
             if (deviceInfo && deviceInfo.gwId) {
@@ -88,7 +94,24 @@ class TuyaDiscovery extends EventEmitter {
             
         } catch (error) {
             // Ignorar mensajes que no se pueden descifrar
-            this._log('Failed to decrypt broadcast: ' + error.message);
+            this._log('Failed to process broadcast: ' + error.message);
+        }
+    }
+
+    verifyCRC(data) {
+        try {
+            if (data.length < 20) return false;
+            
+            // Extraer CRC del paquete
+            const receivedCRC = data.readUInt32BE(data.length - 8);
+            
+            // Calcular CRC de todo excepto CRC y footer
+            const calculatedCRC = TuyaPacket.calculateCRC(data.slice(0, data.length - 8));
+            
+            return receivedCRC === calculatedCRC;
+            
+        } catch (error) {
+            return false;
         }
     }
 
@@ -112,16 +135,21 @@ class TuyaDiscovery extends EventEmitter {
                 return null;
             }
 
-            const encryptedData = data.slice(16, 16 + dataLength - 8); // Excluir CRC
+            const encryptedData = data.slice(16, 16 + dataLength - 8); // Excluir CRC y footer
             
             // Para protocolo 3.4+, usar AES-GCM con clave fija
-            if (encryptedData.length >= 12) {
+            if (encryptedData.length >= 28) { // 12 IV + 16 tag mínimo
+                // Offsets corregidos basados en FU-RAZ
                 const iv = encryptedData.slice(0, 12);
                 const ciphertext = encryptedData.slice(12, -16);
                 const tag = encryptedData.slice(-16);
                 
                 try {
-                    const decipher = crypto.createDecipherGCM('aes-128-gcm', BROADCAST_KEY);
+                    // Crear AAD basado en el protocolo
+                    const aad = this.createBroadcastAAD(data.slice(4, 16)); // seqNo + command + length
+                    
+                    const decipher = crypto.createDecipheriv('aes-128-gcm', BROADCAST_KEY, iv);
+                    decipher.setAAD(aad);
                     decipher.setAuthTag(tag);
                     
                     let decrypted = decipher.update(ciphertext);
@@ -148,6 +176,19 @@ class TuyaDiscovery extends EventEmitter {
         }
     }
 
+    createBroadcastAAD(headerData) {
+        // AAD para broadcast basado en FU-RAZ
+        const aad = Buffer.alloc(16);
+        
+        // Copiar seqNo, command, length del header
+        headerData.copy(aad, 0, 0, 12);
+        
+        // Padding con ceros
+        aad.fill(0, 12);
+        
+        return aad;
+    }
+
     stopDiscovery() {
         if (!this.isDiscovering) return;
         
@@ -160,10 +201,8 @@ class TuyaDiscovery extends EventEmitter {
             this.isDiscovering = false;
             this._log('Discovery stopped. Found ' + this.discoveredDevices.size + ' devices');
             
-            // Emitir evento de finalización
-            if (typeof service.discoveryComplete === 'function') {
-                service.discoveryComplete();
-            }
+            // Emitir evento para que index.js llame a service.discoveryComplete
+            this.emit('discoveryStopped');
             
         } catch (error) {
             this._log('Error stopping discovery: ' + error.message);
