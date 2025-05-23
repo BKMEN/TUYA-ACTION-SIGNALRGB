@@ -2,7 +2,7 @@
  * Negociador de Session Key basado en TuyaNegotiator.test.js del plugin FU-RAZ
  */
 
-import { EventEmitter } from 'events';
+const EventEmitter = require('../utils/EventEmitter.js');
 import crypto from 'crypto';
 import udp from "@SignalRGB/udp";
 

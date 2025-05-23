@@ -8,12 +8,14 @@
  * @version 1.0.0
  */
 
-const crypto = require('crypto');
-
 class TuyaPacket {
     // Constantes del protocolo Tuya
     static PREFIX = '000055aa';
     static SUFFIX = '0000aa55';
+    
+    // Constantes para protocolo v3.5
+    static PREFIX_V35 = '00006699';
+    static SUFFIX_V35 = '00009966';
     
     // Comandos conocidos del protocolo
     static COMMANDS = {
