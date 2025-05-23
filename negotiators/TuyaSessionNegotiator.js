@@ -8,7 +8,7 @@ import udp from "@SignalRGB/udp";
 
 const NEGOTIATION_PORT = 40001;
 const NEGOTIATION_TIMEOUT = 10000;
-const FIXED_KEY = Buffer.from('6f36045d84b042e01e29b7c819e37cf7', 'hex'); // Clave fija del protocolo FU-RAZ
+const FIXED_KEY = Buffer.from('6f36045d84b042e01e29b7c819e37cf7', 'hex');
 
 class TuyaSessionNegotiator extends EventEmitter {
     constructor(device) {
@@ -16,7 +16,9 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.device = device;
         this.socket = null;
         this.negotiationTimer = null;
-        this.negotiationKey = null; // Clave intermedia para descifrar respuesta
+        this.negotiationKey = null;
+        this.deviceToken = null;
+        this.deviceRnd = null;
     }
 
     start() {
@@ -28,8 +30,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         try {
             service.log('Starting negotiation for device: ' + this.device.id);
             
-            // Crear socket para negociación
-            this.socket = udp.createSocket();
+            this.socket = udp.createSocket('udp4');
             
             this.socket.on('message', (data, rinfo) => {
                 this.handleNegotiationResponse(data, rinfo);
@@ -44,7 +45,6 @@ class TuyaSessionNegotiator extends EventEmitter {
             this.socket.bind(() => {
                 this.sendNegotiationRequest();
                 
-                // Timeout para la negociación
                 this.negotiationTimer = setTimeout(() => {
                     this.emit('error', new Error('Negotiation timeout'));
                     this.cleanup();
@@ -59,34 +59,33 @@ class TuyaSessionNegotiator extends EventEmitter {
 
     sendNegotiationRequest() {
         try {
-            // Generar nonce aleatorio
+            // Generar tokens como FU-RAZ
+            this.deviceToken = crypto.randomBytes(16);
+            this.deviceRnd = crypto.randomBytes(16);
+            
+            // Crear payload de negociación compatible con FU-RAZ
+            const negotiationData = Buffer.concat([this.deviceToken, this.deviceRnd]);
+            
+            // Derivar negotiationKey usando localKey (para descifrar respuesta)
+            this.negotiationKey = this.deriveNegotiationKey(this.deviceToken, this.device.localKey);
+            
+            // Generar nonce para cifrado con FIXED_KEY
             const nonce = crypto.randomBytes(12);
             
-            // Crear payload de negociación con token del dispositivo
-            const timestamp = Math.floor(Date.now() / 1000);
-            const deviceToken = crypto.randomBytes(16).toString('hex');
-            
-            const payload = JSON.stringify({
-                t: timestamp,
-                rnd: deviceToken
-            });
-
-            // Derivar negotiationKey usando localKey (para descifrar respuesta posterior)
-            this.negotiationKey = this.deriveNegotiationKey(deviceToken, this.device.localKey);
-            
             // Crear AAD basado en FU-RAZ
-            const aad = this.createNegotiationAAD(this.device.getNextSequenceNumber(), payload.length);
+            const sequenceNumber = this.device.getNextSequenceNumber();
+            const aad = this.createNegotiationAAD(sequenceNumber, negotiationData.length);
             
-            // Cifrar con clave fija y nonce
+            // Cifrar con FIXED_KEY
             const cipher = crypto.createCipheriv('aes-128-gcm', FIXED_KEY, nonce);
             cipher.setAAD(aad);
             
-            let encrypted = cipher.update(payload, 'utf8');
+            let encrypted = cipher.update(negotiationData);
             cipher.final();
             const tag = cipher.getAuthTag();
             
             // Construir paquete Tuya
-            const packet = this.buildNegotiationPacket(nonce, encrypted, tag, aad);
+            const packet = this.buildNegotiationPacket(nonce, encrypted, tag, sequenceNumber);
             
             service.log('Sending negotiation request to ' + this.device.ip + ':' + NEGOTIATION_PORT);
             
@@ -104,42 +103,62 @@ class TuyaSessionNegotiator extends EventEmitter {
     }
 
     createNegotiationAAD(sequenceNumber, payloadLength) {
-        // AAD basado en FU-RAZ para negociación
-        const aad = Buffer.alloc(16);
+        // AAD complejo basado en FU-RAZ TuyaEncryptor.createAad
+        const aad = Buffer.alloc(32);
+        let offset = 0;
         
-        // Sequence number (4 bytes)
-        aad.writeUInt32BE(sequenceNumber, 0);
+        // versionReserved (4 bytes)
+        aad.writeUInt32BE(0x00000000, offset);
+        offset += 4;
         
-        // Command type para negociación (4 bytes)
-        aad.writeUInt32BE(0x03, 4);
+        // reserved (4 bytes) 
+        aad.writeUInt32BE(0x00000000, offset);
+        offset += 4;
         
-        // Payload length (4 bytes)
-        aad.writeUInt32BE(payloadLength, 8);
+        // sequence (4 bytes)
+        aad.writeUInt32BE(sequenceNumber, offset);
+        offset += 4;
         
-        // Device CRC o identificador (4 bytes) - usar gwId convertido
-        const deviceId = parseInt(this.device.gwId.slice(-8), 16) || 0;
-        aad.writeUInt32BE(deviceId, 12);
+        // message type (4 bytes) - 0x05 para negociación según FU-RAZ
+        aad.writeUInt32BE(0x05, offset);
+        offset += 4;
+        
+        // negotiator CRC (4 bytes) - usar device ID como CRC
+        const deviceCrc = parseInt(this.device.gwId.slice(-8), 16) || 0;
+        aad.writeUInt32BE(deviceCrc, offset);
+        offset += 4;
+        
+        // totalLength (4 bytes)
+        aad.writeUInt32BE(payloadLength + 28, offset); // +28 para nonce+tag+headers
+        offset += 4;
+        
+        // frameNum (4 bytes)
+        aad.writeUInt32BE(0x00000001, offset);
+        offset += 4;
+        
+        // padding (4 bytes)
+        aad.writeUInt32BE(0x00000000, offset);
         
         return aad;
     }
 
-    buildNegotiationPacket(nonce, encrypted, tag, aad) {
+    buildNegotiationPacket(nonce, encrypted, tag, sequenceNumber) {
         // Header Tuya
         const header = Buffer.from('000055aa', 'hex');
         
         // Sequence number
         const seqNo = Buffer.alloc(4);
-        seqNo.writeUInt32BE(this.device.getNextSequenceNumber(), 0);
+        seqNo.writeUInt32BE(sequenceNumber, 0);
         
-        // Command type (negociación)
-        const command = Buffer.from('00000003', 'hex');
+        // Command type - 0x05 para negociación
+        const command = Buffer.from('00000005', 'hex');
         
         // Data (nonce + encrypted + tag)
         const data = Buffer.concat([nonce, encrypted, tag]);
         
         // Data length
         const dataLength = Buffer.alloc(4);
-        dataLength.writeUInt32BE(data.length + 8, 0); // +8 para CRC y sufijo
+        dataLength.writeUInt32BE(data.length + 8, 0);
         
         // CRC placeholder
         const crc = Buffer.alloc(4);
@@ -147,7 +166,6 @@ class TuyaSessionNegotiator extends EventEmitter {
         // Footer
         const footer = Buffer.from('0000aa55', 'hex');
         
-        // Combinar todo
         const packet = Buffer.concat([header, seqNo, command, dataLength, data, crc, footer]);
         
         // Calcular CRC real
@@ -161,12 +179,11 @@ class TuyaSessionNegotiator extends EventEmitter {
         try {
             service.log('Received negotiation response from ' + rinfo.address);
             
-            // Verificar estructura del paquete
             if (data.length < 20) {
                 throw new Error('Invalid response packet');
             }
             
-            // Verificar CRC del paquete
+            // Verificar CRC
             const calculatedCRC = this.calculateCRC(data.slice(0, data.length - 8));
             const receivedCRC = data.readUInt32BE(data.length - 8);
             
@@ -178,7 +195,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             const dataLength = data.readUInt32BE(12);
             const encryptedData = data.slice(16, 16 + dataLength - 8);
             
-            if (encryptedData.length < 28) { // 12 nonce + 16 tag mínimo
+            if (encryptedData.length < 28) {
                 throw new Error('Invalid encrypted data length');
             }
             
@@ -186,17 +203,19 @@ class TuyaSessionNegotiator extends EventEmitter {
             const ciphertext = encryptedData.slice(12, -16);
             const tag = encryptedData.slice(-16);
             
+            // Crear AAD para descifrado de respuesta
+            const responseAAD = this.createResponseAAD(data.slice(4, 16));
+            
             // Descifrar usando negotiationKey (clave intermedia)
             const decipher = crypto.createDecipheriv('aes-128-gcm', this.negotiationKey, nonce);
+            decipher.setAAD(responseAAD);
             decipher.setAuthTag(tag);
             
             let decrypted = decipher.update(ciphertext);
             decipher.final();
             
-            const responseData = JSON.parse(decrypted.toString());
-            
-            // Derivar session key final usando el protocolo FU-RAZ
-            const sessionKey = this.deriveSessionKeyFinal(responseData, this.device.localKey);
+            // Derivar session key final usando protocolo FU-RAZ
+            const sessionKey = this.deriveSessionKeyFinal(decrypted);
             
             if (sessionKey) {
                 service.log('Session key negotiated successfully for device: ' + this.device.id);
@@ -214,17 +233,24 @@ class TuyaSessionNegotiator extends EventEmitter {
         }
     }
 
+    createResponseAAD(headerData) {
+        // AAD para descifrar respuesta
+        const aad = Buffer.alloc(16);
+        headerData.copy(aad, 0, 0, 12);
+        aad.fill(0, 12);
+        return aad;
+    }
+
     deriveNegotiationKey(deviceToken, localKey) {
         try {
-            // Algoritmo de derivación basado en FU-RAZ: cifrar token con localKey
+            // Algoritmo FU-RAZ: cifrar deviceToken con localKey
             const key = Buffer.from(localKey, 'hex');
-            const nonce = crypto.randomBytes(12);
+            const nonce = deviceToken.slice(0, 12); // Usar parte del token como nonce
             
             const cipher = crypto.createCipheriv('aes-128-gcm', key, nonce);
-            let encrypted = cipher.update(deviceToken, 'utf8');
+            let encrypted = cipher.update(deviceToken);
             cipher.final();
             
-            // Usar los primeros 16 bytes del encrypted como negotiationKey
             return encrypted.slice(0, 16);
             
         } catch (error) {
@@ -233,18 +259,18 @@ class TuyaSessionNegotiator extends EventEmitter {
         }
     }
 
-    deriveSessionKeyFinal(responseData, localKey) {
+    deriveSessionKeyFinal(responseData) {
         try {
-            // Algoritmo de derivación final basado en FU-RAZ
-            const key = this.negotiationKey;
-            const payload = JSON.stringify(responseData);
-            const nonce = crypto.randomBytes(12);
+            // Extraer sessionToken de la respuesta (protocolo FU-RAZ)
+            const sessionToken = responseData.slice(0, 16);
             
-            const cipher = crypto.createCipheriv('aes-128-gcm', key, nonce);
-            let encrypted = cipher.update(payload, 'utf8');
+            // Derivar sessionKey final: cifrar sessionToken con negotiationKey
+            const nonce = this.deviceRnd.slice(0, 12);
+            
+            const cipher = crypto.createCipheriv('aes-128-gcm', this.negotiationKey, nonce);
+            let encrypted = cipher.update(sessionToken);
             cipher.final();
             
-            // Los primeros 16 bytes del resultado son la sessionKey
             return encrypted.slice(0, 16).toString('hex');
             
         } catch (error) {

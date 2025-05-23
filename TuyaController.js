@@ -6,6 +6,7 @@
 import TuyaDeviceModel from './models/TuyaDeviceModel.js';
 import TuyaSessionNegotiator from './negotiators/TuyaSessionNegotiator.js';
 import TuyaCommandEncryptor from './crypto/TuyaCommandEncryptor.js';
+import DeviceList from './DeviceList.js';
 import udp from "@SignalRGB/udp";
 
 class TuyaController {
@@ -135,6 +136,9 @@ class TuyaController {
 
             const rgb = rgbArray[0]; // Usar primer color
             
+            // Obtener configuración DPS para el tipo de dispositivo
+            const deviceConfig = DeviceList.getDeviceTypeConfig(this.device.deviceType);
+            
             // Convertir RGB a HSV para formato Tuya
             const hsv = this.rgbToHsv(rgb.r, rgb.g, rgb.b);
             
@@ -145,12 +149,16 @@ class TuyaController {
             
             const colorString = h + s + v;
             
-            // Payload DPS según protocolo Tuya
+            // Construir payload DPS usando configuración del dispositivo
+            const dpsPayload = {};
+            dpsPayload[deviceConfig.dps.power] = true;
+            dpsPayload[deviceConfig.dps.mode] = "colour";
+            dpsPayload[deviceConfig.dps.color] = colorString;
+            dpsPayload[deviceConfig.dps.brightness] = Math.round(hsv.v * 255);
+            
             const payload = {
-                "1": true,          // Encender dispositivo
-                "2": "colour",      // Modo color
-                "5": colorString,   // Datos de color HSV
-                "3": 255           // Brillo (0-255)
+                "dps": dpsPayload,
+                "t": Math.floor(Date.now() / 1000)
             };
             
             return JSON.stringify(payload);
@@ -188,13 +196,13 @@ class TuyaController {
 
     sendCommand(encryptedData) {
         try {
-            // Crear socket si no existe (reutilizar)
+            // Crear socket persistente si no existe
             if (!this.socket) {
-                this.socket = udp.createSocket();
+                this.socket = udp.createSocket('udp4');
                 
                 this.socket.on('error', (error) => {
                     service.log('Command socket error: ' + error.message);
-                    this.socket = null; // Recrear en próximo uso
+                    this.socket = null;
                 });
             }
             

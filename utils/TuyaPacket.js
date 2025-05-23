@@ -240,7 +240,7 @@ class TuyaPacket {
      * @returns {number} - Valor CRC calculado
      */
     static calculateCRC(buffer) {
-        // CORREGIDO: CRC32 estándar en lugar de MD5
+        // CORREGIDO: CRC32 estándar bit a bit
         let crc = 0xFFFFFFFF;
         
         for (let i = 0; i < buffer.length; i++) {

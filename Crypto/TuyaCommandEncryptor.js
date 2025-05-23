@@ -11,10 +11,10 @@ class TuyaCommandEncryptor {
 
     encryptCommand(payload, sequenceNumber = 0) {
         try {
-            // Generar nonce aleatorio de 12 bytes (basado en FU-RAZ)
+            // Generar nonce aleatorio de 12 bytes
             const nonce = crypto.randomBytes(12);
             
-            // Crear AAD (Additional Authenticated Data)
+            // Crear AAD
             const aad = this.createAAD(sequenceNumber, payload.length);
             
             // CORREGIDO: Crear cipher AES-GCM con nonce

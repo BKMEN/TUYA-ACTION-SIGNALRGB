@@ -7,6 +7,7 @@
 import TuyaDiscovery from './comms/Discovery.js';
 import TuyaController from './TuyaController.js';
 import TuyaDeviceModel from './models/TuyaDeviceModel.js';
+import DeviceList from './DeviceList.js';
 
 // Información del plugin para SignalRGB
 export const Name = "Tuya LED Controller";
@@ -20,7 +21,7 @@ export const DefaultComponentBrand = "Tuya";
 export const VendorId = 0x2833;
 export const ProductId = 0x1337;
 
-// Parámetros controlables globales
+// Solo parámetros globales
 export const ControllableParameters = [
     { property: "debugMode", group: "settings", label: "Debug Mode", type: "boolean", default: false },
     { property: "discoveryTimeout", group: "settings", label: "Discovery Timeout (ms)", type: "int", min: 1000, max: 30000, default: 5000 }
@@ -51,13 +52,14 @@ export function Initialize() {
             }
         });
         
-        // Exponer funciones para QML
+        // Exponer para QML
         global.service = global.service || {};
         global.service.controllers = controllers;
         global.service.startDiscovery = startDiscovery;
         global.service.initialize = initializeService;
+        global.service.deviceTypes = DeviceList.getDeviceTypes();
         
-        // Eventos para QML (comunicación JS -> QML)
+        // Eventos para QML
         global.service.deviceConfigured = (deviceId) => {
             service.log('Device configured: ' + deviceId);
         };
@@ -90,18 +92,22 @@ export function Render() {
     try {
         controllers.forEach(controller => {
             if (controller.device && controller.device.isReady()) {
-                // Obtener color actual de SignalRGB para este dispositivo
+                // Obtener colores de SignalRGB
                 const ledColors = [];
+                const ledCount = controller.device.ledCount || 1;
                 
-                // Para simplificar, usar color del primer LED
-                if (device && typeof device.getLed === 'function') {
-                    const color = device.getLed(0);
-                    ledColors.push({
-                        r: color[0],
-                        g: color[1], 
-                        b: color[2]
-                    });
-                    
+                for (let i = 0; i < ledCount; i++) {
+                    if (device && typeof device.getLed === 'function') {
+                        const color = device.getLed(i);
+                        ledColors.push({
+                            r: color[0],
+                            g: color[1], 
+                            b: color[2]
+                        });
+                    }
+                }
+                
+                if (ledColors.length > 0) {
                     controller.setColor(ledColors);
                 }
             }
@@ -129,14 +135,12 @@ export function Shutdown() {
     try {
         service.log("Shutting down Tuya LED Controller Plugin");
         
-        // Limpiar controladores
         controllers.forEach(controller => {
             if (typeof controller.cleanup === 'function') {
                 controller.cleanup();
             }
         });
         
-        // Detener descubrimiento
         if (discoveryService) {
             discoveryService.stopDiscovery();
         }
@@ -149,11 +153,9 @@ export function Shutdown() {
 }
 
 export function DiscoveryService() {
-    // Función llamada por SignalRGB para descubrimiento automático
     startDiscovery();
 }
 
-// Funciones auxiliares
 function startDiscovery() {
     if (discoveryService) {
         discoveryService.startDiscovery();
@@ -166,14 +168,12 @@ function initializeService() {
 
 function handleDeviceDiscovered(deviceData) {
     try {
-        // Verificar si ya existe
         const existing = controllers.find(c => c.device.id === deviceData.id);
         if (existing) {
             existing.device.updateFromDiscovery(deviceData);
             return;
         }
 
-        // Crear nuevo dispositivo y controlador
         const device = new TuyaDeviceModel(deviceData);
         const controller = new TuyaController(device);
         
@@ -181,10 +181,8 @@ function handleDeviceDiscovered(deviceData) {
         
         service.log('New device added: ' + device.id);
         
-        // Guardar lista actualizada
         saveDeviceList();
         
-        // Si tiene localKey y está habilitado, iniciar negociación
         if (device.localKey && device.enabled) {
             controller.startNegotiation();
         }
@@ -215,7 +213,6 @@ function loadSavedDevices() {
                 const controller = new TuyaController(device);
                 controllers.push(controller);
                 
-                // Si está habilitado, intentar conectar
                 if (device.enabled && device.localKey) {
                     controller.startNegotiation();
                 }
@@ -238,7 +235,6 @@ function saveDeviceList() {
     }
 }
 
-// Función de validación para SignalRGB
 export function Validate(endpoint) {
     return endpoint.interface === 0;
 }

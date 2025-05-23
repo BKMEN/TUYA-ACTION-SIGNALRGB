@@ -6,7 +6,6 @@ import crypto from 'crypto';
 import TuyaPacket from '../utils/TuyaPacket.js';
 import udp from "@SignalRGB/udp";
 import EventEmitter from 'events';
-import os from 'os';
 
 const DISCOVERY_PORT = 6667;
 const BROADCAST_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn').digest(); // Clave fija del protocolo Tuya
@@ -33,8 +32,7 @@ class TuyaDiscovery extends EventEmitter {
             this.isDiscovering = true;
             this.discoveredDevices.clear();
             
-            // Usar UDP de SignalRGB
-            this.socket = udp.createSocket();
+            this.socket = udp.createSocket('udp4');
             
             this.socket.on('message', (data, rinfo) => {
                 this.handleBroadcastMessage(data, rinfo);
@@ -46,11 +44,9 @@ class TuyaDiscovery extends EventEmitter {
                 this.stopDiscovery();
             });
             
-            // Bind al puerto de descubrimiento
             this.socket.bind(this.port, () => {
                 this._log('Discovery started on port ' + this.port);
                 
-                // Auto-stop después del timeout
                 setTimeout(() => {
                     this.stopDiscovery();
                 }, this.timeout);
@@ -67,21 +63,18 @@ class TuyaDiscovery extends EventEmitter {
         try {
             // Verificar CRC del paquete antes de descifrar
             if (!this.verifyCRC(data)) {
-                return; // Ignorar paquetes con CRC inválido
+                return;
             }
             
-            // Intentar descifrar el mensaje de broadcast
             const deviceInfo = this.decryptBroadcast(data, rinfo);
             
             if (deviceInfo && deviceInfo.gwId) {
                 const deviceId = deviceInfo.gwId;
                 
-                // Evitar duplicados
                 if (this.discoveredDevices.has(deviceId)) {
                     return;
                 }
                 
-                // Agregar información de red
                 deviceInfo.ip = rinfo.address;
                 deviceInfo.discoveryPort = rinfo.port;
                 deviceInfo.id = deviceId;
@@ -93,7 +86,6 @@ class TuyaDiscovery extends EventEmitter {
             }
             
         } catch (error) {
-            // Ignorar mensajes que no se pueden descifrar
             this._log('Failed to process broadcast: ' + error.message);
         }
     }
@@ -102,10 +94,7 @@ class TuyaDiscovery extends EventEmitter {
         try {
             if (data.length < 20) return false;
             
-            // Extraer CRC del paquete
             const receivedCRC = data.readUInt32BE(data.length - 8);
-            
-            // Calcular CRC de todo excepto CRC y footer
             const calculatedCRC = TuyaPacket.calculateCRC(data.slice(0, data.length - 8));
             
             return receivedCRC === calculatedCRC;
@@ -117,12 +106,10 @@ class TuyaDiscovery extends EventEmitter {
 
     decryptBroadcast(data, rinfo) {
         try {
-            // Verificar estructura básica del paquete Tuya
             if (data.length < 20) {
                 return null;
             }
 
-            // Verificar header Tuya
             const header = data.slice(0, 4);
             if (!header.equals(Buffer.from('000055aa', 'hex'))) {
                 return null;
@@ -135,18 +122,18 @@ class TuyaDiscovery extends EventEmitter {
                 return null;
             }
 
-            const encryptedData = data.slice(16, 16 + dataLength - 8); // Excluir CRC y footer
+            const encryptedData = data.slice(16, 16 + dataLength - 8);
             
-            // Para protocolo 3.4+, usar AES-GCM con clave fija
-            if (encryptedData.length >= 28) { // 12 IV + 16 tag mínimo
+            // Para protocolo 3.4+, usar AES-GCM
+            if (encryptedData.length >= 28) {
                 // Offsets corregidos basados en FU-RAZ
                 const iv = encryptedData.slice(0, 12);
                 const ciphertext = encryptedData.slice(12, -16);
                 const tag = encryptedData.slice(-16);
                 
                 try {
-                    // Crear AAD basado en el protocolo
-                    const aad = this.createBroadcastAAD(data.slice(4, 16)); // seqNo + command + length
+                    // Crear AAD para broadcast
+                    const aad = this.createBroadcastAAD(data.slice(4, 16));
                     
                     const decipher = crypto.createDecipheriv('aes-128-gcm', BROADCAST_KEY, iv);
                     decipher.setAAD(aad);
@@ -159,7 +146,7 @@ class TuyaDiscovery extends EventEmitter {
                     return deviceData;
                     
                 } catch (decryptError) {
-                    // Intentar como texto plano (protocolo 3.3)
+                    // Fallback a texto plano (protocolo 3.3)
                     try {
                         const deviceData = JSON.parse(encryptedData.toString());
                         return deviceData;
@@ -201,7 +188,7 @@ class TuyaDiscovery extends EventEmitter {
             this.isDiscovering = false;
             this._log('Discovery stopped. Found ' + this.discoveredDevices.size + ' devices');
             
-            // Emitir evento para que index.js llame a service.discoveryComplete
+            // Emitir evento para index.js
             this.emit('discoveryStopped');
             
         } catch (error) {
