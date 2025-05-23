@@ -1,256 +1,179 @@
 /**
- * Clase para descubrir dispositivos Tuya en la red local.
- * Implementa el protocolo de descubrimiento UDP de Tuya y emite eventos
- * cuando se encuentran dispositivos.
- * 
- * @author BKMEN
- * @version 1.0.0
+ * Servicio de descubrimiento basado en TuyaBroadcast del plugin FU-RAZ
  */
 
-const dgram = require('dgram');
-const EventEmitter = require('events');
-const os = require('os');
-let crypto;
+import crypto from 'crypto';
+import dgram from 'dgram';
+import EventEmitter from 'events';
+import os from 'os';
 
-// PROBLEMA: Intenta cargar un módulo personalizado de crypto
-try {
-    crypto = require('../crypto');
-    if (!crypto) {
-        throw new Error('Crypto module is not loaded');
-    }
-    if (typeof crypto.createDiscoveryPacket !== 'function') {
-        console.error('Failed to load crypto module: - Using emergency fallback. Note: This fallback is not recommended for production as it may lack proper security and functionality.');
-        throw new Error('Invalid crypto module implementation: createDiscoveryPacket is not a function');
-    }
-    if (typeof crypto.parseDiscoveryResponse !== 'function') {
-        console.error('Crypto module is missing the parseDiscoveryResponse function');
-        throw new Error('Invalid crypto module implementation: parseDiscoveryResponse is not a function');
-    }
-} catch (err) {
-    console.error('Failed to load crypto module:', err.message);
-    // Fallback de emergencia (no recomendado)
-    crypto = {
-        // Fallback implementation for createDiscoveryPacket.
-        // WARNING: This uses a hardcoded buffer and may become incompatible if the Tuya protocol changes.
-        // To update this fallback, replace the buffer with the correct discovery packet format.
-        createDiscoveryPacket: () => Buffer.from('000055aa00000000000000070000000100000000', 'hex'),
-        parseDiscoveryResponse: (msg, rinfo) => {
-            console.warn('Fallback parseDiscoveryResponse called. This may not provide accurate results.');
-            return { message: msg.toString(), remoteInfo: rinfo };
-        }
-    };
-}
+const DISCOVERY_PORT = 6667;
+const BROADCAST_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn').digest(); // Clave fija del protocolo Tuya
 
-// Añade nombre a la clase para evitar cargar como plugin
 class TuyaDiscovery extends EventEmitter {
     constructor(options = {}) {
         super();
-        this.constructor.name = "TuyaDiscovery"; // Evita que SignalRGB lo cargue como plugin
-        this.port = options.port !== undefined ? options.port : 6667;
+        this.constructor.name = "TuyaDiscovery";
+        this.port = DISCOVERY_PORT;
         this.timeout = options.timeout || 5000;
-        this.broadcastAddress = Array.isArray(options.broadcastAddress) 
-            ? options.broadcastAddress 
-            : (options.broadcastAddress ? [options.broadcastAddress] : this._getBroadcastAddresses());
-        this.retries = options.retries || 3;
-        this.retryDelay = options.retryDelay || 1000;
-        this.debugMode = options.debugMode || false;
-        this.logger = options.logger || console;
-        this.defaultBroadcastAddress = options.defaultBroadcastAddress || '255.255.255.255';
-        this.includeRawData = options.includeRawData || false;
-
-        // The `socket` property is used to manage the UDP socket for sending and receiving discovery packets.
-        // It is initialized as `null` and created when discovery starts. It is closed and set back to `null` when discovery stops.
         this.socket = null;
-        this.devices = {};
-        this.discoveryRunning = false;
-        this.currentRetry = 0;
-        this.discoveryTimer = null;
+        this.discoveredDevices = new Map();
+        this.isDiscovering = false;
+        this.debugMode = options.debugMode || false;
     }
 
-    discover() {
-        return new Promise((resolve, reject) => {
-            if (this.discoveryRunning) {
-                reject(new Error('Discovery already running'));
-                return;
-            }
-            this.discoveryRunning = true;
-            this.devices = {};
-            this.currentRetry = 0;
-            this._log('Starting Tuya device discovery');
-            this._startDiscovery();
-            this.once('done', (devices) => {
-                this.discoveryRunning = false;
-                resolve(devices);
+    startDiscovery() {
+        if (this.isDiscovering) {
+            this._log('Discovery already in progress');
+            return;
+        }
+
+        try {
+            this.isDiscovering = true;
+            this.discoveredDevices.clear();
+            
+            // Crear socket UDP para escuchar broadcasts
+            this.socket = dgram.createSocket('udp4');
+            
+            this.socket.on('message', (data, rinfo) => {
+                this.handleBroadcastMessage(data, rinfo);
             });
-            this.once('error', (err) => {
-                this.discoveryRunning = false;
-                if (this.socket) {
-                    this.socket.close();
-                    this.socket = null;
+            
+            this.socket.on('error', (error) => {
+                this._log('Discovery socket error: ' + error.message);
+                this.emit('error', error);
+                this.stopDiscovery();
+            });
+            
+            // Bind al puerto de descubrimiento
+            this.socket.bind(this.port, () => {
+                this._log('Discovery started on port ' + this.port);
+                
+                // Auto-stop después del timeout
+                setTimeout(() => {
+                    this.stopDiscovery();
+                }, this.timeout);
+            });
+            
+        } catch (error) {
+            this._log('Error starting discovery: ' + error.message);
+            this.emit('error', error);
+            this.isDiscovering = false;
+        }
+    }
+
+    handleBroadcastMessage(data, rinfo) {
+        try {
+            // Intentar descifrar el mensaje de broadcast usando el protocolo FU-RAZ
+            const deviceInfo = this.decryptBroadcast(data, rinfo);
+            
+            if (deviceInfo && deviceInfo.gwId) {
+                const deviceId = deviceInfo.gwId;
+                
+                // Evitar duplicados
+                if (this.discoveredDevices.has(deviceId)) {
+                    return;
                 }
-                reject(err);
-            });
-        });
+                
+                // Agregar información de red
+                deviceInfo.ip = rinfo.address;
+                deviceInfo.discoveryPort = rinfo.port;
+                deviceInfo.id = deviceId;
+                
+                this.discoveredDevices.set(deviceId, deviceInfo);
+                
+                this._log('Device discovered: ' + deviceId + ' at ' + rinfo.address);
+                this.emit('deviceDiscovered', deviceInfo);
+            }
+            
+        } catch (error) {
+            // Ignorar mensajes que no se pueden descifrar
+            this._log('Failed to decrypt broadcast: ' + error.message);
+        }
     }
 
-    stop() {
-        if (this.discoveryRunning) {
-            if (this.discoveryTimer) clearTimeout(this.discoveryTimer);
+    decryptBroadcast(data, rinfo) {
+        try {
+            // Verificar estructura básica del paquete Tuya
+            if (data.length < 20) {
+                return null;
+            }
+
+            // Verificar header Tuya
+            const header = data.slice(0, 4);
+            if (!header.equals(Buffer.from('000055aa', 'hex'))) {
+                return null;
+            }
+
+            const command = data.readUInt32BE(8);
+            const dataLength = data.readUInt32BE(12);
+            
+            if (dataLength === 0) {
+                return null;
+            }
+
+            const encryptedData = data.slice(16, 16 + dataLength - 8); // Excluir CRC
+            
+            // Para protocolo 3.4+, usar AES-GCM con clave fija
+            if (encryptedData.length >= 12) {
+                const iv = encryptedData.slice(0, 12);
+                const ciphertext = encryptedData.slice(12, -16);
+                const tag = encryptedData.slice(-16);
+                
+                try {
+                    const decipher = crypto.createDecipherGCM('aes-128-gcm', BROADCAST_KEY);
+                    decipher.setAuthTag(tag);
+                    
+                    let decrypted = decipher.update(ciphertext);
+                    decipher.final();
+                    
+                    const deviceData = JSON.parse(decrypted.toString());
+                    return deviceData;
+                    
+                } catch (decryptError) {
+                    // Intentar como texto plano (protocolo 3.3)
+                    try {
+                        const deviceData = JSON.parse(encryptedData.toString());
+                        return deviceData;
+                    } catch (jsonError) {
+                        return null;
+                    }
+                }
+            }
+
+            return null;
+            
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    stopDiscovery() {
+        if (!this.isDiscovering) return;
+        
+        try {
             if (this.socket) {
                 this.socket.close();
                 this.socket = null;
             }
-            this.discoveryRunning = false;
-            this.emit('done', Object.values(this.devices));
-        } else {
-            this._log('Stop called but discovery was not running. No event emitted.');
-        }
-    }
-
-    update() {
-        return this.discover();
-    }
-
-    _startDiscovery() {
-        if (this.socket) {
-            this._log('Closing existing socket before starting discovery');
-            this.socket.close();
-            this.socket = null;
-        }
-        try {
-            this.socket = dgram.createSocket('udp4');
-            this.socket.on('error', (err) => {
-                this._log(`Socket error: ${err.message}`);
-                this.emit('error', err);
-            });
-            this.socket.on('message', this._handleDiscoveryResponse.bind(this));
-            this.socket.bind((err) => {
-                if (err) {
-                    this._log(`Error binding socket: ${err.message}`);
-                    this.emit('error', err);
-                    return; // Termina aquí si hay error al hacer bind
-                }
-                this.socket.setBroadcast(true);
-                this._sendDiscoveryPackets();
-                if (this.discoveryTimer) clearTimeout(this.discoveryTimer);
-                this.discoveryTimer = setTimeout(() => {
-                    if (this.currentRetry < this.retries - 1) {
-                        this.currentRetry++;
-                        this._log(`Retry ${this.currentRetry}/${this.retries}`);
-                        this._sendDiscoveryPackets();
-                    } else {
-                        this._finalizeDiscovery();
-                    }
-                }, this.timeout);
-            });
-        } catch (err) {
-            this._log(`Error starting discovery: ${err.message}`);
-            this.emit('error', err);
-        }
-    }
-
-    _handleDiscoveryResponse(msg, rinfo) {
-        try {
-            const deviceInfo = crypto.parseDiscoveryResponse(msg, rinfo);
-            if (deviceInfo && typeof deviceInfo === 'object' && deviceInfo.id && deviceInfo.ip) {
-                if (!this.devices[deviceInfo.id] ||
-                    JSON.stringify(this.devices[deviceInfo.id]) !== JSON.stringify(deviceInfo)) {
-                    this.devices[deviceInfo.id] = deviceInfo;
-                    this._log(`Device found: ${deviceInfo.id} (${deviceInfo.ip})`);
-                    this.emit('device', deviceInfo);
-                }
-            } else {
-                this._log('Invalid device information received, skipping.');
+            
+            this.isDiscovering = false;
+            this._log('Discovery stopped. Found ' + this.discoveredDevices.size + ' devices');
+            
+            // Emitir evento de finalización
+            if (typeof service.discoveryComplete === 'function') {
+                service.discoveryComplete();
             }
-        } catch (err) {
-            this._log(`Error processing response: ${err.message}`);
+            
+        } catch (error) {
+            this._log('Error stopping discovery: ' + error.message);
         }
-    }
-
-    _sendDiscoveryPackets() {
-        try {
-            const discoveryPacket = crypto.createDiscoveryPacket();
-            const addresses = Array.isArray(this.broadcastAddress) ? this.broadcastAddress : [this.broadcastAddress];
-            addresses.forEach(address => {
-                this._log(`Sending discovery packet to ${address}:${this.port}`);
-                this._sendWithRetry(discoveryPacket, address, this.port);
-            });
-        } catch (err) {
-            this._log(`Error creating discovery packet: ${err.message}`);
-            this.emit('error', err);
-        }
-    }
-
-    _sendWithRetry(packet, address, port, attempt = 0, maxRetries = 3) {
-        this.socket.send(packet, 0, packet.length, port, address, (err) => {
-            if (err) {
-                this._log(`Error sending to ${address}: ${err.message}`);
-                if (attempt < maxRetries) {
-                    this._log(`Retrying send to ${address} (${attempt + 1}/${maxRetries})`);
-                    this._sendWithRetry(packet, address, port, attempt + 1, maxRetries);
-                } else {
-                    this._log(`Failed to send to ${address} after ${maxRetries} attempts`);
-                }
-            }
-        });
-    }
-
-    _finalizeDiscovery() {
-        this._log(`Discovery complete, found ${Object.keys(this.devices).length} devices`);
-        if (this.discoveryTimer) {
-            clearTimeout(this.discoveryTimer);
-            this.discoveryTimer = null;
-        }
-        if (this.socket) {
-            this.socket.close();
-            this.socket = null;
-        }
-        this.discoveryRunning = false;
-        this.emit('done', Object.values(this.devices));
-    }
-
-    _getBroadcastAddresses() {
-        const addresses = [];
-        const interfaces = os.networkInterfaces();
-        Object.keys(interfaces).forEach((ifaceName) => {
-            interfaces[ifaceName].forEach((iface) => {
-                if (iface.family === 'IPv4' && !iface.internal && iface.address && iface.netmask) {
-                    try {
-                        const ipParts = iface.address.split('.').map(Number);
-                        const netmaskParts = iface.netmask.split('.').map(Number);
-                        
-                        // Calculate broadcast address
-                        if (ipParts.length === 4 && netmaskParts.length === 4) {
-                            const broadcastParts = ipParts.map((part, i) => {
-                                return (part & netmaskParts[i]) | (~netmaskParts[i] & 255);
-                            });
-                            addresses.push(broadcastParts.join('.'));
-                        } else {
-                            this._log(`Invalid IPv4 address or netmask: ${iface.address}, ${iface.netmask}`);
-                        }
-                    } catch (err) {
-                        this._log(`Error processing interface ${ifaceName}: ${err.message}`);
-                    }
-                }
-            });
-        });
-        
-        // If no valid addresses found, use default broadcast address
-        if (addresses.length === 0 && this.defaultBroadcastAddress) {
-            addresses.push(this.defaultBroadcastAddress);
-        }
-        
-        return addresses;
     }
 
     _log(message) {
-        if (this.debugMode && this.logger) {
+        if (this.debugMode) {
             const timestamp = new Date().toISOString();
-            if (typeof this.logger.log === 'function') {
-                this.logger.log(`[TuyaDiscovery ${timestamp}] ${message}`);
-            } else {
-                console.log(`[TuyaDiscovery ${timestamp}] ${message}`);
-            }
+            console.log(`[TuyaDiscovery ${timestamp}] ${message}`);
         }
     }
 }

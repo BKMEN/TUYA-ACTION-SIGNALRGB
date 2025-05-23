@@ -701,6 +701,151 @@ if (typeof TextEncoder === 'undefined') {
     global.TextDecoder = util.TextDecoder;
 }
 
+/**
+ * Plugin principal integrado para SignalRGB
+ */
+
+import TuyaDiscovery from './comms/Discovery.js';
+import TuyaController from './TuyaController.js';
+import TuyaDeviceModel from './models/TuyaDeviceModel.js';
+
+// Variables globales
+let discoveryService = null;
+let controllers = [];
+
+export function Initialize() {
+    try {
+        service.log("Initializing Tuya LED Controller Plugin v2.0.0");
+        
+        // Inicializar servicio de descubrimiento
+        discoveryService = new TuyaDiscovery({ debugMode: true });
+        
+        // Configurar eventos de descubrimiento
+        discoveryService.on('deviceDiscovered', handleDeviceDiscovered);
+        discoveryService.on('error', handleDiscoveryError);
+        
+        // Exponer funciones para QML
+        global.service = global.service || {};
+        global.service.controllers = controllers;
+        global.service.startDiscovery = startDiscovery;
+        global.service.initialize = initializeService;
+        
+        // Eventos para QML (comunicación JS -> QML)
+        global.service.deviceConfigured = (deviceId) => {
+            // QML recibirá este evento via Connections
+        };
+        
+        global.service.deviceError = (deviceId, error) => {
+            service.log(`Device error ${deviceId}: ${error}`);
+        };
+        
+        global.service.negotiationComplete = (deviceId) => {
+            service.log(`Negotiation complete for device: ${deviceId}`);
+        };
+        
+        global.service.discoveryComplete = () => {
+            service.log("Discovery process completed");
+        };
+        
+        // Cargar dispositivos guardados
+        loadSavedDevices();
+        
+        service.log("Plugin initialized successfully");
+        
+    } catch (error) {
+        service.log("Error initializing plugin: " + error.message);
+        throw error;
+    }
+}
+
+function startDiscovery() {
+    if (discoveryService) {
+        discoveryService.startDiscovery();
+    }
+}
+
+function initializeService() {
+    // Función llamada desde QML Component.onCompleted
+    service.log("Service initialized from QML");
+}
+
+function handleDeviceDiscovered(deviceData) {
+    try {
+        // Verificar si ya existe
+        const existing = controllers.find(c => c.device.id === deviceData.id);
+        if (existing) {
+            existing.device.updateFromDiscovery(deviceData);
+            return;
+        }
+
+        // Crear nuevo dispositivo y controlador
+        const device = new TuyaDeviceModel(deviceData);
+        const controller = new TuyaController(device);
+        
+        controllers.push(controller);
+        
+        service.log('New device added: ' + device.id);
+        
+        // Si tiene localKey y está habilitado, iniciar negociación
+        if (device.localKey && device.enabled) {
+            controller.startNegotiation();
+        }
+        
+    } catch (error) {
+        service.log('Error handling discovered device: ' + error.message);
+    }
+}
+
+function handleDiscoveryError(error) {
+    service.log('Discovery error: ' + error.message);
+    if (typeof service.deviceError === 'function') {
+        service.deviceError('discovery', error.message);
+    }
+}
+
+function loadSavedDevices() {
+    try {
+        const savedDeviceIds = service.getSetting('tuyaDevices', 'deviceList', '[]');
+        const deviceIds = JSON.parse(savedDeviceIds);
+        
+        deviceIds.forEach(deviceId => {
+            const configData = service.getSetting(deviceId, 'configData', '{}');
+            const config = JSON.parse(configData);
+            
+            if (config.id) {
+                const device = new TuyaDeviceModel(config);
+                const controller = new TuyaController(device);
+                controllers.push(controller);
+                
+                // Si está habilitado, intentar conectar
+                if (device.enabled && device.localKey) {
+                    controller.startNegotiation();
+                }
+            }
+        });
+        
+        // Guardar lista actualizada
+        saveDeviceList();
+        
+    } catch (error) {
+        service.log('Error loading saved devices: ' + error.message);
+    }
+}
+
+function saveDeviceList() {
+    try {
+        const deviceIds = controllers.map(c => c.device.id);
+        service.saveSetting('tuyaDevices', 'deviceList', JSON.stringify(deviceIds));
+    } catch (error) {
+        service.log('Error saving device list: ' + error.message);
+    }
+}
+
+export function DiscoveryService() {
+    // Función llamada por SignalRGB para descubrimiento automático
+    startDiscovery();
+}
+
 // Exportación en formato compatible con SignalRGB
 module.exports = {
     Name,

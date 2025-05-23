@@ -3,17 +3,17 @@ import QtQuick.Controls 2.15
 import QtQuick.Dialogs 1.3
 import QtQml 2.15
 
-ApplicationWindow {
-    id: window
+Item {
+    id: root
     width: 600
     height: 500
-    title: "Controlador LED Tuya"
+    //title: "Controlador LED Tuya"
     visible: true
 
     property var devices: []
     property int selectedDeviceIndex: -1
     property color selectedColor: "#ffffff"
-    property int ledCount: 30
+    property int globalLedCount: 30
     property bool isDiscovering: false
     property string statusMessage: ""
 
@@ -94,17 +94,12 @@ ApplicationWindow {
                         Button {
                             text: isDiscovering ? "Buscando..." : "Buscar Dispositivos"
                             enabled: !isDiscovering
-                            Material.background: Material.Blue
-                            Material.foreground: "white"
                             
                             onClicked: {
-                                if (service) {
+                                if (service && service.startDiscovery) {
                                     isDiscovering = true;
-                                    service.discoverDevices();
+                                    service.startDiscovery();
                                     showSuccess("Búsqueda iniciada...");
-                                    
-                                    // Simular finalización después de 3 segundos
-                                    Qt.createQmlObject("import QtQuick 2.15; Timer { interval: 3000; running: true; onTriggered: { window.isDiscovering = false; destroy(); } }", window);
                                 }
                             }
 
@@ -118,70 +113,173 @@ ApplicationWindow {
 
                         Text {
                             anchors.verticalCenter: parent.verticalCenter
-                            text: "Dispositivos encontrados: " + devices.length
+                            text: "Dispositivos: " + (service && service.controllers ? service.controllers.length : 0)
                             color: "#555"
                         }
                     }
                 }
             }
 
-            // Lista de dispositivos
+            // Lista de dispositivos configurables
             GroupBox {
-                title: "📱 Dispositivos Encontrados"
+                title: "📱 Configuración de Dispositivos"
                 width: parent.width
 
                 ListView {
                     id: deviceList
                     width: parent.width
-                    height: Math.min(200, contentHeight)
-                    model: devices
-                    currentIndex: selectedDeviceIndex
+                    height: Math.min(400, contentHeight)
+                    model: service ? service.controllers : []
+                    spacing: 8
 
                     delegate: Rectangle {
+                        id: deviceItem
                         width: parent.width
-                        height: 50
-                        color: ListView.isCurrentItem ? "#e3f2fd" : "transparent"
-                        border.color: ListView.isCurrentItem ? "#1976d2" : "#ddd"
+                        height: deviceColumn.height + 20
+                        color: "#f8f9fa"
+                        border.color: "#e9ecef"
                         border.width: 1
-                        radius: 5
+                        radius: 8
 
-                        MouseArea {
-                            anchors.fill: parent
-                            onClicked: {
-                                deviceList.currentIndex = index;
-                                selectedDeviceIndex = index;
-                                showSuccess("Dispositivo seleccionado: " + modelData.id);
-                            }
-                        }
+                        // Acceso al controlador del dispositivo (similar a FU-RAZ)
+                        property var controller: model.modelData
 
-                        Row {
+                        Column {
+                            id: deviceColumn
                             anchors.left: parent.left
-                            anchors.leftMargin: 15
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 15
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 10
+                            spacing: 8
 
-                            Rectangle {
-                                width: 12
-                                height: 12
-                                radius: 6
-                                color: modelData.online ? "#4caf50" : "#f44336"
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
+                            // Información del dispositivo
+                            Row {
+                                width: parent.width
+                                spacing: 10
 
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: 2
-
-                                Text {
-                                    text: "📟 " + (modelData.id || "ID Desconocido")
-                                    font.bold: true
-                                    color: "#333"
+                                Rectangle {
+                                    width: 10
+                                    height: 10
+                                    radius: 5
+                                    color: (controller && controller.device && controller.device.initialized) ? "#4caf50" : "#f44336"
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
 
+                                Column {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: 2
+
+                                    Text {
+                                        text: "📟 " + (controller && controller.device ? controller.device.id : "ID Desconocido")
+                                        font.bold: true
+                                        color: "#333"
+                                        font.pixelSize: 14
+                                    }
+
+                                    Text {
+                                        text: "🌐 " + (controller && controller.device ? controller.device.ip : "IP Desconocida") + 
+                                              " • " + (controller && controller.device && controller.device.initialized ? "Conectado" : "Desconectado")
+                                        color: "#666"
+                                        font.pixelSize: 11
+                                    }
+                                }
+                            }
+
+                            // Controles de configuración
+                            Grid {
+                                width: parent.width
+                                columns: 2
+                                columnSpacing: 15
+                                rowSpacing: 8
+
+                                // Habilitar dispositivo
+                                Row {
+                                    spacing: 8
+                                    Text {
+                                        text: "Habilitado:"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        font.pixelSize: 12
+                                    }
+                                    Switch {
+                                        id: enabledSwitch
+                                        checked: controller && controller.device ? controller.device.enabled : false
+                                    }
+                                }
+
+                                // Tipo de dispositivo
+                                Row {
+                                    spacing: 8
+                                    Text {
+                                        text: "Tipo:"
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        font.pixelSize: 12
+                                    }
+                                    ComboBox {
+                                        id: deviceTypeCombo
+                                        width: 120
+                                        model: ["LED Strip", "LED Bulb", "LED Panel"]
+                                        currentIndex: {
+                                            if (controller && controller.device) {
+                                                let type = controller.device.deviceType || "LED Strip";
+                                                return model.indexOf(type);
+                                            }
+                                            return 0;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Local Key (campo de contraseña)
+                            Row {
+                                width: parent.width
+                                spacing: 8
+                                
                                 Text {
-                                    text: "🌐 " + (modelData.ip || "IP Desconocida") + " • " + (modelData.online ? "En línea" : "Desconectado")
-                                    color: "#666"
+                                    text: "Local Key:"
+                                    anchors.verticalCenter: parent.verticalCenter
                                     font.pixelSize: 12
+                                    width: 80
+                                }
+                                
+                                TextField {
+                                    id: localKeyField
+                                    width: parent.width - 180
+                                    placeholderText: "Ingrese la clave local del dispositivo..."
+                                    echoMode: TextInput.Password
+                                    text: controller && controller.device ? (controller.device.localKey || "") : ""
+                                    font.pixelSize: 11
+                                }
+                                
+                                Button {
+                                    text: "👁"
+                                    width: 30
+                                    height: 30
+                                    onClicked: {
+                                        localKeyField.echoMode = localKeyField.echoMode === TextInput.Password ? 
+                                                                 TextInput.Normal : TextInput.Password;
+                                    }
+                                }
+                            }
+
+                            // Botón guardar configuración
+                            Button {
+                                text: "💾 Guardar Configuración"
+                                enabled: localKeyField.text.length > 0
+                                width: parent.width
+                                
+                                onClicked: {
+                                    if (controller && typeof controller.updateDeviceConfig === "function") {
+                                        try {
+                                            controller.updateDeviceConfig(
+                                                localKeyField.text,
+                                                enabledSwitch.checked,
+                                                deviceTypeCombo.currentText
+                                            );
+                                            showSuccess("Dispositivo " + controller.device.id + " configurado");
+                                        } catch (e) {
+                                            showError("Error configurando dispositivo: " + e.toString());
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -198,52 +296,9 @@ ApplicationWindow {
                 }
             }
 
-            // Control de color
+            // Control global de color (simplificado)
             GroupBox {
-                title: "🎨 Selección de Color"
-                width: parent.width
-
-                Row {
-                    spacing: 15
-                    anchors.horizontalCenter: parent.horizontalCenter
-
-                    Button {
-                        text: "Elegir Color"
-                        Material.background: Material.Indigo
-                        Material.foreground: "white"
-                        onClicked: colorDialog.open()
-                    }
-
-                    Rectangle {
-                        width: 60
-                        height: 40
-                        color: selectedColor
-                        border.color: "#888"
-                        border.width: 1
-                        radius: 5
-
-                        Text {
-                            anchors.centerIn: parent
-                            text: "👁"
-                            color: Qt.colorEqual(selectedColor, "#ffffff") ? "#333" : "white"
-                            font.pixelSize: 18
-                        }
-                    }
-
-                    Text {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "RGB: " + Math.round(selectedColor.r * 255) + ", " + 
-                              Math.round(selectedColor.g * 255) + ", " + 
-                              Math.round(selectedColor.b * 255)
-                        color: "#555"
-                        font.family: "monospace"
-                    }
-                }
-            }
-
-            // Control de LEDs
-            GroupBox {
-                title: "💡 Cantidad de LEDs"
+                title: "🎨 Control Global"
                 width: parent.width
 
                 Column {
@@ -251,114 +306,76 @@ ApplicationWindow {
                     spacing: 10
 
                     Row {
-                        width: parent.width
                         spacing: 15
+                        anchors.horizontalCenter: parent.horizontalCenter
 
-                        Text {
-                            text: "LEDs:"
-                            anchors.verticalCenter: parent.verticalCenter
-                            font.bold: true
+                        Button {
+                            text: "Elegir Color"
+                            Material.background: Material.Indigo
+                            Material.foreground: "white"
+                            onClicked: colorDialog.open()
                         }
 
-                        Slider {
-                            id: ledSlider
-                            from: 1
-                            to: 300
-                            value: ledCount
-                            width: parent.width - 150
-                            onValueChanged: ledCount = Math.round(value)
+                        Rectangle {
+                            width: 60
+                            height: 40
+                            color: selectedColor
+                            border.color: "#888"
+                            border.width: 1
+                            radius: 5
 
-                            background: Rectangle {
-                                x: ledSlider.leftPadding
-                                y: ledSlider.topPadding + ledSlider.availableHeight / 2 - height / 2
-                                width: ledSlider.availableWidth
-                                height: 4
-                                radius: 2
-                                color: "#e0e0e0"
+                            Text {
+                                anchors.centerIn: parent
+                                text: "👁"
+                                color: Qt.colorEqual(selectedColor, "#ffffff") ? "#333" : "white"
+                                font.pixelSize: 18
+                            }
+                        }
 
-                                Rectangle {
-                                    width: ledSlider.visualPosition * parent.width
-                                    height: parent.height
-                                    color: "#667eea"
-                                    radius: 2
+                        Text {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "RGB: " + Math.round(selectedColor.r * 255) + ", " + 
+                                  Math.round(selectedColor.g * 255) + ", " + 
+                                  Math.round(selectedColor.b * 255)
+                            color: "#555"
+                            font.family: "monospace"
+                        }
+                    }
+
+                    // Botón aplicar a todos
+                    Button {
+                        text: "🚀 Aplicar a Dispositivos Habilitados"
+                        width: parent.width
+                        enabled: service && service.controllers && service.controllers.length > 0
+                        
+                        onClicked: {
+                            if (service && service.controllers) {
+                                let applied = 0;
+                                service.controllers.forEach(controller => {
+                                    if (controller.device && controller.device.enabled && controller.device.initialized) {
+                                        try {
+                                            if (typeof controller.setColor === "function") {
+                                                let rgb = {
+                                                    r: Math.round(selectedColor.r * 255),
+                                                    g: Math.round(selectedColor.g * 255),
+                                                    b: Math.round(selectedColor.b * 255)
+                                                };
+                                                controller.setColor([rgb]);
+                                                applied++;
+                                            }
+                                        } catch (e) {
+                                            showError("Error en dispositivo " + controller.device.id + ": " + e.toString());
+                                        }
+                                    }
+                                });
+                                
+                                if (applied > 0) {
+                                    showSuccess("Color aplicado a " + applied + " dispositivos");
+                                } else {
+                                    showError("No hay dispositivos habilitados e inicializados");
                                 }
                             }
-
-                            handle: Rectangle {
-                                x: ledSlider.leftPadding + ledSlider.visualPosition * (ledSlider.availableWidth - width)
-                                y: ledSlider.topPadding + ledSlider.availableHeight / 2 - height / 2
-                                width: 20
-                                height: 20
-                                radius: 10
-                                color: ledSlider.pressed ? "#5a67d8" : "#667eea"
-                                border.color: "#4a5568"
-                                border.width: 1
-                            }
                         }
-
-                        Text {
-                            text: ledCount
-                            anchors.verticalCenter: parent.verticalCenter
-                            font.bold: true
-                            font.pixelSize: 16
-                            color: "#333"
-                            width: 40
-                        }
-                    }
-
-                    Text {
-                        text: "Rango: 1 - 300 LEDs"
-                        color: "#666"
-                        font.pixelSize: 12
-                    }
-                }
-            }
-
-            // Botón de envío
-            Button {
-                text: getButtonText()
-                enabled: selectedDeviceIndex >= 0 && devices[selectedDeviceIndex] && devices[selectedDeviceIndex].online
-                width: parent.width
-                height: 50
-                Material.background: enabled ? Material.Green : Material.Grey
-                Material.foreground: "white"
-                font.pixelSize: 16
-
-                onClicked: {
-                    if (selectedDeviceIndex < 0) {
-                        showError("No hay dispositivo seleccionado");
-                        return;
-                    }
-
-                    try {
-                        let dev = devices[selectedDeviceIndex];
-                        if (!dev) {
-                            showError("Dispositivo no válido");
-                            return;
-                        }
-
-                        if (!dev.online) {
-                            showError("El dispositivo está desconectado");
-                            return;
-                        }
-
-                        // Conversión de color QML a RGB
-                        let rgb = {
-                            r: Math.round(selectedColor.r * 255),
-                            g: Math.round(selectedColor.g * 255),
-                            b: Math.round(selectedColor.b * 255)
-                        };
-
-                        // Llamadas al servicio
-                        if (service) {
-                            service.setDeviceColor(dev.id, [rgb]);
-                            service.setDeviceLedCount(dev.id, ledCount);
-                            showSuccess("Configuración enviada a " + dev.id);
-                        } else {
-                            showError("Servicio no disponible");
-                        }
-                    } catch (e) {
-                        showError("Error inesperado: " + e.toString());
                     }
                 }
             }
@@ -416,6 +433,24 @@ ApplicationWindow {
         // Cargar dispositivos al iniciar
         if (service) {
             devices = service.getDevices();
+        }
+    }
+
+    // Conexiones para eventos del servicio (comunicación JS -> QML)
+    Connections {
+        target: service
+        function onDeviceConfigured(deviceId) {
+            showSuccess("Dispositivo configurado: " + deviceId);
+        }
+        function onDeviceError(deviceId, error) {
+            showError("Error en " + deviceId + ": " + error);
+        }
+        function onNegotiationComplete(deviceId) {
+            showSuccess("Conexión establecida con: " + deviceId);
+        }
+        function onDiscoveryComplete() {
+            isDiscovering = false;
+            showSuccess("Búsqueda completada");
         }
     }
 }
