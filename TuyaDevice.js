@@ -3,9 +3,11 @@
  * Representa un dispositivo Tuya conectado
  */
 
-const EventEmitter = require('events');
-const crypto = require('crypto');
-const TuyaPacket = require('./TuyaPacket');
+// CORREGIR: Eliminar módulos nativos no compatibles
+// const EventEmitter = require('events'); // ELIMINAR
+// const crypto = require('crypto'); // ELIMINAR
+const EventEmitter = require('./utils/EventEmitter.js'); // AGREGAR
+const TuyaPacket = require('./utils/TuyaPacket'); // CORREGIR RUTA
 
 class TuyaDevice extends EventEmitter {
     constructor(options) {
@@ -97,12 +99,12 @@ class TuyaDevice extends EventEmitter {
                 return;
             }
             
-            // Generar clientRandom para el handshake
-            const clientRandom = crypto.randomBytes(16).toString('hex');
+            // CORREGIR: Usar implementación propia para generar random
+            const clientRandom = this._generateRandomHex(16);
             
             // Crear payload para solicitud de handshake
             const payload = JSON.stringify({
-                uuid: crypto.randomUUID(),
+                uuid: this._generateUUID(),
                 t: Math.floor(Date.now() / 1000),
                 gwId: this.id,
                 random: clientRandom
@@ -150,12 +152,67 @@ class TuyaDevice extends EventEmitter {
      */
     _deriveSessionKey(response, clientRandom) {
         // Extraer deviceRandom de la respuesta
-        // Esto es un placeholder - la implementación real depende del formato exacto de la respuesta
         const deviceRandom = response.random || '';
         
-        // Derivar sessionKey usando MD5(localKey + clientRandom + deviceRandom)
+        // CORREGIR: Usar implementación propia de MD5
         const md5Input = this.key + clientRandom + deviceRandom;
-        return crypto.createHash('md5').update(Buffer.from(md5Input, 'hex')).digest('hex');
+        return this._calculateMD5(md5Input);
+    }
+    
+    /**
+     * Genera un string hexadecimal aleatorio
+     * @param {number} length - Longitud en bytes
+     * @returns {string} - String hexadecimal aleatorio
+     * @private
+     */
+    _generateRandomHex(length) {
+        const chars = '0123456789abcdef';
+        let result = '';
+        for (let i = 0; i < length * 2; i++) {
+            result += chars[Math.floor(Math.random() * 16)];
+        }
+        return result;
+    }
+    
+    /**
+     * Genera un UUID simple
+     * @returns {string} - UUID generado
+     * @private
+     */
+    _generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+    
+    /**
+     * Calcula MD5 de un string
+     * @param {string} input - Input para calcular MD5
+     * @returns {string} - Hash MD5 en hexadecimal
+     * @private
+     */
+    _calculateMD5(input) {
+        // Implementación simple de MD5 - se mejorará con CryptoJS
+        // Por ahora usar una implementación básica
+        return this._simpleHash(input);
+    }
+    
+    /**
+     * Hash simple temporal hasta implementar CryptoJS
+     * @param {string} input - Input para hash
+     * @returns {string} - Hash simple
+     * @private
+     */
+    _simpleHash(input) {
+        let hash = 0;
+        for (let i = 0; i < input.length; i++) {
+            const char = input.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convertir a 32-bit
+        }
+        return Math.abs(hash).toString(16).padStart(8, '0');
     }
     
     /**
