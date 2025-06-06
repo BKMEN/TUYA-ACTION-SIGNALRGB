@@ -22,8 +22,6 @@ const ServiceHelper = {
 };
 
 // Exportar para uso si es necesario
-export default ServiceHelper;
-
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ServiceHelper;
 }

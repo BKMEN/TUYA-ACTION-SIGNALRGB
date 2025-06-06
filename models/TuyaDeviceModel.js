@@ -112,8 +112,3 @@ class TuyaDeviceModel {
 
 // SOLO exportar la clase, SIN ProductId
 module.exports = TuyaDeviceModel;
-
-// Para compatibilidad con ES6
-if (typeof exports !== 'undefined') {
-    exports.default = TuyaDeviceModel;
-}
