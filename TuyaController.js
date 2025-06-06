@@ -5,9 +5,14 @@
 
 const TuyaDeviceModel = require('./models/TuyaDeviceModel.js');
 const TuyaSessionNegotiator = require('./negotiators/TuyaSessionNegotiator.js');
-const TuyaCommandEncryptor = require('./crypto/TuyaCommandEncryptor.js');
+const TuyaCommandEncryptor = require('./Crypto/TuyaCommandEncryptor.js');
 const DeviceList = require('./DeviceList.js');
-const udp = require('@SignalRGB/udp');
+let udp;
+try {
+    udp = require('@SignalRGB/udp');
+} catch (err) {
+    udp = require('dgram');
+}
 
 class TuyaController {
     constructor(device) {

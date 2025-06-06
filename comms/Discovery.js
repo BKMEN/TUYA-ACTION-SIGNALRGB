@@ -2,7 +2,14 @@
  * Servicio de descubrimiento de dispositivos Tuya
  */
 
-const udp = require('@SignalRGB/udp');
+let udp;
+try {
+    // Prefer the SignalRGB UDP module if available
+    udp = require('@SignalRGB/udp');
+} catch (err) {
+    // Fallback to Node's built in dgram implementation for development
+    udp = require('dgram');
+}
 const EventEmitter = require('../utils/EventEmitter.js');
 
 class TuyaDiscovery extends EventEmitter {
