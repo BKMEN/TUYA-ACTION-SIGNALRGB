@@ -2,8 +2,11 @@
  * Manejador de negociación de sesión para protocolo Tuya v3.5
  */
 
-// ELIMINAR imports problemáticos y usar solo los compatibles
 const EventEmitter = require('../utils/EventEmitter.js');
+const dgram = require('dgram');
+const crypto = require('crypto');
+const TuyaEncryption = require('../utils/TuyaEncryption.js');
+const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
 
 class TuyaSessionNegotiator extends EventEmitter {
     constructor(options = {}) {
@@ -42,61 +45,81 @@ class TuyaSessionNegotiator extends EventEmitter {
      */
     _performNegotiation() {
         return new Promise((resolve, reject) => {
+            const socket = dgram.createSocket('udp4');
+            this.socket = socket;
+
+            const clientRandom = TuyaEncryption.generateRandomHexBytes(16);
+
+            const payload = {
+                uuid: this.generateUUID(),
+                t: Math.floor(Date.now() / 1000),
+                gwId: this.deviceId,
+                random: clientRandom
+            };
+
+            const iv = crypto.randomBytes(12);
+            const aad = TuyaEncryption.createAAD(0x05, Buffer.alloc(4), Buffer.byteLength(JSON.stringify(payload)));
+            const enc = TuyaEncryption.encryptGCM(JSON.stringify(payload), UDP_KEY, iv, aad);
+            const encPayload = Buffer.concat([iv, enc.ciphertext, enc.tag]);
+
+            const packet = this.buildHandshakePacket(encPayload);
+
             const timeoutId = setTimeout(() => {
+                this.emit('error', new Error('Session negotiation timeout'));
                 this.cleanup();
                 reject(new Error('Session negotiation timeout'));
             }, this.timeout);
 
-            try {
-                // Generar random del cliente
-                const clientRandom = this.generateRandomHex(16);
-                
-                // Crear payload de handshake
-                const payload = {
-                    uuid: this.generateUUID(),
-                    t: Math.floor(Date.now() / 1000),
-                    gwId: this.deviceId,
-                    random: clientRandom
-                };
+            socket.on('error', (err) => {
+                clearTimeout(timeoutId);
+                this.emit('error', err);
+                this.cleanup();
+                reject(err);
+            });
 
-                // Construir paquete
-                const packet = this.buildHandshakePacket(JSON.stringify(payload));
-                
-                // Simular envío (en implementación real usaría UDP)
-                setTimeout(() => {
-                    // Simular respuesta exitosa
-                    const mockResponse = {
-                        random: this.generateRandomHex(16),
-                        success: true
+            socket.on('message', (msg, rinfo) => {
+                if (rinfo.address !== this.ip) {
+                    return;
+                }
+
+                try {
+                    const response = this.parseHandshakeResponse(msg);
+                    if (!response || !response.random) {
+                        throw new Error('Invalid handshake response');
+                    }
+
+                    this.sessionKey = this.deriveSessionKey(clientRandom, response.random);
+
+                    clearTimeout(timeoutId);
+                    socket.close();
+                    this.socket = null;
+
+                    const result = {
+                        sessionKey: this.sessionKey,
+                        deviceId: this.deviceId,
+                        ip: this.ip,
+                        port: this.port
                     };
 
-                    try {
-                        this.sessionKey = this.deriveSessionKey(
-                            clientRandom,
-                            mockResponse.random
-                        );
+                    this.emit('success', result);
+                    resolve(result);
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    socket.close();
+                    this.socket = null;
+                    this.emit('error', error);
+                    reject(error);
+                }
+            });
 
-                        clearTimeout(timeoutId);
-                        this.cleanup();
-                        
-                        resolve({
-                            sessionKey: this.sessionKey,
-                            deviceId: this.deviceId,
-                            ip: this.ip,
-                            port: this.port
-                        });
-                    } catch (error) {
-                        clearTimeout(timeoutId);
-                        this.cleanup();
-                        reject(error);
-                    }
-                }, 100); // Simular delay de red
-
-            } catch (error) {
-                clearTimeout(timeoutId);
-                this.cleanup();
-                reject(error);
-            }
+            socket.send(packet, 0, packet.length, this.port, this.ip, (err) => {
+                if (err) {
+                    clearTimeout(timeoutId);
+                    this.emit('error', err);
+                    this.cleanup();
+                    reject(err);
+                }
+            });
         });
     }
 
@@ -104,7 +127,7 @@ class TuyaSessionNegotiator extends EventEmitter {
      * Construye paquete de handshake
      */
     buildHandshakePacket(payload) {
-        const payloadBuffer = Buffer.from(payload, 'utf8');
+        const payloadBuffer = Buffer.isBuffer(payload) ? payload : Buffer.from(payload, 'utf8');
         const headerSize = 16;
         const packetSize = headerSize + payloadBuffer.length + 8;
         
@@ -136,36 +159,57 @@ class TuyaSessionNegotiator extends EventEmitter {
     }
 
     /**
-     * Deriva clave de sesión usando hash simple
+     * Deriva la clave de sesión usando MD5 como en el protocolo oficial
      */
     deriveSessionKey(clientRandom, deviceRandom) {
-        const input = this.deviceKey + clientRandom + deviceRandom;
-        return this.calculateHash(input);
+        const input = Buffer.from(this.deviceKey + clientRandom + deviceRandom, 'hex');
+        return crypto.createHash('md5').update(input).digest('hex');
     }
 
     /**
-     * Calcula hash simple
+     * Parsea la respuesta del handshake
      */
-    calculateHash(input) {
-        let hash = 0;
-        for (let i = 0; i < input.length; i++) {
-            const char = input.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
+    parseHandshakeResponse(buffer) {
+        if (!Buffer.isBuffer(buffer) || buffer.length < 20) {
+            throw new Error('Invalid handshake packet');
         }
-        return Math.abs(hash).toString(16).padStart(32, '0');
+
+        const prefix = buffer.slice(0, 4).toString('hex');
+        if (prefix !== '000055aa') {
+            throw new Error('Invalid handshake prefix');
+        }
+
+        const command = buffer.readUInt32BE(8);
+        if (command !== 0x06) {
+            throw new Error('Unexpected handshake command');
+        }
+
+        const seq = buffer.slice(4, 8);
+        const len = buffer.readUInt32BE(12);
+        const payload = buffer.slice(16, 16 + len);
+
+        const iv = payload.slice(0, 12);
+        const tag = payload.slice(payload.length - 16);
+        const ciphertext = payload.slice(12, payload.length - 16);
+        const aad = TuyaEncryption.createAAD(0x06, seq, ciphertext.length);
+
+        const decrypted = TuyaEncryption.decryptGCM(ciphertext, UDP_KEY, iv, tag, aad);
+        if (!decrypted) {
+            throw new Error('Handshake decryption failed');
+        }
+
+        try {
+            return JSON.parse(decrypted.toString());
+        } catch (err) {
+            throw new Error('Failed to parse handshake payload');
+        }
     }
 
     /**
      * Genera string hexadecimal aleatorio
      */
     generateRandomHex(length) {
-        const chars = '0123456789abcdef';
-        let result = '';
-        for (let i = 0; i < length * 2; i++) {
-            result += chars[Math.floor(Math.random() * 16)];
-        }
-        return result;
+        return crypto.randomBytes(length).toString('hex');
     }
 
     /**
