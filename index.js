@@ -222,6 +222,11 @@ class DiscoveryService {
     }
 
     handleTuyaDiscovery(deviceData) {
+        if (!deviceData) {
+            service.log('DiscoveryService: handleTuyaDiscovery called with undefined data');
+            return;
+        }
+
         service.log(`DiscoveryService: Handling discovered device: ${deviceData.id || deviceData.gwId}`);
         try {
             const deviceId = deviceData.id || deviceData.gwId;
@@ -242,6 +247,10 @@ class DiscoveryService {
             } else {
                 service.log(`Creating new controller for ${deviceId}`);
                 const newDeviceModel = new TuyaDeviceModel(deviceData);
+                if (!newDeviceModel) {
+                    service.log('DiscoveryService: failed to initialize TuyaDeviceModel');
+                    return;
+                }
 
                 const newController = new TuyaController(newDeviceModel);
                 controllers.push(newController);
@@ -314,7 +323,11 @@ function loadSavedDevices() {
             
             if (config.id) {
                 if (!controllers.find(c => c.device.id === config.id)) {
-                    const deviceModel = new TuyaDeviceModel(config);
+                    const deviceModel = new TuyaDeviceModel(config || {});
+                    if (!deviceModel) {
+                        service.log('loadSavedDevices: failed to init device model for ' + deviceId);
+                        return;
+                    }
                     const controller = new TuyaController(deviceModel);
                     controllers.push(controller);
                     loadedCount++;

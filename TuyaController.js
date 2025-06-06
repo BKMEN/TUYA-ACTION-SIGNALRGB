@@ -16,7 +16,19 @@ try {
 
 class TuyaController {
     constructor(device) {
+        if (!device) {
+            if (typeof service !== 'undefined' && service.log) {
+                service.log('TuyaController constructor received undefined device, using empty model');
+            }
+            device = {};
+        }
+
         this.device = device instanceof TuyaDeviceModel ? device : new TuyaDeviceModel(device);
+
+        if (!this.device) {
+            throw new Error('TuyaController failed to initialize device model');
+        }
+
         this.negotiator = null;
         this.encryptor = null;
         this.socket = null; // Socket persistente para comandos
