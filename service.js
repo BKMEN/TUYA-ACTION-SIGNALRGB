@@ -4,6 +4,8 @@
 // the necessary methods and event placeholders so that the QML UI
 // and backend code can interact without throwing errors.
 
+'use strict';
+
 // Use CommonJS to ensure compatibility with SignalRGB's module loader
 const EventEmitter = require('./utils/EventEmitter.js');
 

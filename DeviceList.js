@@ -1,4 +1,5 @@
 // Lista de tipos de dispositivos y configuraciones
+'use strict';
 const deviceTypes = [
     { name: 'LED Strip', defaultLeds: 30, dps: { power: '1', mode: '2', color: '5', brightness: '3' } },
     { name: 'LED Bulb', defaultLeds: 1, dps: { power: '1', mode: '2', color: '5', brightness: '3' } },

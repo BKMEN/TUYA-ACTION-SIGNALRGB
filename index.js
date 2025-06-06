@@ -3,6 +3,7 @@
  * @author BKMEN
  * @version 2.0.1 (Refactored based on fu-raz structure)
  */
+'use strict';
 
 // Cargar dependencias usando CommonJS para compatibilidad con SignalRGB
 const TuyaDiscoveryServiceInternal = require('./comms/Discovery.js');
