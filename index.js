@@ -147,9 +147,10 @@ function Shutdown(SystemSuspending) {
 
         if (discoveryServiceInstance) {
             discoveryServiceInstance.stopDiscovery();
-            discoveryServiceInstance = null; 
+            discoveryServiceInstance = null;
         }
         controllers = [];
+        saveDeviceList();
         service.log("Plugin shutdown complete.");
     } catch (error) {
         service.log("Error during shutdown: " + error.message);
@@ -286,4 +287,37 @@ function loadSavedDevices() {
                     loadedCount++;
                     
                     if (deviceModel.enabled && deviceModel.localKey && !deviceModel.isReady()) {
-                        service.log(`Attempting
+                        service.log(`Attempting negotiation for saved device: ${deviceModel.id}`);
+                        controller.startNegotiation();
+                    }
+                }
+            }
+        });
+        service.controllers = controllers;
+        service.log('Loaded ' + loadedCount + ' devices from settings. Total controllers: ' + controllers.length);
+    } catch (error) {
+        service.log('Error loading saved devices: ' + error.message + (error.stack ? "\n" + error.stack : ""));
+    }
+}
+
+function saveDeviceList() {
+    try {
+        const deviceIds = controllers.map(c => c.device.id);
+        service.saveSetting('tuyaDevices', 'deviceList', JSON.stringify(deviceIds));
+        service.log(`Saved ${deviceIds.length} device IDs to list.`);
+    } catch (error) {
+        service.log('Error saving device list: ' + error.message + (error.stack ? "\n" + error.stack : ""));
+    }
+}
+
+// Para que SignalRGB reconozca las funciones exportadas,
+// si el entorno no soporta ES6 modules directamente para plugins,
+// se necesitaría module.exports. Asumiendo que sí los soporta por ahora.
+// Si sigue sin cargar, considera cambiar a module.exports.
+/*
+module.exports = {
+    Name, Version, Type, Publisher, Size, DefaultPosition, DefaultScale,
+    DefaultComponentBrand, VendorId, ProductId, ControllableParameters,
+    Initialize, Render, onParameterChange, Shutdown, DiscoveryService, Validate
+};
+*/
