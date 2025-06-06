@@ -4,12 +4,12 @@
  * @version 2.0.1 (Refactored based on fu-raz structure)
  */
 
-// CAMBIAR: ES6 imports por CommonJS requires
-const TuyaDiscoveryServiceInternal = require('./comms/Discovery.js');
-const TuyaController = require('./TuyaController.js');
-const TuyaDeviceModel = require('./models/TuyaDeviceModel.js');
-const DeviceList = require('./DeviceList.js');
-const fs = require('fs');
+// Utilizamos importaciones ES6 para coherencia con SignalRGB
+import TuyaDiscoveryServiceInternal from './comms/Discovery.js';
+import TuyaController from './TuyaController.js';
+import TuyaDeviceModel from './models/TuyaDeviceModel.js';
+import DeviceList from './DeviceList.js';
+import fs from 'fs';
 
 // --- Metadatos del Plugin para SignalRGB ---
 function Name() { return "Tuya LED Controller"; }
@@ -18,10 +18,30 @@ function Type() { return "network"; }
 function Publisher() { return "BKMEN"; }
 function Size() { return [1, 1]; }
 function DefaultPosition() { return [240, 120]; }
-function DefaultScale() { return 100; }
+function DefaultScale() { return 1.0; }
 function DefaultComponentBrand() { return "Tuya"; }
 function VendorId() { return 0x2833; }
 function ProductId() { return 0x1337; }
+
+// Devuelve lista de nombres de LEDs para mapeo en SignalRGB
+function LedNames(controller) {
+    const count = (controller && controller.device && controller.device.ledCount) || 1;
+    const names = [];
+    for (let i = 0; i < count; i++) {
+        names.push(`LED ${i + 1}`);
+    }
+    return names;
+}
+
+// Devuelve posiciones relativas simples para los LEDs
+function LedPositions(controller) {
+    const count = (controller && controller.device && controller.device.ledCount) || 1;
+    const positions = [];
+    for (let i = 0; i < count; i++) {
+        positions.push([i, 0]);
+    }
+    return positions;
+}
 
 function ControllableParameters() {
     return [
@@ -265,6 +285,9 @@ class DiscoveryService {
                 if (typeof service.addController === 'function') {
                     try {
                         service.addController(newController);
+                        if (newDeviceModel.enabled && typeof service.announceController === 'function') {
+                            service.announceController(newController);
+                        }
                     } catch (addErr) {
                         service.log('addController error: ' + addErr.message);
                     }
@@ -394,7 +417,7 @@ function saveDeviceList() {
     }
 }
 
-module.exports = {
+export {
     Name,
     Version,
     Type,
@@ -405,6 +428,8 @@ module.exports = {
     DefaultComponentBrand,
     VendorId,
     ProductId,
+    LedNames,
+    LedPositions,
     ControllableParameters,
     Initialize,
     Render,
