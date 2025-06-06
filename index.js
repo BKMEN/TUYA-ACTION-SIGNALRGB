@@ -299,7 +299,8 @@ class DiscoveryService {
                     try {
                         service.addController(newController);
                         console.log(`✅ Controlador registrado: ${newController.device.name}`);
-                        if (newDeviceModel.enabled && typeof service.announceController === 'function') {
+                        // Temporarily announce controller regardless of enabled flag
+                        if (/* newDeviceModel.enabled && */ typeof service.announceController === 'function') {
                             service.announceController(newController);
                         }
                     } catch (addErr) {
@@ -321,7 +322,8 @@ class DiscoveryService {
                 service.log('New device added to controllers list: ' + newDeviceModel.id);
                 saveDeviceList();
 
-                if (newDeviceModel.localKey && newDeviceModel.enabled) {
+                // Temporarily start negotiation regardless of LocalKey/Enabled state
+                if (/* newDeviceModel.localKey && newDeviceModel.enabled */ true) {
                     service.log(`Attempting negotiation for new device: ${newDeviceModel.id}`);
                     newController.startNegotiation();
                 } else {
