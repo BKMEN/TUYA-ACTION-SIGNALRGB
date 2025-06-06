@@ -9,7 +9,16 @@ import TuyaDiscoveryServiceInternal from './comms/Discovery.js';
 import TuyaController from './TuyaController.js';
 import TuyaDeviceModel from './models/TuyaDeviceModel.js';
 import DeviceList from './DeviceList.js';
-import fs from 'fs';
+
+// Optional filesystem access if available (Node environments)
+let fs;
+try {
+    if (typeof require !== 'undefined') {
+        fs = require('fs');
+    }
+} catch (e) {
+    fs = undefined;
+}
 
 // --- Metadatos del Plugin para SignalRGB ---
 function Name() { return "Tuya LED Controller"; }
@@ -219,8 +228,11 @@ class DiscoveryService {
 
             this.internalDiscovery.on('device_found', (deviceData) => {
                 this.handleTuyaDiscovery(deviceData);
+                // Optional: persist discovered devices for debugging if fs is available
                 try {
-                    fs.appendFileSync('devices_found.json', JSON.stringify(deviceData, null, 2) + ',\n');
+                    if (typeof fs !== 'undefined' && fs.appendFileSync) {
+                        fs.appendFileSync('devices_found.json', JSON.stringify(deviceData, null, 2) + ',\n');
+                    }
                 } catch (e) {
                     service.log('Error writing devices_found.json: ' + e.message);
                 }
