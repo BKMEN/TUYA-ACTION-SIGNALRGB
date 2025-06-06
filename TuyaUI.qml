@@ -452,6 +452,12 @@ Item {
         if (service && typeof service.initialize === "function") {
             service.initialize();
         }
+
+        // Iniciar búsqueda automática si está disponible
+        if (service && service.startDiscovery) {
+            service.startDiscovery();
+        }
+
         // Cargar dispositivos al iniciar
         if (service && typeof service.getDevices === "function") {
             devices = service.getDevices();
