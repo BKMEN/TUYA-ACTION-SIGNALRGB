@@ -13,10 +13,6 @@ Item {
     //title: "Controlador LED Tuya"
     visible: true
 
-    QtObject {
-        id: style
-        Material.theme: Material.Dark
-    }
 
     property var devices: []
     property int selectedDeviceIndex: -1
@@ -44,6 +40,15 @@ Item {
         id: statusTimer
         interval: 5000
         onTriggered: statusMessage = ""
+    }
+
+    // Indicador sencillo para saber que el UI se cargó
+    Text {
+        id: uiLoadedLabel
+        text: "UI cargada"
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        color: "#ff0000"
     }
 
     ScrollView {
@@ -115,6 +120,7 @@ Item {
                         BusyIndicator {
                             anchors.verticalCenter: parent.verticalCenter
                             visible: isDiscovering
+                            running: isDiscovering
                             width: 20
                             height: 20
                         }
@@ -150,7 +156,7 @@ Item {
                         radius: 8
 
                         // Acceso al controlador del dispositivo (similar a FU-RAZ)
-                        property var controller: model.modelData
+                        property var controller: modelData
 
                         Column {
                             id: deviceColumn
@@ -287,6 +293,8 @@ Item {
                                         } catch (e) {
                                             showError("Error configurando dispositivo: " + e.toString());
                                         }
+                                    } else {
+                                        showError("updateDeviceConfig no disponible en el controlador");
                                     }
                                 }
                             }
@@ -438,8 +446,13 @@ Item {
     }
 
     Component.onCompleted: {
+        Material.theme = Material.Dark
+        // Inicializar el puente con el backend si está disponible
+        if (service && typeof service.initialize === "function") {
+            service.initialize();
+        }
         // Cargar dispositivos al iniciar
-        if (service) {
+        if (service && typeof service.getDevices === "function") {
             devices = service.getDevices();
         }
     }
