@@ -159,6 +159,7 @@ class TuyaDiscovery extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             try {
+                console.log('TuyaDiscovery: Preparing discovery request');
                 // Crear mensaje de descubrimiento simple
                 const discoveryMessage = JSON.stringify({
                     cmd: 'discovery',
@@ -175,6 +176,7 @@ class TuyaDiscovery extends EventEmitter {
                         if (error) {
                             reject(error);
                         } else {
+                            console.log('TuyaDiscovery: Discovery request sent');
                             resolve();
                         }
                     }

@@ -273,7 +273,17 @@ class DiscoveryService {
     Start() {
         service.log("DiscoveryService: Start method called by SignalRGB.");
         if (this.internalDiscovery) {
-            this.internalDiscovery.startDiscovery();
+            this.internalDiscovery.startDiscovery()
+                .then(() => {
+                    service.log("DiscoveryService: Sending discovery request");
+                    return this.internalDiscovery.sendDiscoveryRequest();
+                })
+                .then(() => {
+                    service.log("DiscoveryService: Discovery request sent");
+                })
+                .catch((err) => {
+                    service.log('DiscoveryService Start error: ' + err.message);
+                });
         } else {
             service.log("DiscoveryService: Internal discovery not initialized. Call Initialize first.");
         }
