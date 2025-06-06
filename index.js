@@ -43,6 +43,7 @@ if (typeof service === 'undefined') {
 function Initialize() {
     try {
         service.log("Initializing Tuya LED Controller Plugin v2.0.1");
+        service.log("🧪 PluginUIPath = " + PluginUIPath());
 
         // Configurar el objeto service para QML
         service.controllers = controllers;
