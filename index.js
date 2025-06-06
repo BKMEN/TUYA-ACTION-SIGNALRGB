@@ -51,8 +51,8 @@ function Initialize() {
             service.log("QML requested discovery");
             if (!discoveryServiceInstance) {
                 service.log("DiscoveryService instance missing, creating...");
-                new DiscoveryService();
-                if (discoveryServiceInstance && typeof discoveryServiceInstance.Initialize === 'function') {
+                discoveryServiceInstance = new DiscoveryService();
+                if (typeof discoveryServiceInstance.Initialize === 'function') {
                     discoveryServiceInstance.Initialize();
                 }
             }
@@ -160,8 +160,12 @@ function Shutdown(SystemSuspending) {
         });
 
         if (discoveryServiceInstance) {
-            discoveryServiceInstance.stopDiscovery();
-            discoveryServiceInstance = null; 
+            if (typeof discoveryServiceInstance.Stop === 'function') {
+                discoveryServiceInstance.Stop();
+            } else if (typeof discoveryServiceInstance.stopDiscovery === 'function') {
+                discoveryServiceInstance.stopDiscovery();
+            }
+            discoveryServiceInstance = null;
         }
         controllers = [];
         service.log("Plugin shutdown complete.");
@@ -178,13 +182,15 @@ function Validate(endpoint) {
 // --- Servicio de Descubrimiento ---
 let discoveryServiceInstance = null;
 
-function DiscoveryService() {
-    service.log("Tuya DiscoveryService constructor called.");
+class DiscoveryService {
+    constructor() {
+        service.log("Tuya DiscoveryService constructor called.");
+        this.internalDiscovery = null;
+        this.negotiatorInstances = new Map();
+        discoveryServiceInstance = this;
+    }
 
-    this.internalDiscovery = null;
-    this.negotiatorInstances = new Map();
-
-    this.Initialize = function() {
+    Initialize() {
         service.log("Tuya DiscoveryService: Initialize method called.");
         try {
             this.internalDiscovery = new TuyaDiscoveryServiceInternal({
@@ -213,9 +219,9 @@ function DiscoveryService() {
             service.log("Error in DiscoveryService.Initialize: " + e.message);
             if (e.stack) service.log(e.stack);
         }
-    };
+    }
 
-    this.handleTuyaDiscovery = function(deviceData) {
+    handleTuyaDiscovery(deviceData) {
         service.log(`DiscoveryService: Handling discovered device: ${deviceData.id || deviceData.gwId}`);
         try {
             const deviceId = deviceData.id || deviceData.gwId;
@@ -236,7 +242,7 @@ function DiscoveryService() {
             } else {
                 service.log(`Creating new controller for ${deviceId}`);
                 const newDeviceModel = new TuyaDeviceModel(deviceData);
-                
+
                 const newController = new TuyaController(newDeviceModel);
                 controllers.push(newController);
                 service.controllers = controllers;
@@ -255,33 +261,31 @@ function DiscoveryService() {
             service.log('Error in handleTuyaDiscovery: ' + error.message);
             if (error.stack) service.log(error.stack);
         }
-    };
+    }
 
-    this.Update = function(force) {
+    Update(force) {
         controllers.forEach(controller => {
             if (controller.negotiator && typeof controller.negotiator.handleQueue === 'function') {
                 // controller.negotiator.handleQueue(Date.now());
             }
         });
-    };
+    }
 
-    this.Start = function() {
+    Start() {
         service.log("DiscoveryService: Start method called by SignalRGB.");
         if (this.internalDiscovery) {
             this.internalDiscovery.startDiscovery();
         } else {
             service.log("DiscoveryService: Internal discovery not initialized. Call Initialize first.");
         }
-    };
+    }
 
-    this.Stop = function() {
+    Stop() {
         service.log("DiscoveryService: Stop method called by SignalRGB.");
         if (this.internalDiscovery) {
             this.internalDiscovery.stopDiscovery();
         }
-    };
-    
-    discoveryServiceInstance = this;
+    }
 }
 
 // --- Funciones Auxiliares ---
