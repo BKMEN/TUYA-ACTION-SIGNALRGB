@@ -53,7 +53,7 @@ class TuyaDeviceModel {
             // Usar servicio global si está disponible
             if (typeof service !== 'undefined') {
                 service.saveSetting(this.id, 'configData', JSON.stringify(config));
-                service.log('Settings saved for device: ' + this.id);
+                service.log(`Settings saved for device: ${this.id} (enabled=${this.enabled}, localKey=${this.localKey})`);
             }
             return true;
         } catch (error) {
@@ -75,7 +75,7 @@ class TuyaDeviceModel {
                     this.localKey = config.localKey;
                     this.enabled = config.enabled || false;
                     this.deviceType = config.deviceType || 'LED Strip';
-                    service.log('Settings loaded for device: ' + this.id);
+                    service.log(`Settings loaded for device: ${this.id} (enabled=${this.enabled}, localKey=${this.localKey})`);
                     return true;
                 }
             }

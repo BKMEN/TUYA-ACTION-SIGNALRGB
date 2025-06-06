@@ -290,6 +290,7 @@ class DiscoveryService {
                     service.log('DiscoveryService: failed to initialize TuyaDeviceModel');
                     return;
                 }
+                service.log(`Estado del dispositivo: enabled=${newDeviceModel.enabled}, localKey=${newDeviceModel.localKey}`);
 
                 const newController = new TuyaController(newDeviceModel);
                 controllers.push(newController);
@@ -391,6 +392,7 @@ function loadSavedDevices() {
                     }
                     const controller = new TuyaController(deviceModel);
                     controllers.push(controller);
+                    service.log(`Loaded device ${deviceModel.id}: enabled=${deviceModel.enabled}, localKey=${deviceModel.localKey}`);
                     loadedCount++;
                     if (!deviceModel.localKey) {
                         service.log('Warning: no localKey stored for ' + deviceModel.id);
