@@ -114,7 +114,7 @@ function Initialize() {
     }
 }
 function PluginUIPath() {
-    return "ui/TuyaUI.qml"; // o simplemente "TuyaUI.qml" si está en la raíz
+    return "TuyaUI.qml"; // Temporalmente en la raíz para descartar error de ruta
 }
 
 // CORREGIR: Render debe recibir device como parámetro
@@ -285,6 +285,7 @@ class DiscoveryService {
                 if (typeof service.addController === 'function') {
                     try {
                         service.addController(newController);
+                        console.log(`✅ Controlador registrado: ${newController.device.name}`);
                         if (newDeviceModel.enabled && typeof service.announceController === 'function') {
                             service.announceController(newController);
                         }
