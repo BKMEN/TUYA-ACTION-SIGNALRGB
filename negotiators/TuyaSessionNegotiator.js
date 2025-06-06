@@ -207,8 +207,3 @@ class TuyaSessionNegotiator extends EventEmitter {
 }
 
 module.exports = TuyaSessionNegotiator;
-
-// Para compatibilidad con ES6
-if (typeof exports !== 'undefined') {
-    exports.default = TuyaSessionNegotiator;
-}

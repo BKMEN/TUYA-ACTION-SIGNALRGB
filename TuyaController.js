@@ -3,11 +3,11 @@
  * Basado en TuyaController.test.js del plugin FU-RAZ
  */
 
-import TuyaDeviceModel from './models/TuyaDeviceModel.js';
-import TuyaSessionNegotiator from './negotiators/TuyaSessionNegotiator.js';
-import TuyaCommandEncryptor from './crypto/TuyaCommandEncryptor.js';
-import DeviceList from './DeviceList.js';
-import udp from "@SignalRGB/udp";
+const TuyaDeviceModel = require('./models/TuyaDeviceModel.js');
+const TuyaSessionNegotiator = require('./negotiators/TuyaSessionNegotiator.js');
+const TuyaCommandEncryptor = require('./crypto/TuyaCommandEncryptor.js');
+const DeviceList = require('./DeviceList.js');
+const udp = require('@SignalRGB/udp');
 
 class TuyaController {
     constructor(device) {
@@ -232,4 +232,4 @@ class TuyaController {
     }
 }
 
-export default TuyaController;
+module.exports = TuyaController;

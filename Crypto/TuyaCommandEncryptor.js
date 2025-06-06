@@ -123,4 +123,4 @@ class TuyaCommandEncryptor {
     }
 }
 
-export default TuyaCommandEncryptor;
+module.exports = TuyaCommandEncryptor;

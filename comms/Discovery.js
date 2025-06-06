@@ -2,7 +2,7 @@
  * Servicio de descubrimiento de dispositivos Tuya
  */
 
-import udp from "@SignalRGB/udp";
+const udp = require('@SignalRGB/udp');
 const EventEmitter = require('../utils/EventEmitter.js');
 
 class TuyaDiscovery extends EventEmitter {
@@ -191,8 +191,3 @@ class TuyaDiscovery extends EventEmitter {
 }
 
 module.exports = TuyaDiscovery;
-
-// Para compatibilidad con ES6
-if (typeof exports !== 'undefined') {
-    exports.default = TuyaDiscovery;
-}

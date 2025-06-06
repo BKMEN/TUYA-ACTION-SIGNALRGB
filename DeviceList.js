@@ -74,8 +74,3 @@ const DeviceList = {
 
 // SOLO exportar DeviceList, SIN ProductId
 module.exports = DeviceList;
-
-// Para compatibilidad con ES6
-if (typeof exports !== 'undefined') {
-    exports.default = DeviceList;
-}
