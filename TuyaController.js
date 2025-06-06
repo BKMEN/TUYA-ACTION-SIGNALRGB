@@ -44,6 +44,7 @@ class TuyaController {
             
             // Guardar configuración
             const saved = this.device.saveSettings();
+            service.log(`Estado actualizado: enabled=${this.device.enabled}, localKey=${this.device.localKey}`);
             
             if (saved) {
                 service.log('Device configuration updated: ' + this.device.id);
