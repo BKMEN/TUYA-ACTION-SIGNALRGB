@@ -473,6 +473,7 @@ Item {
         function onDiscoveryComplete() {
             isDiscovering = false;
             showSuccess("Búsqueda completada");
+            devices = service.getDevices();
         }
         function onControllersChanged() {
             devices = service.getDevices();
