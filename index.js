@@ -51,8 +51,19 @@ function Initialize() {
 
         // Configurar el objeto service para QML
         service.controllers = controllers;
+        service.getDevices = () => controllers;
         service.startDiscovery = () => {
             service.log("QML requested discovery");
+            if (!discoveryServiceInstance) {
+                service.log("DiscoveryService instance missing, creating...");
+                new DiscoveryService();
+                if (discoveryServiceInstance && typeof discoveryServiceInstance.Initialize === 'function') {
+                    discoveryServiceInstance.Initialize();
+                }
+            }
+            if (discoveryServiceInstance && typeof discoveryServiceInstance.Start === 'function') {
+                discoveryServiceInstance.Start();
+            }
         };
         service.initialize = function() {
             service.log("Service (QML interface) initialized from QML");
@@ -182,14 +193,20 @@ function DiscoveryService() {
                 timeout: globalDiscoveryTimeout
             });
 
-            this.internalDiscovery.on('deviceDiscovered', (deviceData) => {
+            this.internalDiscovery.on('device_found', (deviceData) => {
                 this.handleTuyaDiscovery(deviceData);
             });
             this.internalDiscovery.on('error', (error) => {
                 service.log('DiscoveryService Internal Error: ' + error.message);
             });
-            this.internalDiscovery.on('discoveryStopped', () => {
+            this.internalDiscovery.on('started', () => {
+                service.log('DiscoveryService Internal: Discovery started.');
+            });
+            this.internalDiscovery.on('stopped', () => {
                 service.log("DiscoveryService Internal: Discovery stopped.");
+                if (typeof service.discoveryComplete === 'function') {
+                    service.discoveryComplete();
+                }
             });
 
             service.log("Tuya DiscoveryService internal components initialized.");
