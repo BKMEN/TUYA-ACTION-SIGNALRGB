@@ -335,3 +335,9 @@ module.exports = {
     onParameterChange,
     DiscoveryService
 };
+function Component() {
+    return {
+        UI: "ui/TuyaUI.qml"  // Asegúrate que el archivo se llama así y está en la misma carpeta o en `/ui/`
+    };
+}
+
