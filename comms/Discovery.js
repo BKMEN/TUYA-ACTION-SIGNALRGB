@@ -1,5 +1,9 @@
 /**
- * Servicio de descubrimiento de dispositivos Tuya
+ * Servicio de descubrimiento de dispositivos Tuya.
+ *
+ * Maneja el envío y recepción de paquetes UDP de broadcast para localizar
+ * dispositivos en la red local. Expone métodos públicos para iniciar y
+ * detener el proceso de forma segura.
  */
 
 let udp;
@@ -194,6 +198,23 @@ class TuyaDiscovery extends EventEmitter {
     clearDevices() {
         this.devices.clear();
         this.emit('devices_cleared');
+    }
+
+    /**
+     * Alias público para iniciar el descubrimiento.
+     * Mantiene compatibilidad con versiones anteriores.
+     * @returns {Promise<void>}
+     */
+    startDiscovery() {
+        return this.start();
+    }
+
+    /**
+     * Alias público para detener el descubrimiento.
+     * @returns {Promise<void>}
+     */
+    stopDiscovery() {
+        return this.stop();
     }
 }
 
