@@ -286,4 +286,52 @@ function loadSavedDevices() {
                     loadedCount++;
                     
                     if (deviceModel.enabled && deviceModel.localKey && !deviceModel.isReady()) {
-                        service.log(`Attempting
+                        service.log(`Attempting negotiation for saved device: ${deviceModel.id}`);
+                        try {
+                            controller.startNegotiation();
+                        } catch (negErr) {
+                            service.log('Negotiation error for ' + deviceModel.id + ': ' + negErr.message);
+                        }
+                    }
+                }
+            }
+        });
+
+        service.controllers = controllers;
+        service.log(`Loaded ${loadedCount} saved devices.`);
+    } catch (error) {
+        service.log('Error loading saved devices: ' + error.message);
+        if (error.stack) service.log(error.stack);
+    }
+}
+
+function saveDeviceList() {
+    try {
+        const ids = controllers.map(c => c.device.id);
+        service.saveSetting('tuyaDevices', 'deviceList', JSON.stringify(ids));
+        service.log('Device list saved.');
+    } catch (error) {
+        service.log('Error saving device list: ' + error.message);
+        if (error.stack) service.log(error.stack);
+    }
+}
+
+module.exports = {
+    Name,
+    Version,
+    Type,
+    Publisher,
+    Size,
+    DefaultPosition,
+    DefaultScale,
+    DefaultComponentBrand,
+    VendorId,
+    ProductId,
+    ControllableParameters,
+    Initialize,
+    Render,
+    Shutdown,
+    Validate,
+    onParameterChange,
+    DiscoveryService
+};
