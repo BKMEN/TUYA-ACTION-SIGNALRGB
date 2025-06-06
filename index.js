@@ -28,7 +28,11 @@ function ControllableParameters() {
         { property: "discoveryTimeout", group: "settings", label: "Discovery Timeout (ms)", type: "int", min: 1000, max: 30000, default: 5000 }
     ];
 }
-
+function Component() {
+    return {
+        UI: "ui/TuyaUI.qml"  // Asegúrate que el archivo se llama así y está en la misma carpeta o en `/ui/`
+    };
+}
 // --- Variables Globales del Plugin ---
 let controllers = [];
 let globalDebugMode = false;
@@ -315,11 +319,7 @@ function saveDeviceList() {
         if (error.stack) service.log(error.stack);
     }
 }
-function Component() {
-    return {
-        UI: "ui/TuyaUI.qml"  // Asegúrate que el archivo se llama así y está en la misma carpeta o en `/ui/`
-    };
-}
+
 module.exports = {
     Name,
     Version,
