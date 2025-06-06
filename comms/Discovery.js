@@ -23,12 +23,11 @@ class TuyaDiscovery extends EventEmitter {
     constructor(config = {}) {
         super();
         this.isRunning = false;
-        this.discoveryPort = config.port || 6666;
-        // Use port 6666 for broadcast by default as most Tuya devices listen
-        // on this port for discovery messages. Allow override via config.
-        this.broadcastPort = config.broadcastPort || 6666;
+        this.discoveryPort = config.port || 6666;     // puerto de envío
+        this.listenPort = config.listenPort || 6667;  // puerto de escucha
         this.devices = new Map();
-        this.socket = null;
+        this.sendSocket = null;
+        this.listenSocket = null;
         this.config = config;
     }
 
@@ -42,20 +41,23 @@ class TuyaDiscovery extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             try {
-                // Crear socket UDP usando SignalRGB UDP
-                this.socket = udp.createSocket('udp4');
-                
-                this.socket.on('message', (msg, rinfo) => {
+                // Socket para enviar broadcast
+                this.sendSocket = udp.createSocket('udp4');
+
+                // Socket para recibir respuestas
+                this.listenSocket = udp.createSocket('udp4');
+
+                this.listenSocket.on('message', (msg, rinfo) => {
                     this.handleDiscoveryMessage(msg, rinfo);
                 });
 
-                this.socket.on('error', (err) => {
+                this.listenSocket.on('error', (err) => {
                     console.error('Discovery socket error:', err);
                     this.emit('error', err);
                 });
 
-                this.socket.bind(this.discoveryPort, () => {
-                    this.socket.setBroadcast(true);
+                this.listenSocket.bind(this.listenPort, () => {
+                    this.listenSocket.setBroadcast(true);
                     this.isRunning = true;
                     this.emit('started');
                     resolve();
@@ -76,17 +78,21 @@ class TuyaDiscovery extends EventEmitter {
         }
 
         return new Promise((resolve) => {
-            if (this.socket) {
-                this.socket.close(() => {
-                    this.isRunning = false;
-                    this.socket = null;
-                    this.emit('stopped');
-                    resolve();
-                });
-            } else {
-                this.isRunning = false;
-                resolve();
+            const closeTasks = [];
+            if (this.sendSocket) {
+                closeTasks.push(new Promise(res => this.sendSocket.close(res)));
+                this.sendSocket = null;
             }
+            if (this.listenSocket) {
+                closeTasks.push(new Promise(res => this.listenSocket.close(res)));
+                this.listenSocket = null;
+            }
+
+            Promise.all(closeTasks).finally(() => {
+                this.isRunning = false;
+                this.emit('stopped');
+                resolve();
+            });
         });
     }
 
@@ -95,6 +101,7 @@ class TuyaDiscovery extends EventEmitter {
      */
     handleDiscoveryMessage(message, rinfo) {
         try {
+            console.log("🧩 Procesando mensaje:", message.toString('hex').slice(0, 20));
             const prefix = message.slice(0, 4);
             let deviceInfo = null;
 
@@ -107,9 +114,12 @@ class TuyaDiscovery extends EventEmitter {
                 deviceInfo = this.parseDiscoveryMessage(message, rinfo);
             }
 
-            if (deviceInfo) {
+            if (deviceInfo && deviceInfo.id) {
+                if (this.devices.has(deviceInfo.id)) return;
+                console.log("📦 Dispositivo descubierto:", deviceInfo); // DEBUG
                 this.devices.set(deviceInfo.id, deviceInfo);
                 this.emit('device_found', deviceInfo);
+                console.log(`✅ Dispositivo descubierto: ${deviceInfo.id} (${deviceInfo.ip})`);
             }
         } catch (error) {
             console.error('Error processing discovery message:', error);
@@ -213,7 +223,7 @@ class TuyaDiscovery extends EventEmitter {
             const jsonString = decrypted.slice(4).toString().replace(/\0+$/, '').trim();
             return JSON.parse(jsonString);
         } catch (err) {
-            console.log('decryptGCM error:', err.message);
+            console.log('decryptGCM error:', err.stack || err.message);
             return null;
         }
     }
@@ -222,13 +232,13 @@ class TuyaDiscovery extends EventEmitter {
      * Envía solicitud de descubrimiento por broadcast
      */
     sendDiscoveryRequest() {
-        if (!this.isRunning || !this.socket) {
+        if (!this.isRunning || !this.sendSocket) {
             return Promise.reject(new Error('Discovery not running'));
         }
 
         return new Promise((resolve, reject) => {
             try {
-                console.log('TuyaDiscovery: Preparing discovery request');
+                console.log('📡 Enviando solicitud de descubrimiento...');
                 // Crear mensaje de descubrimiento simple
                 const discoveryMessage = JSON.stringify({
                     cmd: 'discovery',
@@ -237,9 +247,9 @@ class TuyaDiscovery extends EventEmitter {
 
                 const broadcastAddress = '255.255.255.255';
                 
-                this.socket.send(
+                this.sendSocket.send(
                     discoveryMessage,
-                    this.broadcastPort,
+                    this.discoveryPort,
                     broadcastAddress,
                     (error) => {
                         if (error) {
