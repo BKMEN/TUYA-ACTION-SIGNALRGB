@@ -13,6 +13,11 @@ Item {
     //title: "Controlador LED Tuya"
     visible: true
 
+    QtObject {
+        id: style
+        Material.theme: Material.Dark
+    }
+
     property var devices: []
     property int selectedDeviceIndex: -1
     property color selectedColor: "#ffffff"
@@ -97,7 +102,7 @@ Item {
                         Button {
                             text: isDiscovering ? "Buscando..." : "Buscar Dispositivos"
                             enabled: !isDiscovering
-                            
+
                             onClicked: {
                                 if (service && service.startDiscovery) {
                                     isDiscovering = true;
@@ -105,13 +110,13 @@ Item {
                                     showSuccess("Búsqueda iniciada...");
                                 }
                             }
+                        }
 
-                            BusyIndicator {
-                                anchors.centerIn: parent
-                                visible: isDiscovering
-                                width: 20
-                                height: 20
-                            }
+                        BusyIndicator {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: isDiscovering
+                            width: 20
+                            height: 20
                         }
 
                         Text {
@@ -294,7 +299,7 @@ Item {
                         text: isDiscovering ? "Buscando dispositivos..." : "No hay dispositivos encontrados.\nPresiona 'Buscar Dispositivos' para comenzar."
                         color: "#999"
                         horizontalAlignment: Text.AlignHCenter
-                        visible: devices.length === 0
+                        visible: deviceList.count === 0
                     }
                 }
             }
@@ -454,6 +459,9 @@ Item {
         function onDiscoveryComplete() {
             isDiscovering = false;
             showSuccess("Búsqueda completada");
+        }
+        function onControllersChanged() {
+            devices = service.getDevices();
         }
     }
 }
