@@ -447,6 +447,7 @@ Item {
 
     Component.onCompleted: {
         Material.theme = Material.Dark
+
         // Inicializar el puente con el backend si está disponible
         if (service && typeof service.initialize === "function") {
             service.initialize();
