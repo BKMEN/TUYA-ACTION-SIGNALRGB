@@ -150,6 +150,7 @@ function Shutdown(SystemSuspending) {
             discoveryServiceInstance = null;
         }
         controllers = [];
+        service.controllers = controllers;
         saveDeviceList();
         service.log("Plugin shutdown complete.");
     } catch (error) {
@@ -294,6 +295,7 @@ function loadSavedDevices() {
             }
         });
         service.controllers = controllers;
+        saveDeviceList();
         service.log('Loaded ' + loadedCount + ' devices from settings. Total controllers: ' + controllers.length);
     } catch (error) {
         service.log('Error loading saved devices: ' + error.message + (error.stack ? "\n" + error.stack : ""));
