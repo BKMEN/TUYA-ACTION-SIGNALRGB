@@ -9,6 +9,7 @@ import TuyaDiscoveryServiceInternal from './comms/Discovery.js';
 import TuyaController from './TuyaController.js';
 import TuyaDeviceModel from './models/TuyaDeviceModel.js';
 import DeviceList from './DeviceList.js';
+import service from './service.js';
 
 // Optional filesystem access if available (Node environments)
 let fs;
@@ -63,14 +64,15 @@ let controllers = [];
 let globalDebugMode = false;
 let globalDiscoveryTimeout = 5000;
 
-// CORREGIR: Simplificar manejo de service
-if (typeof service === 'undefined') {
-    global.service = { log: console.log };
-}
+
 
 // --- Funciones del Ciclo de Vida del Plugin Principal ---
 
 function Initialize() {
+    if (typeof service === 'undefined' || typeof service.log !== 'function') {
+        console.log("❌ Error: 'service' no está disponible o no es válido.");
+        return;
+    }
     try {
         service.log("Initializing Tuya LED Controller Plugin v2.0.1");
         service.log("🧪 PluginUIPath = " + PluginUIPath());
