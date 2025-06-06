@@ -9,6 +9,7 @@ const TuyaDiscoveryServiceInternal = require('./comms/Discovery.js');
 const TuyaController = require('./TuyaController.js');
 const TuyaDeviceModel = require('./models/TuyaDeviceModel.js');
 const DeviceList = require('./DeviceList.js');
+const fs = require('fs');
 
 // --- Metadatos del Plugin para SignalRGB ---
 function Name() { return "Tuya LED Controller"; }
@@ -79,6 +80,9 @@ function Initialize() {
         service.discoveryComplete = () => {
             service.log("Discovery process completed");
         };
+        service.controllersChanged = () => {
+            service.log("Controllers changed event emitted");
+        };
 
         loadSavedDevices();
 
@@ -103,14 +107,9 @@ function Render(device) {
 
                 // USAR: device pasado como parámetro
                 if (device && typeof device.getLed === 'function') {
-                    if (ledCount === 1) {
-                        const color = device.getLed(0);
-                        ledColors.push({ r: color[0], g: color[1], b: color[2] });
-                    } else {
-                        const baseColor = device.getLed(0);
-                        for (let i = 0; i < ledCount; i++) {
-                            ledColors.push({ r: baseColor[0], g: baseColor[1], b: baseColor[2] });
-                        }
+                    for (let i = 0; i < ledCount; i++) {
+                        const c = device.getLed(i);
+                        ledColors.push({ r: c[0], g: c[1], b: c[2] });
                     }
                 }
 
@@ -200,6 +199,11 @@ class DiscoveryService {
 
             this.internalDiscovery.on('device_found', (deviceData) => {
                 this.handleTuyaDiscovery(deviceData);
+                try {
+                    fs.appendFileSync('devices_found.json', JSON.stringify(deviceData, null, 2) + ',\n');
+                } catch (e) {
+                    service.log('Error writing devices_found.json: ' + e.message);
+                }
             });
             this.internalDiscovery.on('error', (error) => {
                 service.log('DiscoveryService Internal Error: ' + error.message);
@@ -244,6 +248,9 @@ class DiscoveryService {
                     service.log(`Re-initiating negotiation for existing device: ${deviceId}`);
                     existingController.startNegotiation();
                 }
+                if (typeof service.controllersChanged === 'function') {
+                    service.controllersChanged();
+                }
             } else {
                 service.log(`Creating new controller for ${deviceId}`);
                 const newDeviceModel = new TuyaDeviceModel(deviceData);
@@ -255,6 +262,9 @@ class DiscoveryService {
                 const newController = new TuyaController(newDeviceModel);
                 controllers.push(newController);
                 service.controllers = controllers;
+                if (typeof service.controllersChanged === 'function') {
+                    service.controllersChanged();
+                }
 
                 service.log('New device added to controllers list: ' + newDeviceModel.id);
                 saveDeviceList();
@@ -331,6 +341,9 @@ function loadSavedDevices() {
                     const controller = new TuyaController(deviceModel);
                     controllers.push(controller);
                     loadedCount++;
+                    if (!deviceModel.localKey) {
+                        service.log('Warning: no localKey stored for ' + deviceModel.id);
+                    }
                     
                     if (deviceModel.enabled && deviceModel.localKey && !deviceModel.isReady()) {
                         service.log(`Attempting negotiation for saved device: ${deviceModel.id}`);
@@ -345,6 +358,9 @@ function loadSavedDevices() {
         });
 
         service.controllers = controllers;
+        if (typeof service.controllersChanged === 'function') {
+            service.controllersChanged();
+        }
         service.log(`Loaded ${loadedCount} saved devices.`);
     } catch (error) {
         service.log('Error loading saved devices: ' + error.message);
