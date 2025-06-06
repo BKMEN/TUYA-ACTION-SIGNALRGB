@@ -25,7 +25,7 @@
 - `TuyaController.js` - Controlador central para gestionar dispositivos
 - `TuyaDevice.js` - Clase que representa un dispositivo Tuya
 - `crypto.js` - Funciones para cifrado y comunicación con dispositivos Tuya
-- `comms/` - Módulos para comunicación (Discovery, TuyaProtocol)
+- `comms/` - Módulos para comunicación (`Discovery`, `TuyaUDP`, `TuyaTCP`)
 - `ui/` - Componentes de interfaz de usuario para el plugin
 
 ---
