@@ -333,7 +333,8 @@ module.exports = {
     Shutdown,
     Validate,
     onParameterChange,
-    DiscoveryService
+    DiscoveryService,
+    Component
 };
 function Component() {
     return {
