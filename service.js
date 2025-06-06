@@ -4,7 +4,8 @@
 // the necessary methods and event placeholders so that the QML UI
 // and backend code can interact without throwing errors.
 
-import EventEmitter from './utils/EventEmitter.js';
+// Use CommonJS to ensure compatibility with SignalRGB's module loader
+const EventEmitter = require('./utils/EventEmitter.js');
 
 // Reuse existing global service if one was provided by SignalRGB
 const existing = (typeof global !== 'undefined' && global.service) ? global.service : null;
@@ -123,5 +124,5 @@ if (typeof global !== 'undefined') {
     global.service = svc;
 }
 
-export default svc;
+module.exports = svc;
 

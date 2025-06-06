@@ -4,12 +4,12 @@
  * @version 2.0.1 (Refactored based on fu-raz structure)
  */
 
-// Utilizamos importaciones ES6 para coherencia con SignalRGB
-import TuyaDiscoveryServiceInternal from './comms/Discovery.js';
-import TuyaController from './TuyaController.js';
-import TuyaDeviceModel from './models/TuyaDeviceModel.js';
-import DeviceList from './DeviceList.js';
-import service from './service.js';
+// Cargar dependencias usando CommonJS para compatibilidad con SignalRGB
+const TuyaDiscoveryServiceInternal = require('./comms/Discovery.js');
+const TuyaController = require('./TuyaController.js');
+const TuyaDeviceModel = require('./models/TuyaDeviceModel.js');
+const DeviceList = require('./DeviceList.js');
+const service = require('./service.js');
 
 // Optional filesystem access if available (Node environments)
 let fs;
@@ -437,7 +437,7 @@ function saveDeviceList() {
     }
 }
 
-export {
+module.exports = {
     Name,
     Version,
     Type,
