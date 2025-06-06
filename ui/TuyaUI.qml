@@ -46,6 +46,15 @@ Item {
         onTriggered: statusMessage = ""
     }
 
+    // Indicador sencillo para saber que el UI se cargó
+    Text {
+        id: uiLoadedLabel
+        text: "UI cargada"
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        color: "#ff0000"
+    }
+
     ScrollView {
         anchors.fill: parent
         anchors.margins: 20
@@ -438,8 +447,12 @@ Item {
     }
 
     Component.onCompleted: {
+        // Inicializar el puente con el backend si está disponible
+        if (service && typeof service.initialize === "function") {
+            service.initialize();
+        }
         // Cargar dispositivos al iniciar
-        if (service) {
+        if (service && typeof service.getDevices === "function") {
             devices = service.getDevices();
         }
     }
