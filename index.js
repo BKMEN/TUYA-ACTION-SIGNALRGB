@@ -88,11 +88,10 @@ function Initialize() {
         throw error;
     }
 }
-function Component() {
-    return {
-        UI: "ui/TuyaUI.qml"  // Asegúrate que el archivo se llama así y está en la misma carpeta o en `/ui/`
-    };
+function PluginUIPath() {
+    return "ui/TuyaUI.qml"; // o simplemente "TuyaUI.qml" si está en la raíz
 }
+
 // CORREGIR: Render debe recibir device como parámetro
 function Render(device) {
     try {
@@ -358,7 +357,7 @@ module.exports = {
     Validate,
     onParameterChange,
     DiscoveryService,
-    Component
+    PluginUIPath
 };
 
 
