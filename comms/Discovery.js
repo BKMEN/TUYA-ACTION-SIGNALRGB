@@ -15,6 +15,9 @@ try {
     udp = require('dgram');
 }
 const EventEmitter = require('../utils/EventEmitter.js');
+const crypto = require('crypto');
+const TuyaEncryption = require('../utils/TuyaEncryption.js');
+const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
 
 class TuyaDiscovery extends EventEmitter {
     constructor(config = {}) {
@@ -92,10 +95,18 @@ class TuyaDiscovery extends EventEmitter {
      */
     handleDiscoveryMessage(message, rinfo) {
         try {
-            // Log raw message to help debugging parsing issues
-            console.log('Discovery raw message:', message.toString());
-            // Procesar mensaje de descubrimiento
-            const deviceInfo = this.parseDiscoveryMessage(message, rinfo);
+            const prefix = message.slice(0, 4);
+            let deviceInfo = null;
+
+            if (prefix.equals(Buffer.from([0x00, 0x00, 0x66, 0x99]))) {
+                console.log('DiscoveryService: GCM packet detected from', rinfo.address);
+                deviceInfo = this.parseGcmDiscovery(message, rinfo);
+            } else {
+                // Log raw message to help debugging parsing issues
+                console.log('Discovery raw message:', message.toString());
+                deviceInfo = this.parseDiscoveryMessage(message, rinfo);
+            }
+
             if (deviceInfo) {
                 this.devices.set(deviceInfo.id, deviceInfo);
                 this.emit('device_found', deviceInfo);
@@ -130,6 +141,27 @@ class TuyaDiscovery extends EventEmitter {
     }
 
     /**
+     * Parsea mensaje cifrado con GCM (protocolo 3.4+)
+     */
+    parseGcmDiscovery(message, rinfo) {
+        const data = this.decryptGCM(message);
+        if (!data) {
+            console.log('DiscoveryService: unable to decrypt GCM packet');
+            return null;
+        }
+
+        return {
+            id: data.gwId || data.devId,
+            ip: rinfo.address,
+            port: rinfo.port,
+            productKey: data.productKey,
+            version: data.version || '3.4',
+            timestamp: Date.now(),
+            raw: data
+        };
+    }
+
+    /**
      * Parsea mensaje binario de descubrimiento
      */
     parseBinaryDiscovery(message, rinfo) {
@@ -152,6 +184,38 @@ class TuyaDiscovery extends EventEmitter {
             timestamp: Date.now(),
             binary: true
         };
+    }
+
+    /**
+     * Convierte bytes en string hexadecimal
+     */
+    toHexString(byteArray) {
+        return Array.from(byteArray, (byte) => {
+            return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+        }).join('');
+    }
+
+    /**
+     * Descifra un paquete GCM proveniente de broadcast
+     */
+    decryptGCM(buffer) {
+        try {
+            const aad = buffer.slice(4, 18);
+            const iv = buffer.slice(18, 30);
+            const ciphertext = buffer.slice(30, -20);
+            const tag = buffer.slice(-20, -4);
+
+            const decrypted = TuyaEncryption.decryptGCM(ciphertext, UDP_KEY, iv, tag, aad);
+            if (!decrypted) {
+                return null;
+            }
+
+            const jsonString = decrypted.slice(4).toString().replace(/\0+$/, '').trim();
+            return JSON.parse(jsonString);
+        } catch (err) {
+            console.log('decryptGCM error:', err.message);
+            return null;
+        }
     }
 
     /**
