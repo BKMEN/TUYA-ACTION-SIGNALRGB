@@ -315,7 +315,11 @@ function saveDeviceList() {
         if (error.stack) service.log(error.stack);
     }
 }
-
+function Component() {
+    return {
+        UI: "ui/TuyaUI.qml"  // Asegúrate que el archivo se llama así y está en la misma carpeta o en `/ui/`
+    };
+}
 module.exports = {
     Name,
     Version,
@@ -336,9 +340,5 @@ module.exports = {
     DiscoveryService,
     Component
 };
-function Component() {
-    return {
-        UI: "ui/TuyaUI.qml"  // Asegúrate que el archivo se llama así y está en la misma carpeta o en `/ui/`
-    };
-}
+
 
