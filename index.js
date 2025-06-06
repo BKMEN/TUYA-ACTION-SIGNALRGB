@@ -123,7 +123,8 @@ function Initialize() {
     }
 }
 function PluginUIPath() {
-    return "TuyaUI.qml"; // Temporalmente en la raíz para descartar error de ruta
+    // UI principal ubicado en la raíz del proyecto
+    return "TuyaUI.qml";
 }
 
 // CORREGIR: Render debe recibir device como parámetro
