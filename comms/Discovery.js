@@ -21,7 +21,9 @@ class TuyaDiscovery extends EventEmitter {
         super();
         this.isRunning = false;
         this.discoveryPort = config.port || 6666;
-        this.broadcastPort = config.broadcastPort || 6667;
+        // Use port 6666 for broadcast by default as most Tuya devices listen
+        // on this port for discovery messages. Allow override via config.
+        this.broadcastPort = config.broadcastPort || 6666;
         this.devices = new Map();
         this.socket = null;
         this.config = config;
@@ -90,6 +92,8 @@ class TuyaDiscovery extends EventEmitter {
      */
     handleDiscoveryMessage(message, rinfo) {
         try {
+            // Log raw message to help debugging parsing issues
+            console.log('Discovery raw message:', message.toString());
             // Procesar mensaje de descubrimiento
             const deviceInfo = this.parseDiscoveryMessage(message, rinfo);
             if (deviceInfo) {
@@ -106,8 +110,9 @@ class TuyaDiscovery extends EventEmitter {
      */
     parseDiscoveryMessage(message, rinfo) {
         try {
-            // Intentar parsear como JSON
-            const data = JSON.parse(message.toString());
+            // Intentar parsear como JSON (elimina nulos o espacios)
+            const dataStr = message.toString().replace(/\0+$/, '').trim();
+            const data = JSON.parse(dataStr);
             
             return {
                 id: data.gwId || data.devId,
