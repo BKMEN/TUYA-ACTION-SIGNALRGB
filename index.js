@@ -262,8 +262,23 @@ class DiscoveryService {
                 const newController = new TuyaController(newDeviceModel);
                 controllers.push(newController);
                 service.controllers = controllers;
+                if (typeof service.addController === 'function') {
+                    try {
+                        service.addController(newController);
+                    } catch (addErr) {
+                        service.log('addController error: ' + addErr.message);
+                    }
+                }
                 if (typeof service.controllersChanged === 'function') {
                     service.controllersChanged();
+                }
+
+                if (typeof service.deviceDiscovered === 'function') {
+                    try {
+                        service.deviceDiscovered(newDeviceModel.id, newDeviceModel.ip, newDeviceModel.localKey || '');
+                    } catch (ddErr) {
+                        service.log('deviceDiscovered error: ' + ddErr.message);
+                    }
                 }
 
                 service.log('New device added to controllers list: ' + newDeviceModel.id);
