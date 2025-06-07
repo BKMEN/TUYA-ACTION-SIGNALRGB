@@ -3,7 +3,7 @@
  * Utilidades de cifrado para el protocolo Tuya v3.5
  */
 
-const crypto = require('crypto');
+import crypto from 'node:crypto';
 
 const TuyaEncryption = {
     /**
@@ -160,4 +160,5 @@ const TuyaEncryption = {
     }
 };
 
-module.exports = TuyaEncryption;
+export default TuyaEncryption;
+

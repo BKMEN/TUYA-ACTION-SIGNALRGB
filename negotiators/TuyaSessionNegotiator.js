@@ -2,10 +2,10 @@
  * Manejador de negociación de sesión para protocolo Tuya v3.5
  */
 
-const EventEmitter = require('../utils/EventEmitter.js');
-const dgram = require('dgram');
-const crypto = require('crypto');
-const TuyaEncryption = require('../utils/TuyaEncryption.js');
+import EventEmitter from '../utils/EventEmitter.js';
+import dgram from 'node:dgram';
+import crypto from 'node:crypto';
+import TuyaEncryption from '../utils/TuyaEncryption.js';
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
 
 class TuyaSessionNegotiator extends EventEmitter {
@@ -250,4 +250,5 @@ class TuyaSessionNegotiator extends EventEmitter {
     }
 }
 
-module.exports = TuyaSessionNegotiator;
+export default TuyaSessionNegotiator;
+

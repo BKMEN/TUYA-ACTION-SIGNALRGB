@@ -74,4 +74,5 @@ const DeviceList = {
 };
 
 // SOLO exportar DeviceList, SIN ProductId
-module.exports = DeviceList;
+export default DeviceList;
+

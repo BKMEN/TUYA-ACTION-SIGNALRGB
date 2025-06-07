@@ -3,7 +3,7 @@
  */
 
 // Funciones básicas para el descubrimiento y comunicación Tuya
-const crypto = require('crypto');
+import crypto from 'node:crypto';
 
 // Crear paquete de descubrimiento Tuya (para broadcast UDP)
 function createDiscoveryPacket() {
@@ -65,9 +65,10 @@ function parseSetColorResponse(msg) {
 }
 
 // Exportar funciones
-module.exports = {
+export {
     createDiscoveryPacket,
     parseDiscoveryResponse,
     createSetColorPacket,
     parseSetColorResponse
 };
+

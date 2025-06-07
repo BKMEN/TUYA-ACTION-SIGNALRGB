@@ -6,6 +6,12 @@
 
 **TUYA-ACTION-SIGNALRGB** es un plugin para [SignalRGB](https://www.signalrgb.com/) que permite descubrir, controlar y sincronizar dispositivos LED WiFi basados en Tuya desde el ecosistema SignalRGB. Compatible con tiras LED, bombillas, paneles y más.
 
+## ⚙️ Entorno totalmente ESM
+
+Todo el código está escrito utilizando la sintaxis de módulos de ECMAScript.
+El archivo `package.json` define `"type": "module"`, por lo que se
+requiere Node.js 14 o superior para ejecutar el proyecto.
+
 ---
 
 ## ⚡️ Características

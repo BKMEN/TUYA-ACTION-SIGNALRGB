@@ -234,7 +234,7 @@ class TuyaPacket {
     }
 }
 
-module.exports = TuyaPacket;
+export default TuyaPacket;
 
 /* EJEMPLO DE USO:
 

@@ -4,7 +4,7 @@
  * Permite establecer la conexión, enviar datos y cerrar el socket.
  */
 
-const net = require('net');
+import net from 'node:net';
 
 class TuyaTCP {
     constructor(host, port = 6668) {
@@ -58,4 +58,5 @@ class TuyaTCP {
     }
 }
 
-module.exports = TuyaTCP;
+export default TuyaTCP;
+

@@ -111,4 +111,5 @@ class TuyaDeviceModel {
 }
 
 // SOLO exportar la clase, SIN ProductId
-module.exports = TuyaDeviceModel;
+export default TuyaDeviceModel;
+

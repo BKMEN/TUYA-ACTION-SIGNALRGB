@@ -1,5 +1,5 @@
-const assert = require('assert');
-const TuyaDevice = require('../TuyaDevice');
+import assert from 'node:assert';
+import TuyaDevice from '../TuyaDevice.js';
 
 (() => {
     const dev = new TuyaDevice({ id: '1', ip: '127.0.0.1', key: '1234' });
@@ -8,3 +8,4 @@ const TuyaDevice = require('../TuyaDevice');
         console.log('TuyaDevice tests passed');
     });
 })();
+

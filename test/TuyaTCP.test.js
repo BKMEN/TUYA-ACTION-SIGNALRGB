@@ -1,6 +1,6 @@
-const net = require('net');
-const assert = require('assert');
-const TuyaTCP = require('../comms/TuyaTCP');
+import net from 'node:net';
+import assert from 'node:assert';
+import TuyaTCP from '../comms/TuyaTCP.js';
 
 (async () => {
     // create simple echo server
@@ -17,3 +17,4 @@ const TuyaTCP = require('../comms/TuyaTCP');
     server.close();
     console.log('TuyaTCP tests passed');
 })();
+

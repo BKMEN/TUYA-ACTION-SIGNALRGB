@@ -3,15 +3,16 @@
  * Basado en TuyaController.test.js del plugin FU-RAZ
  */
 
-const TuyaDeviceModel = require('./models/TuyaDeviceModel.js');
-const TuyaSessionNegotiator = require('./negotiators/TuyaSessionNegotiator.js');
-const TuyaCommandEncryptor = require('./Crypto/TuyaCommandEncryptor.js');
-const DeviceList = require('./DeviceList.js');
+import TuyaDeviceModel from './models/TuyaDeviceModel.js';
+import TuyaSessionNegotiator from './negotiators/TuyaSessionNegotiator.js';
+import TuyaCommandEncryptor from './Crypto/TuyaCommandEncryptor.js';
+import DeviceList from './DeviceList.js';
+
 let udp;
 try {
-    udp = require('@SignalRGB/udp');
+    ({ default: udp } = await import('@SignalRGB/udp'));
 } catch (err) {
-    udp = require('dgram');
+    udp = await import('node:dgram');
 }
 
 class TuyaController {
@@ -255,4 +256,5 @@ class TuyaController {
     }
 }
 
-module.exports = TuyaController;
+export default TuyaController;
+

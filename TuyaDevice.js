@@ -4,8 +4,8 @@
  */
 
 // CORREGIR: Eliminar módulos nativos no compatibles
-const EventEmitter = require('./utils/EventEmitter.js');
-const TuyaPacket = require('./utils/TuyaPacket.js'); // CORREGIR: Agregar .js
+import EventEmitter from './utils/EventEmitter.js';
+import TuyaPacket from './utils/TuyaPacket.js';
 
 class TuyaDevice extends EventEmitter {
     constructor(options) {
@@ -541,4 +541,4 @@ class TuyaDevice extends EventEmitter {
     }
 }
 
-module.exports = TuyaDevice;
+export default TuyaDevice;

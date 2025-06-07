@@ -2,6 +2,8 @@
  * Encriptador de comandos basado en TuyaEncryptor del plugin FU-RAZ
  */
 
+import crypto from 'node:crypto';
+
 class TuyaCommandEncryptor {
     constructor(sessionKey) {
         this.sessionKey = Buffer.from(sessionKey, 'hex');
@@ -123,4 +125,5 @@ class TuyaCommandEncryptor {
     }
 }
 
-module.exports = TuyaCommandEncryptor;
+export default TuyaCommandEncryptor;
+

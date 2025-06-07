@@ -6,8 +6,7 @@
 
 'use strict';
 
-// Use CommonJS to ensure compatibility with SignalRGB's module loader
-const EventEmitter = require('./utils/EventEmitter.js');
+import EventEmitter from './utils/EventEmitter.js';
 
 // Reuse existing global service if one was provided by SignalRGB
 const existing = (typeof global !== 'undefined' && global.service) ? global.service : null;
@@ -126,5 +125,6 @@ if (typeof global !== 'undefined') {
     global.service = svc;
 }
 
-module.exports = svc;
+export default svc;
+
 

@@ -7,9 +7,9 @@
 
 let dgram;
 try {
-    dgram = require('@SignalRGB/udp');
+    ({ default: dgram } = await import('@SignalRGB/udp'));
 } catch (err) {
-    dgram = require('dgram');
+    dgram = await import('node:dgram');
 }
 
 class TuyaUDP {
@@ -48,4 +48,5 @@ class TuyaUDP {
     }
 }
 
-module.exports = TuyaUDP;
+export default TuyaUDP;
+
