@@ -3,7 +3,7 @@
  * @author BKMEN
  * @version 2.0.1 (Refactored based on fu-raz structure)
  */
-'use strict';
+
 
 // Cargar dependencias usando la sintaxis de import
 import TuyaDiscoveryServiceInternal from './comms/Discovery.js';
@@ -29,6 +29,17 @@ function logInfo(...msg) {
         service.log('[TuyaPlugin]', ...msg);
     }
 }
+
+function Components() {
+    return [
+        {
+            id: "tuyaController",
+            name: "Tuya LED Controller",
+            controller: TuyaController
+        }
+    ];
+}
+
 
 function logError(...msg) {
     logger.error(...msg);
@@ -141,11 +152,12 @@ export function Initialize() {
         throw error;
     }
 }
+
+
 export function PluginUIPath() {
     // UI principal ubicado en la raíz del proyecto
     return "TuyaUI.qml";
 }
-
 // CORREGIR: Render debe recibir device como parámetro
 export function Render(device) {
     try {
