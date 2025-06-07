@@ -9,6 +9,9 @@ import TuyaEncryption from './TuyaEncryption.js';
 import TuyaEncryptor from './TuyaEncryptor.js';
 import TuyaNegotiationMessage from './TuyaNegotiationMessage.js';
 import TuyaMessage from './TuyaMessage.js';
+import TuyaGCMParser from './TuyaGCMParser.js';
+import gcmBuffer from './GCMBuffer.js';
+import SessionCache from './SessionCache.js';
 
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest('hex');
 
@@ -23,6 +26,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.maxRetries = options.maxRetries || 3;
         this.retryInterval = options.retryInterval || 5000;
         this.debugMode = options.debugMode || false;
+        this.gcmBuffer = options.gcmBuffer || gcmBuffer;
 
         this.sessionKey = null;
         this.sessionIV = null;
@@ -59,6 +63,44 @@ class TuyaSessionNegotiator extends EventEmitter {
         return new Promise((resolve, reject) => {
             const socket = dgram.createSocket('udp4');
             this.socket = socket;
+
+            const cached = this.gcmBuffer.get(this.ip);
+            if (cached) {
+                try {
+                    const res = this.parseHandshakeResponse(cached);
+                    if (res && res.sessionKey) {
+                        this.sessionKey = res.sessionKey;
+                        this.sessionIV = res.sessionIV;
+                        this.deviceRandom = res.deviceRandom;
+                        SessionCache.set(this.deviceId, {
+                            sessionKey: this.sessionKey,
+                            sessionIV: this.sessionIV,
+                            deviceRandom: this.deviceRandom
+                        });
+                        this.retryCount = 0;
+                        this.socket = null;
+                        socket.close();
+                        this.emit('success', {
+                            sessionKey: this.sessionKey,
+                            sessionIV: this.sessionIV,
+                            deviceRandom: this.deviceRandom,
+                            deviceId: this.deviceId,
+                            ip: this.ip,
+                            port: this.port
+                        });
+                        return resolve({
+                            sessionKey: this.sessionKey,
+                            sessionIV: this.sessionIV,
+                            deviceRandom: this.deviceRandom,
+                            deviceId: this.deviceId,
+                            ip: this.ip,
+                            port: this.port
+                        });
+                    }
+                } catch (e) {
+                    // ignore cached packet errors
+                }
+            }
 
             const clientRandom = TuyaEncryption.generateRandomHexBytes(16);
             this._lastRandom = clientRandom;
@@ -127,6 +169,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             });
 
             const onMessage = (msg, rinfo) => {
+                this.gcmBuffer.add(rinfo.address, msg);
                 if (rinfo.address !== this.ip) {
                     return;
                 }
@@ -153,6 +196,12 @@ class TuyaSessionNegotiator extends EventEmitter {
                 this.sessionKey = response.sessionKey;
                 this.sessionIV = response.sessionIV;
                 this.deviceRandom = response.deviceRandom;
+
+                SessionCache.set(this.deviceId, {
+                    sessionKey: this.sessionKey,
+                    sessionIV: this.sessionIV,
+                    deviceRandom: this.deviceRandom
+                });
 
                 clearInterval(retryTimer);
                 clearTimeout(timeoutId);
@@ -240,16 +289,13 @@ class TuyaSessionNegotiator extends EventEmitter {
      * Parsea la respuesta del handshake
      */
     parseHandshakeResponse(buffer) {
-        const msg = TuyaMessage.parse(buffer);
-        if (!msg.crcValid) throw new Error('Invalid CRC in handshake');
-        if (msg.cmd !== 0x08) throw new Error('Unexpected command');
-        const { iv, payload } = this.decryptGcmPacket(msg, 0x08);
-        if (!payload) throw new Error('Failed to decrypt handshake');
+        const result = TuyaGCMParser.parse(buffer, 0x08);
+        if (!result) throw new Error('Invalid handshake packet');
         if ((service && service.debug) || this.debugMode) {
             const log = service && service.debug ? service.debug.bind(service) : console.debug;
-            log('Handshake decrypted:', payload.toString('hex'));
+            log('Handshake decrypted:', result.payload.toString('hex'));
         }
-        const data = JSON.parse(payload.toString());
+        const data = JSON.parse(result.payload.toString());
         const deviceRandom = data.random || data.rnd || '';
         const sessionKey = TuyaEncryption.deriveSessionKey(this.deviceKey, this._lastRandom, deviceRandom);
         if (!sessionKey) throw new Error('Invalid negotiation response');
@@ -261,7 +307,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             const log = service && service.debug ? service.debug.bind(service) : console.debug;
             log('Negotiator sessionKey', sessionKey);
         }
-        return { ...data, sessionKey, sessionIV: iv.toString('hex'), deviceRandom };
+        return { ...data, sessionKey, sessionIV: result.iv, deviceRandom };
     }
 
     /**
@@ -289,12 +335,8 @@ class TuyaSessionNegotiator extends EventEmitter {
     handleQueue(now = Date.now()) {
         if (this.sessionKey) return;
         if (this.isNegotiating) return;
-        if (this.lastErrorTime && now - this.lastErrorTime >= this.retryInterval) {
-            this.lastErrorTime = 0;
-            this.retryCount = 0;
-            return this.start().catch(() => {});
-        }
-        if (now - this.lastAttempt < this.retryInterval) return;
+        const interval = this.retryInterval * Math.pow(2, this.retryCount);
+        if (this.lastErrorTime && now - this.lastErrorTime < interval) return;
         if (this.retryCount >= this.maxRetries) return;
         this.retryCount++;
         this.lastAttempt = now;

@@ -5,6 +5,8 @@ class NegotiatorManager extends EventEmitter {
     constructor() {
         super();
         this.negotiators = new Map();
+        this.failCounts = new Map();
+        this.controllers = new Map();
     }
 
     create(options) {
@@ -13,8 +15,24 @@ class NegotiatorManager extends EventEmitter {
         if (this.negotiators.has(id)) return this.negotiators.get(id);
         const negotiator = new TuyaSessionNegotiator(options);
         this.negotiators.set(id, negotiator);
-        negotiator.on('success', data => this.emit('negotiation_success', data));
-        negotiator.on('error', err => this.emit('negotiation_error', id, err));
+        this.failCounts.set(id, 0);
+        if (options.controller) this.controllers.set(id, options.controller);
+        negotiator.on('success', data => {
+            this.failCounts.set(id, 0);
+            this.emit('negotiation_success', data);
+        });
+        negotiator.on('error', err => {
+            const count = (this.failCounts.get(id) || 0) + 1;
+            this.failCounts.set(id, count);
+            this.emit('negotiation_error', id, err);
+            if (count >= 3) {
+                const ctrl = this.controllers.get(id);
+                if (ctrl && typeof ctrl.setOffline === 'function') {
+                    ctrl.setOffline();
+                }
+                this.emit('device_offline', id);
+            }
+        });
         return negotiator;
     }
 
@@ -27,7 +45,13 @@ class NegotiatorManager extends EventEmitter {
         if (n) {
             n.cleanup();
             this.negotiators.delete(deviceId);
+            this.failCounts.delete(deviceId);
+            this.controllers.delete(deviceId);
         }
+    }
+
+    getFailureCount(deviceId) {
+        return this.failCounts.get(deviceId) || 0;
     }
 }
 

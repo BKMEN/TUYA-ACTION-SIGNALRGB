@@ -33,6 +33,7 @@ class TuyaController {
         this.negotiator = null;
         this.encryptor = null;
         this.socket = null; // Socket persistente para comandos
+        this.online = true;
     }
 
     // Método llamado desde QML para actualizar configuración
@@ -248,6 +249,13 @@ class TuyaController {
         } catch (error) {
             service.log('Error in sendCommand: ' + error.message);
             throw error;
+        }
+    }
+
+    setOffline() {
+        this.online = false;
+        if (this.negotiator) {
+            this.negotiator.cleanup();
         }
     }
 
