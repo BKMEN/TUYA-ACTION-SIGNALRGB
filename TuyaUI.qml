@@ -1,9 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
-import QtQuick.Dialogs 1.3
 import QtQml 2.15
 import QtQuick.Controls.Material 2.15
-import Qt5Compat.GraphicalEffects
 import QtQuick.Dialogs 6.5
 
 
