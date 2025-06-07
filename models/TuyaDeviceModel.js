@@ -15,9 +15,10 @@ class TuyaDeviceModel {
         this.version = discoveryData.version || '3.3';
         
         // Configuración del usuario (persistente)
-        this.localKey = '';
-        this.enabled = false;
-        this.deviceType = 'LED Strip';
+        this.localKey = discoveryData.localKey || discoveryData.key || '';
+        this.enabled = discoveryData.enabled || false;
+        this.deviceType = discoveryData.deviceType || discoveryData.type || 'LED Strip';
+        this.ledCount = discoveryData.ledCount || 1;
         
         // Estado de conexión
         this.sessionKey = null;
@@ -27,8 +28,13 @@ class TuyaDeviceModel {
         // Metadatos
         this.lastSeen = Date.now();
         
-        // Cargar configuración guardada
-        this.loadSettings();
+        // Cargar configuración guardada. Si no existen ajustes previos
+        // se mantienen los valores proporcionados por discoveryData.
+        const loaded = this.loadSettings();
+        if (!loaded) {
+            // No hay configuración previa almacenada, se usarán los valores
+            // proporcionados por el descubrimiento.
+        }
     }
 
     getCurrentConfig() {
@@ -43,6 +49,7 @@ class TuyaDeviceModel {
             localKey: this.localKey,
             enabled: this.enabled,
             deviceType: this.deviceType,
+            ledCount: this.ledCount,
             lastSeen: this.lastSeen
         };
     }
@@ -75,6 +82,9 @@ class TuyaDeviceModel {
                     this.localKey = config.localKey;
                     this.enabled = config.enabled || false;
                     this.deviceType = config.deviceType || 'LED Strip';
+                    if (typeof config.ledCount === 'number') {
+                        this.ledCount = config.ledCount;
+                    }
                     service.log(`Settings loaded for device: ${this.id} (enabled=${this.enabled}, localKey=${this.localKey})`);
                     return true;
                 }

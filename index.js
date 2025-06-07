@@ -328,10 +328,11 @@ export class DiscoveryService {
                 logInfo(`Creating new controller for ${deviceId}`);
                 const predefined = DeviceList.predefinedDevices.find(d => d.id === deviceId);
                 if (predefined) {
-                    deviceData.key = predefined.key;
+                    // Map predefined fields to the model property names
+                    deviceData.localKey = predefined.key;
                     deviceData.name = predefined.name;
-                    deviceData.leds = predefined.leds;
-                    deviceData.type = predefined.type;
+                    deviceData.ledCount = predefined.leds;
+                    deviceData.deviceType = predefined.type;
                     deviceData.version = predefined.version || deviceData.version;
                     deviceData.enabled = true;
                 }
