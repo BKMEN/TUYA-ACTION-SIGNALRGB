@@ -14,12 +14,33 @@ import service from './service.js';
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
+// Cargar dependencias de CommonJS usando createRequire
+// Logger aplica color y prefijo a cada mensaje para dar "tonalidad" uniforme al plugin
+const logger = require('./utils/Logger.js');
 let fs;
 try {
     fs = require('fs');
 } catch (e) {
     fs = undefined;
 }
+
+// ----------------------------------------------
+// Helper logging functions with consistent style
+// ----------------------------------------------
+function logInfo(...msg) {
+    logger.info(...msg);
+    if (service && typeof service.log === 'function') {
+        service.log('[TuyaPlugin]', ...msg);
+    }
+}
+
+function logError(...msg) {
+    logger.error(...msg);
+    if (service && typeof service.log === 'function') {
+        service.log('[TuyaPlugin]', ...msg);
+    }
+}
+
 
 // --- Metadatos del Plugin para SignalRGB ---
 export function Name() { return "Tuya LED Controller"; }
@@ -70,20 +91,20 @@ let globalDiscoveryTimeout = 5000;
 
 export function Initialize() {
     if (typeof service === 'undefined' || typeof service.log !== 'function') {
-        console.log("❌ Error: 'service' no está disponible o no es válido.");
+        logError("❌ Error: 'service' no está disponible o no es válido.");
         return;
     }
     try {
-        service.log("Initializing Tuya LED Controller Plugin v2.0.1");
-        service.log("🧪 PluginUIPath = " + PluginUIPath());
+        logInfo("Initializing Tuya LED Controller Plugin v2.0.1");
+        logInfo("🧪 PluginUIPath = " + PluginUIPath());
 
         // Configurar el objeto service para QML
         service.controllers = controllers;
         service.getDevices = () => controllers;
         service.startDiscovery = () => {
-            service.log("QML requested discovery");
+            logInfo("QML requested discovery");
             if (!discoveryServiceInstance) {
-                service.log("DiscoveryService instance missing, creating...");
+                logInfo("DiscoveryService instance missing, creating...");
                 discoveryServiceInstance = new DiscoveryService();
                 if (typeof discoveryServiceInstance.Initialize === 'function') {
                     discoveryServiceInstance.Initialize();
@@ -94,33 +115,33 @@ export function Initialize() {
             }
         };
         service.initialize = function() {
-            service.log("Service (QML interface) initialized from QML");
+            logInfo("Service (QML interface) initialized from QML");
         };
         service.deviceTypes = (typeof DeviceList.getDeviceTypes === 'function') ? DeviceList.getDeviceTypes() : [];
 
         // Funciones de callback para QML
         service.deviceConfigured = (deviceId) => {
-            service.log('Device configured: ' + deviceId);
+            logInfo('Device configured: ' + deviceId);
         };
         service.deviceError = (deviceId, error) => {
-            service.log(`Device error ${deviceId}: ${error}`);
+            logError(`Device error ${deviceId}: ${error}`);
         };
         service.negotiationComplete = (deviceId) => {
-            service.log(`Negotiation complete for device: ${deviceId}`);
+            logInfo(`Negotiation complete for device: ${deviceId}`);
         };
         service.discoveryComplete = () => {
-            service.log("Discovery process completed");
+            logInfo("Discovery process completed");
         };
         service.controllersChanged = () => {
-            service.log("Controllers changed event emitted");
+            logInfo("Controllers changed event emitted");
         };
 
         loadSavedDevices();
 
-        service.log("Plugin initialized successfully.");
+        logInfo("Plugin initialized successfully.");
     } catch (error) {
-        service.log("Error initializing plugin: " + error.message);
-        if (error.stack) service.log(error.stack);
+        logError("Error initializing plugin: " + error.message);
+        if (error.stack) logError(error.stack);
         throw error;
     }
 }
@@ -151,13 +172,13 @@ export function Render(device) {
             }
         });
     } catch (error) {
-        service.log("Error in Render: " + error.message);
-        if (error.stack) service.log(error.stack);
+        logError("Error in Render: " + error.message);
+        if (error.stack) logError(error.stack);
     }
 }
 
 export function onParameterChange(parameterName, value) {
-    service.log(`Parameter changed: ${parameterName} = ${value}`);
+    logInfo(`Parameter changed: ${parameterName} = ${value}`);
     switch (parameterName) {
         case "debugMode":
             globalDebugMode = value;
@@ -180,7 +201,7 @@ export function onParameterChange(parameterName, value) {
 
 export function Shutdown(SystemSuspending) {
     try {
-        service.log("Shutting down Tuya LED Controller Plugin. System Suspending: " + SystemSuspending);
+        logInfo("Shutting down Tuya LED Controller Plugin. System Suspending: " + SystemSuspending);
         controllers.forEach(controller => {
             if (SystemSuspending) {
                 // Opcional: apagar LEDs al suspender sistema
@@ -199,10 +220,10 @@ export function Shutdown(SystemSuspending) {
             discoveryServiceInstance = null;
         }
         controllers = [];
-        service.log("Plugin shutdown complete.");
+        logInfo("Plugin shutdown complete.");
     } catch (error) {
-        service.log("Error during shutdown: " + error.message);
-        if (error.stack) service.log(error.stack);
+        logError("Error during shutdown: " + error.message);
+        if (error.stack) logError(error.stack);
     }
 }
 
@@ -215,14 +236,14 @@ let discoveryServiceInstance = null;
 
 export class DiscoveryService {
     constructor() {
-        service.log("Tuya DiscoveryService constructor called.");
+        logInfo("Tuya DiscoveryService constructor called.");
         this.internalDiscovery = null;
         this.negotiatorInstances = new Map();
         discoveryServiceInstance = this;
     }
 
     Initialize() {
-        service.log("Tuya DiscoveryService: Initialize method called.");
+        logInfo("Tuya DiscoveryService: Initialize method called.");
         try {
             this.internalDiscovery = new TuyaDiscoveryServiceInternal({
                 debugMode: globalDebugMode,
@@ -237,63 +258,63 @@ export class DiscoveryService {
                         fs.appendFileSync('devices_found.json', JSON.stringify(deviceData, null, 2) + ',\n');
                     }
                 } catch (e) {
-                    service.log('Error writing devices_found.json: ' + e.message);
+                    logError('Error writing devices_found.json: ' + e.message);
                 }
             });
             this.internalDiscovery.on('error', (error) => {
-                service.log('DiscoveryService Internal Error: ' + error.message);
+                logError('DiscoveryService Internal Error: ' + error.message);
             });
             this.internalDiscovery.on('started', () => {
-                service.log('DiscoveryService Internal: Discovery started.');
+                logInfo('DiscoveryService Internal: Discovery started.');
             });
             this.internalDiscovery.on('stopped', () => {
-                service.log("DiscoveryService Internal: Discovery stopped.");
+                logInfo("DiscoveryService Internal: Discovery stopped.");
                 if (typeof service.discoveryComplete === 'function') {
                     service.discoveryComplete();
                 }
             });
 
-            service.log("Tuya DiscoveryService internal components initialized.");
+            logInfo("Tuya DiscoveryService internal components initialized.");
         } catch (e) {
-            service.log("Error in DiscoveryService.Initialize: " + e.message);
-            if (e.stack) service.log(e.stack);
+            logError("Error in DiscoveryService.Initialize: " + e.message);
+            if (e.stack) logError(e.stack);
         }
     }
 
     handleTuyaDiscovery(deviceData) {
         if (!deviceData) {
-            service.log('DiscoveryService: handleTuyaDiscovery called with undefined data');
+            logError('DiscoveryService: handleTuyaDiscovery called with undefined data');
             return;
         }
 
-        service.log(`DiscoveryService: Handling discovered device: ${deviceData.id || deviceData.gwId}`);
+        logInfo(`DiscoveryService: Handling discovered device: ${deviceData.id || deviceData.gwId}`);
         try {
             const deviceId = deviceData.id || deviceData.gwId;
             if (!deviceId) {
-                service.log("Discovered device has no ID. Skipping.");
+                logError("Discovered device has no ID. Skipping.");
                 return;
             }
 
             let existingController = controllers.find(c => c.device.id === deviceId);
 
             if (existingController) {
-                service.log(`Device ${deviceId} already exists. Updating info.`);
+                logInfo(`Device ${deviceId} already exists. Updating info.`);
                 existingController.device.updateFromDiscovery(deviceData);
                 if (!existingController.device.isReady() && existingController.device.localKey && existingController.device.enabled) {
-                    service.log(`Re-initiating negotiation for existing device: ${deviceId}`);
+                    logInfo(`Re-initiating negotiation for existing device: ${deviceId}`);
                     existingController.startNegotiation();
                 }
                 if (typeof service.controllersChanged === 'function') {
                     service.controllersChanged();
                 }
             } else {
-                service.log(`Creating new controller for ${deviceId}`);
+                logInfo(`Creating new controller for ${deviceId}`);
                 const newDeviceModel = new TuyaDeviceModel(deviceData);
                 if (!newDeviceModel) {
-                    service.log('DiscoveryService: failed to initialize TuyaDeviceModel');
+                    logError('DiscoveryService: failed to initialize TuyaDeviceModel');
                     return;
                 }
-                service.log(`Estado del dispositivo: enabled=${newDeviceModel.enabled}, localKey=${newDeviceModel.localKey}`);
+                logInfo(`Estado del dispositivo: enabled=${newDeviceModel.enabled}, localKey=${newDeviceModel.localKey}`);
 
                 const newController = new TuyaController(newDeviceModel);
                 controllers.push(newController);
@@ -301,13 +322,13 @@ export class DiscoveryService {
                 if (typeof service.addController === 'function') {
                     try {
                         service.addController(newController);
-                        console.log(`✅ Controlador registrado: ${newController.device.name}`);
+                        logInfo(`✅ Controlador registrado: ${newController.device.name}`);
                         // Temporarily announce controller regardless of enabled flag
                         if (/* newDeviceModel.enabled && */ typeof service.announceController === 'function') {
                             service.announceController(newController);
                         }
                     } catch (addErr) {
-                        service.log('addController error: ' + addErr.message);
+                        logError('addController error: ' + addErr.message);
                     }
                 }
                 if (typeof service.controllersChanged === 'function') {
@@ -318,24 +339,24 @@ export class DiscoveryService {
                     try {
                         service.deviceDiscovered(newDeviceModel.id, newDeviceModel.ip, newDeviceModel.localKey || '');
                     } catch (ddErr) {
-                        service.log('deviceDiscovered error: ' + ddErr.message);
+                        logError('deviceDiscovered error: ' + ddErr.message);
                     }
                 }
 
-                service.log('New device added to controllers list: ' + newDeviceModel.id);
+                logInfo('New device added to controllers list: ' + newDeviceModel.id);
                 saveDeviceList();
 
                 // Temporarily start negotiation regardless of LocalKey/Enabled state
                 if (/* newDeviceModel.localKey && newDeviceModel.enabled */ true) {
-                    service.log(`Attempting negotiation for new device: ${newDeviceModel.id}`);
+                    logInfo(`Attempting negotiation for new device: ${newDeviceModel.id}`);
                     newController.startNegotiation();
                 } else {
-                    service.log(`Device ${newDeviceModel.id} needs configuration (LocalKey/Enabled).`);
+                    logInfo(`Device ${newDeviceModel.id} needs configuration (LocalKey/Enabled).`);
                 }
             }
         } catch (error) {
-            service.log('Error in handleTuyaDiscovery: ' + error.message);
-            if (error.stack) service.log(error.stack);
+            logError('Error in handleTuyaDiscovery: ' + error.message);
+            if (error.stack) logError(error.stack);
         }
     }
 
@@ -348,26 +369,26 @@ export class DiscoveryService {
     }
 
     Start() {
-        service.log("DiscoveryService: Start method called by SignalRGB.");
+        logInfo("DiscoveryService: Start method called by SignalRGB.");
         if (this.internalDiscovery) {
             this.internalDiscovery.startDiscovery()
                 .then(() => {
-                    service.log("DiscoveryService: Sending discovery request");
+                    logInfo("DiscoveryService: Sending discovery request");
                     return this.internalDiscovery.sendDiscoveryRequest();
                 })
                 .then(() => {
-                    service.log("DiscoveryService: Discovery request sent");
+                    logInfo("DiscoveryService: Discovery request sent");
                 })
                 .catch((err) => {
-                    service.log('DiscoveryService Start error: ' + err.message);
+                    logError('DiscoveryService Start error: ' + err.message);
                 });
         } else {
-            service.log("DiscoveryService: Internal discovery not initialized. Call Initialize first.");
+            logError("DiscoveryService: Internal discovery not initialized. Call Initialize first.");
         }
     }
 
     Stop() {
-        service.log("DiscoveryService: Stop method called by SignalRGB.");
+        logInfo("DiscoveryService: Stop method called by SignalRGB.");
         if (this.internalDiscovery) {
             this.internalDiscovery.stopDiscovery();
         }
@@ -381,7 +402,7 @@ function loadSavedDevices() {
         const savedDeviceIdsJson = service.getSetting('tuyaDevices', 'deviceList', '[]');
         const deviceIds = JSON.parse(savedDeviceIdsJson);
         
-        service.log(`Found ${deviceIds.length} saved device IDs.`);
+        logInfo(`Found ${deviceIds.length} saved device IDs.`);
         let loadedCount = 0;
 
         deviceIds.forEach(deviceId => {
@@ -392,23 +413,23 @@ function loadSavedDevices() {
                 if (!controllers.find(c => c.device.id === config.id)) {
                     const deviceModel = new TuyaDeviceModel(config || {});
                     if (!deviceModel) {
-                        service.log('loadSavedDevices: failed to init device model for ' + deviceId);
+                        logError('loadSavedDevices: failed to init device model for ' + deviceId);
                         return;
                     }
                     const controller = new TuyaController(deviceModel);
                     controllers.push(controller);
-                    service.log(`Loaded device ${deviceModel.id}: enabled=${deviceModel.enabled}, localKey=${deviceModel.localKey}`);
+                    logInfo(`Loaded device ${deviceModel.id}: enabled=${deviceModel.enabled}, localKey=${deviceModel.localKey}`);
                     loadedCount++;
                     if (!deviceModel.localKey) {
-                        service.log('Warning: no localKey stored for ' + deviceModel.id);
+                        logInfo('Warning: no localKey stored for ' + deviceModel.id);
                     }
                     
                     if (deviceModel.enabled && deviceModel.localKey && !deviceModel.isReady()) {
-                        service.log(`Attempting negotiation for saved device: ${deviceModel.id}`);
+                        logInfo(`Attempting negotiation for saved device: ${deviceModel.id}`);
                         try {
                             controller.startNegotiation();
                         } catch (negErr) {
-                            service.log('Negotiation error for ' + deviceModel.id + ': ' + negErr.message);
+                            logError('Negotiation error for ' + deviceModel.id + ': ' + negErr.message);
                         }
                     }
                 }
@@ -419,10 +440,10 @@ function loadSavedDevices() {
         if (typeof service.controllersChanged === 'function') {
             service.controllersChanged();
         }
-        service.log(`Loaded ${loadedCount} saved devices.`);
+        logInfo(`Loaded ${loadedCount} saved devices.`);
     } catch (error) {
-        service.log('Error loading saved devices: ' + error.message);
-        if (error.stack) service.log(error.stack);
+        logError('Error loading saved devices: ' + error.message);
+        if (error.stack) logError(error.stack);
     }
 }
 
@@ -430,10 +451,10 @@ function saveDeviceList() {
     try {
         const ids = controllers.map(c => c.device.id);
         service.saveSetting('tuyaDevices', 'deviceList', JSON.stringify(ids));
-        service.log('Device list saved.');
+        logInfo('Device list saved.');
     } catch (error) {
-        service.log('Error saving device list: ' + error.message);
-        if (error.stack) service.log(error.stack);
+        logError('Error saving device list: ' + error.message);
+        if (error.stack) logError(error.stack);
     }
 }
 
