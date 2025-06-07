@@ -390,7 +390,7 @@ export class DiscoveryService {
     Update(force) {
         controllers.forEach(controller => {
             if (controller.negotiator && typeof controller.negotiator.handleQueue === 'function') {
-                // controller.negotiator.handleQueue(Date.now());
+                controller.negotiator.handleQueue(Date.now());
             }
         });
     }
@@ -419,6 +419,27 @@ export class DiscoveryService {
         if (this.internalDiscovery) {
             this.internalDiscovery.stopDiscovery();
         }
+    }
+
+    addDevice(data) {
+        if (!data || !data.id || !data.ip) {
+            logError('addDevice: invalid device data');
+            return null;
+        }
+        if (controllers.find(c => c.device.id === data.id)) {
+            logInfo(`addDevice: device ${data.id} already exists`);
+            return null;
+        }
+        const model = new TuyaDeviceModel(data);
+        const controller = new TuyaController(model);
+        controllers.push(controller);
+        service.controllers = controllers;
+        saveDeviceList();
+        if (typeof service.controllersChanged === 'function') {
+            service.controllersChanged();
+        }
+        if (model.enabled && model.localKey) controller.startNegotiation();
+        return controller;
     }
 }
 
