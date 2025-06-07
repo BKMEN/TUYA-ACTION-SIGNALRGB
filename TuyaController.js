@@ -114,7 +114,15 @@ class TuyaController {
                 }
             });
             
-            this.negotiator.start();
+            // Iniciar proceso de negociación de sesión
+            if (typeof this.negotiator.negotiateSession === 'function') {
+                this.negotiator.negotiateSession();
+            } else if (typeof this.negotiator.start === 'function') {
+                // Compatibilidad por si existe un método start en otras versiones
+                this.negotiator.start();
+            } else {
+                throw new Error('Negotiator instance has no start method');
+            }
             
         } catch (error) {
             service.log('Error starting negotiation: ' + error.message);
