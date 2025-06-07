@@ -224,6 +224,13 @@ class TuyaSessionNegotiator extends EventEmitter {
     }
 
     /**
+     * Alias de compatibilidad para iniciar la negociación
+     */
+    start() {
+        return this.negotiateSession();
+    }
+
+    /**
      * Calcula CRC simple
      */
     calculateSimpleCRC(buffer) {
