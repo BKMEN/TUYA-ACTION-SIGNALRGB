@@ -17,6 +17,7 @@ try {
 import EventEmitter from '../utils/EventEmitter.js';
 import crypto from 'node:crypto';
 import TuyaEncryption from '../negotiators/TuyaEncryption.js';
+import gcmBuffer from '../negotiators/GCMBuffer.js';
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
 
 class TuyaDiscovery extends EventEmitter {
@@ -156,6 +157,8 @@ class TuyaDiscovery extends EventEmitter {
             console.log('DiscoveryService: unable to decrypt GCM packet');
             return null;
         }
+
+        gcmBuffer.add(rinfo.address, message);
 
         return {
             id: data.gwId || data.devId,

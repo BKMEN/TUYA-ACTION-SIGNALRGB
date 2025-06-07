@@ -9,6 +9,9 @@ import TuyaEncryption from './TuyaEncryption.js';
 import TuyaEncryptor from './TuyaEncryptor.js';
 import TuyaNegotiationMessage from './TuyaNegotiationMessage.js';
 import TuyaMessage from './TuyaMessage.js';
+import TuyaGCMParser from './TuyaGCMParser.js';
+import gcmBuffer from './GCMBuffer.js';
+import SessionCache from './SessionCache.js';
 
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest('hex');
 
@@ -22,13 +25,18 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.timeout = options.timeout || 10000;
         this.maxRetries = options.maxRetries || 3;
         this.retryInterval = options.retryInterval || 5000;
+        this.debugMode = options.debugMode || false;
+        this.gcmBuffer = options.gcmBuffer || gcmBuffer;
 
         this.sessionKey = null;
+        this.sessionIV = null;
+        this.deviceRandom = null;
         this.sequenceNumber = 0;
         this.socket = null;
         this.isNegotiating = false;
         this.lastAttempt = 0;
         this.retryCount = 0;
+        this.lastErrorTime = 0;
     }
 
     /**
@@ -56,9 +64,50 @@ class TuyaSessionNegotiator extends EventEmitter {
             const socket = dgram.createSocket('udp4');
             this.socket = socket;
 
+            const cached = this.gcmBuffer.get(this.ip);
+            if (cached) {
+                try {
+                    const res = this.parseHandshakeResponse(cached);
+                    if (res && res.sessionKey) {
+                        this.sessionKey = res.sessionKey;
+                        this.sessionIV = res.sessionIV;
+                        this.deviceRandom = res.deviceRandom;
+                        SessionCache.set(this.deviceId, {
+                            sessionKey: this.sessionKey,
+                            sessionIV: this.sessionIV,
+                            deviceRandom: this.deviceRandom
+                        });
+                        this.retryCount = 0;
+                        this.socket = null;
+                        socket.close();
+                        this.emit('success', {
+                            sessionKey: this.sessionKey,
+                            sessionIV: this.sessionIV,
+                            deviceRandom: this.deviceRandom,
+                            deviceId: this.deviceId,
+                            ip: this.ip,
+                            port: this.port
+                        });
+                        return resolve({
+                            sessionKey: this.sessionKey,
+                            sessionIV: this.sessionIV,
+                            deviceRandom: this.deviceRandom,
+                            deviceId: this.deviceId,
+                            ip: this.ip,
+                            port: this.port
+                        });
+                    }
+                } catch (e) {
+                    // ignore cached packet errors
+                }
+            }
+
             const clientRandom = TuyaEncryption.generateRandomHexBytes(16);
             this._lastRandom = clientRandom;
-            if (service && service.debug) service.debug('Negotiator random:', clientRandom);
+            if ((service && service.debug) || this.debugMode) {
+                const log = service && service.debug ? service.debug.bind(service) : console.debug;
+                log(`Negotiator ${this.deviceId} random:`, clientRandom);
+            }
 
             const payload = {
                 uuid: this.generateUUID(),
@@ -67,7 +116,10 @@ class TuyaSessionNegotiator extends EventEmitter {
                 random: clientRandom
             };
 
-            if (service && service.debug) service.debug('Negotiator UUID:', payload.uuid);
+            if ((service && service.debug) || this.debugMode) {
+                const log = service && service.debug ? service.debug.bind(service) : console.debug;
+                log(`Negotiator ${this.deviceId} UUID:`, payload.uuid);
+            }
 
             const iv = crypto.randomBytes(12).toString('hex');
             const aad = TuyaEncryption.createAAD(0x05, Buffer.alloc(4), Buffer.byteLength(JSON.stringify(payload)));
@@ -77,61 +129,111 @@ class TuyaSessionNegotiator extends EventEmitter {
             const packet = this.buildHandshakePacket(encPayload);
 
             const parsed = TuyaMessage.parse(packet);
-            if (service && service.debug) service.debug('Handshake CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
+            if ((service && service.debug) || this.debugMode) {
+                const log = service && service.debug ? service.debug.bind(service) : console.debug;
+                log('Handshake CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
+            }
 
             const timeoutId = setTimeout(() => {
+                this.lastErrorTime = Date.now();
                 this.emit('error', new Error('Session negotiation timeout'));
                 this.cleanup();
                 reject(new Error('Session negotiation timeout'));
             }, this.timeout);
 
+            let retries = 0;
+            const retryTimer = setInterval(() => {
+                if (this.sessionKey) {
+                    clearInterval(retryTimer);
+                    return;
+                }
+                if (retries >= this.maxRetries) {
+                    clearInterval(retryTimer);
+                    return;
+                }
+                retries++;
+                if ((service && service.debug) || this.debugMode) {
+                    const log = service && service.debug ? service.debug.bind(service) : console.debug;
+                    log(`Negotiator retry ${retries} for ${this.deviceId}`);
+                }
+                socket.send(packet, 0, packet.length, this.port, this.ip);
+            }, 2000);
+
             socket.on('error', (err) => {
+                this.lastErrorTime = Date.now();
+                clearInterval(retryTimer);
                 clearTimeout(timeoutId);
                 this.emit('error', err);
                 this.cleanup();
                 reject(err);
             });
 
-            socket.on('message', (msg, rinfo) => {
+            const onMessage = (msg, rinfo) => {
+                this.gcmBuffer.add(rinfo.address, msg);
                 if (rinfo.address !== this.ip) {
                     return;
                 }
-
-                try {
-                    const response = this.parseHandshakeResponse(msg);
-                    if (!response || !response.sessionKey) {
-                        throw new Error('Invalid handshake response');
-                    }
-
-                    this.sessionKey = response.sessionKey;
-                    
-                    clearTimeout(timeoutId);
-                    socket.close();
-                    this.socket = null;
-                    this.retryCount = 0;
-
-                    if (service && service.debug) service.debug('Negotiator session established');
-                    const result = {
-                        sessionKey: this.sessionKey,
-                        deviceId: this.deviceId,
-                        ip: this.ip,
-                        port: this.port
-                    };
-
-                    this.emit('success', result);
-                    resolve(result);
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    socket.close();
-                    this.socket = null;
-                    if (service && service.error) service.error('Negotiation error: ' + error.message);
-                    this.emit('error', error);
-                    reject(error);
+                if ((service && service.debug) || this.debugMode) {
+                    const log = service && service.debug ? service.debug.bind(service) : console.debug;
+                    const parsed = TuyaMessage.parse(msg);
+                    log('Handshake response raw:', msg.toString('hex'), 'cmd', parsed.cmd.toString(16));
                 }
-            });
 
+                let response;
+                try {
+                    response = this.parseHandshakeResponse(msg);
+                } catch (err) {
+                    if ((service && service.debug) || this.debugMode) {
+                        const log = service && service.debug ? service.debug.bind(service) : console.debug;
+                        log('Failed to parse handshake:', err.message);
+                    }
+                    return;
+                }
+
+                if (!response || !response.sessionKey) return;
+                if (response.gwId && response.gwId !== this.deviceId) return;
+
+                this.sessionKey = response.sessionKey;
+                this.sessionIV = response.sessionIV;
+                this.deviceRandom = response.deviceRandom;
+
+                SessionCache.set(this.deviceId, {
+                    sessionKey: this.sessionKey,
+                    sessionIV: this.sessionIV,
+                    deviceRandom: this.deviceRandom
+                });
+
+                clearInterval(retryTimer);
+                clearTimeout(timeoutId);
+                socket.removeListener('message', onMessage);
+                socket.close();
+                this.socket = null;
+                this.retryCount = 0;
+
+                if (service && service.debug) service.debug('Negotiator session established');
+                const result = {
+                    sessionKey: this.sessionKey,
+                    sessionIV: this.sessionIV,
+                    deviceRandom: this.deviceRandom,
+                    deviceId: this.deviceId,
+                    ip: this.ip,
+                    port: this.port
+                };
+
+                this.emit('success', result);
+                resolve(result);
+            };
+
+            socket.on('message', onMessage);
+
+            if ((service && service.debug) || this.debugMode) {
+                const log = service && service.debug ? service.debug.bind(service) : console.debug;
+                log('Sending handshake packet:', packet.toString('hex'));
+            }
             socket.send(packet, 0, packet.length, this.port, this.ip, (err) => {
                 if (err) {
+                    this.lastErrorTime = Date.now();
+                    clearInterval(retryTimer);
                     clearTimeout(timeoutId);
                     if (service && service.error) service.error('Send error: ' + err.message);
                     this.emit('error', err);
@@ -168,12 +270,44 @@ class TuyaSessionNegotiator extends EventEmitter {
     }
 
     /**
+     * Descifra un paquete GCM y devuelve el payload
+     */
+    decryptGcmPacket(msg, cmd) {
+        const iv = msg.payload.slice(0, 12);
+        const tag = msg.payload.slice(msg.payload.length - 16);
+        const ciphertext = msg.payload.slice(12, msg.payload.length - 16);
+        const seqBuf = Buffer.alloc(4);
+        seqBuf.writeUInt32BE(msg.seq);
+        const aad = TuyaEncryption.createAAD(cmd, seqBuf, ciphertext.length);
+        return {
+            iv,
+            payload: TuyaEncryptor.decrypt(ciphertext, UDP_KEY, iv.toString('hex'), tag, aad)
+        };
+    }
+
+    /**
      * Parsea la respuesta del handshake
      */
     parseHandshakeResponse(buffer) {
-        const { data, sessionKey } = TuyaNegotiationMessage.parse(buffer, this.deviceKey, this._lastRandom);
-        if (service && service.debug) service.debug('Negotiator sessionKey', sessionKey);
-        return { ...data, sessionKey };
+        const result = TuyaGCMParser.parse(buffer, 0x08);
+        if (!result) throw new Error('Invalid handshake packet');
+        if ((service && service.debug) || this.debugMode) {
+            const log = service && service.debug ? service.debug.bind(service) : console.debug;
+            log('Handshake decrypted:', result.payload.toString('hex'));
+        }
+        const data = JSON.parse(result.payload.toString());
+        const deviceRandom = data.random || data.rnd || '';
+        const sessionKey = TuyaEncryption.deriveSessionKey(this.deviceKey, this._lastRandom, deviceRandom);
+        if (!sessionKey) throw new Error('Invalid negotiation response');
+        if (!data.uuid || !data.gwId) throw new Error('Missing handshake fields');
+        if (data.uuid !== this.generateUUID()) throw new Error('UUID mismatch');
+        if (data.gwId !== this.deviceId) throw new Error('gwId mismatch');
+        if (data.version && typeof data.version !== 'string') throw new Error('Invalid version');
+        if ((service && service.debug) || this.debugMode) {
+            const log = service && service.debug ? service.debug.bind(service) : console.debug;
+            log('Negotiator sessionKey', sessionKey);
+        }
+        return { ...data, sessionKey, sessionIV: result.iv, deviceRandom };
     }
 
     /**
@@ -187,11 +321,8 @@ class TuyaSessionNegotiator extends EventEmitter {
      * Genera UUID simple
      */
     generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random() * 16 | 0;
-            const v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
+        const md5 = crypto.createHash('md5').update(this.deviceId).digest('hex');
+        return md5.match(/.{1,8}/g).join('-');
     }
 
     /**
@@ -204,7 +335,8 @@ class TuyaSessionNegotiator extends EventEmitter {
     handleQueue(now = Date.now()) {
         if (this.sessionKey) return;
         if (this.isNegotiating) return;
-        if (now - this.lastAttempt < this.retryInterval) return;
+        const interval = this.retryInterval * Math.pow(2, this.retryCount);
+        if (this.lastErrorTime && now - this.lastErrorTime < interval) return;
         if (this.retryCount >= this.maxRetries) return;
         this.retryCount++;
         this.lastAttempt = now;
