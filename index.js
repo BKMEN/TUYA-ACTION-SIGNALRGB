@@ -30,7 +30,7 @@ function logInfo(...msg) {
     }
 }
 
-function Components() {
+export function Components() {
     return [
         {
             id: "tuyaController",
