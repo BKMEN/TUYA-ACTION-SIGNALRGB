@@ -5,37 +5,36 @@
  */
 'use strict';
 
-// Cargar dependencias usando CommonJS para compatibilidad con SignalRGB
-const TuyaDiscoveryServiceInternal = require('./comms/Discovery.js');
-const TuyaController = require('./TuyaController.js');
-const TuyaDeviceModel = require('./models/TuyaDeviceModel.js');
-const DeviceList = require('./DeviceList.js');
-const service = require('./service.js');
+// Cargar dependencias usando la sintaxis de import
+import TuyaDiscoveryServiceInternal from './comms/Discovery.js';
+import TuyaController from './TuyaController.js';
+import TuyaDeviceModel from './models/TuyaDeviceModel.js';
+import DeviceList from './DeviceList.js';
+import service from './service.js';
 
-// Optional filesystem access if available (Node environments)
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 let fs;
 try {
-    if (typeof require !== 'undefined') {
-        fs = require('fs');
-    }
+    fs = require('fs');
 } catch (e) {
     fs = undefined;
 }
 
 // --- Metadatos del Plugin para SignalRGB ---
-function Name() { return "Tuya LED Controller"; }
-function Version() { return "2.0.1"; }
-function Type() { return "network"; }
-function Publisher() { return "BKMEN"; }
-function Size() { return [1, 1]; }
-function DefaultPosition() { return [240, 120]; }
-function DefaultScale() { return 1.0; }
-function DefaultComponentBrand() { return "Tuya"; }
-function VendorId() { return 0x2833; }
-function ProductId() { return 0x1337; }
+export function Name() { return "Tuya LED Controller"; }
+export function Version() { return "2.0.1"; }
+export function Type() { return "network"; }
+export function Publisher() { return "BKMEN"; }
+export function Size() { return [1, 1]; }
+export function DefaultPosition() { return [240, 120]; }
+export function DefaultScale() { return 1.0; }
+export function DefaultComponentBrand() { return "Tuya"; }
+export function VendorId() { return 0x2833; }
+export function ProductId() { return 0x1337; }
 
 // Devuelve lista de nombres de LEDs para mapeo en SignalRGB
-function LedNames(controller) {
+export function LedNames(controller) {
     const count = (controller && controller.device && controller.device.ledCount) || 1;
     const names = [];
     for (let i = 0; i < count; i++) {
@@ -45,7 +44,7 @@ function LedNames(controller) {
 }
 
 // Devuelve posiciones relativas simples para los LEDs
-function LedPositions(controller) {
+export function LedPositions(controller) {
     const count = (controller && controller.device && controller.device.ledCount) || 1;
     const positions = [];
     for (let i = 0; i < count; i++) {
@@ -54,7 +53,7 @@ function LedPositions(controller) {
     return positions;
 }
 
-function ControllableParameters() {
+export function ControllableParameters() {
     return [
         { property: "debugMode", group: "settings", label: "Debug Mode", type: "boolean", default: false },
         { property: "discoveryTimeout", group: "settings", label: "Discovery Timeout (ms)", type: "int", min: 1000, max: 30000, default: 5000 }
@@ -69,7 +68,7 @@ let globalDiscoveryTimeout = 5000;
 
 // --- Funciones del Ciclo de Vida del Plugin Principal ---
 
-function Initialize() {
+export function Initialize() {
     if (typeof service === 'undefined' || typeof service.log !== 'function') {
         console.log("❌ Error: 'service' no está disponible o no es válido.");
         return;
@@ -125,13 +124,13 @@ function Initialize() {
         throw error;
     }
 }
-function PluginUIPath() {
+export function PluginUIPath() {
     // UI principal ubicado en la raíz del proyecto
     return "TuyaUI.qml";
 }
 
 // CORREGIR: Render debe recibir device como parámetro
-function Render(device) {
+export function Render(device) {
     try {
         controllers.forEach(controllerInstance => {
             if (controllerInstance.device && controllerInstance.device.isReady()) {
@@ -157,7 +156,7 @@ function Render(device) {
     }
 }
 
-function onParameterChange(parameterName, value) {
+export function onParameterChange(parameterName, value) {
     service.log(`Parameter changed: ${parameterName} = ${value}`);
     switch (parameterName) {
         case "debugMode":
@@ -179,7 +178,7 @@ function onParameterChange(parameterName, value) {
     }
 }
 
-function Shutdown(SystemSuspending) {
+export function Shutdown(SystemSuspending) {
     try {
         service.log("Shutting down Tuya LED Controller Plugin. System Suspending: " + SystemSuspending);
         controllers.forEach(controller => {
@@ -207,14 +206,14 @@ function Shutdown(SystemSuspending) {
     }
 }
 
-function Validate(endpoint) {
+export function Validate(endpoint) {
     return endpoint.interface === 0;
 }
 
 // --- Servicio de Descubrimiento ---
 let discoveryServiceInstance = null;
 
-class DiscoveryService {
+export class DiscoveryService {
     constructor() {
         service.log("Tuya DiscoveryService constructor called.");
         this.internalDiscovery = null;
@@ -438,7 +437,7 @@ function saveDeviceList() {
     }
 }
 
-module.exports = {
+export {
     Name,
     Version,
     Type,
