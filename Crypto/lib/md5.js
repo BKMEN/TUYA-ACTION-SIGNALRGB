@@ -233,4 +233,4 @@ function II(a, b, c, d, x, s, t) {
 
 CryptoJS.MD5 = MD5;
 
-module.exports = CryptoJS;
+export default CryptoJS;

@@ -1,5 +1,5 @@
-const assert = require('assert');
-const TuyaDiscovery = require('../comms/Discovery.js');
+import assert from 'node:assert';
+import TuyaDiscovery from '../comms/Discovery.js';
 
 (async () => {
     const discovery = new TuyaDiscovery({ port: 0 });
@@ -10,3 +10,4 @@ const TuyaDiscovery = require('../comms/Discovery.js');
     assert.ok(!discovery.isRunning, 'discovery should be stopped');
     console.log('Discovery tests passed');
 })();
+

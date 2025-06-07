@@ -1,5 +1,5 @@
-const assert = require('assert');
-const DeviceList = require('../DeviceList');
+import assert from 'node:assert';
+import DeviceList from '../DeviceList.js';
 
 (() => {
     const types = DeviceList.getDeviceTypes();
@@ -8,3 +8,4 @@ const DeviceList = require('../DeviceList');
     assert.ok(ledStrip.defaultLeds > 0, 'Config should have default leds');
     console.log('DeviceList tests passed');
 })();
+

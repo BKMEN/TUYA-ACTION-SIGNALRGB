@@ -1,5 +1,5 @@
-const TuyaUDP = require('../comms/TuyaUDP');
-const assert = require('assert');
+import TuyaUDP from '../comms/TuyaUDP.js';
+import assert from 'node:assert';
 
 (async () => {
     const udp = new TuyaUDP();
@@ -8,3 +8,4 @@ const assert = require('assert');
     udp.close();
     console.log('TuyaUDP tests passed');
 })();
+

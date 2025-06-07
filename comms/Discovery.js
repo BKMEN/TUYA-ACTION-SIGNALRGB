@@ -9,14 +9,14 @@
 let udp;
 try {
     // Prefer the SignalRGB UDP module if available
-    udp = require('@SignalRGB/udp');
+    ({ default: udp } = await import('@SignalRGB/udp'));
 } catch (err) {
     // Fallback to Node's built in dgram implementation for development
-    udp = require('dgram');
+    udp = await import('node:dgram');
 }
-const EventEmitter = require('../utils/EventEmitter.js');
-const crypto = require('crypto');
-const TuyaEncryption = require('../utils/TuyaEncryption.js');
+import EventEmitter from '../utils/EventEmitter.js';
+import crypto from 'node:crypto';
+import TuyaEncryption from '../utils/TuyaEncryption.js';
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
 
 class TuyaDiscovery extends EventEmitter {
@@ -301,4 +301,5 @@ class TuyaDiscovery extends EventEmitter {
     }
 }
 
-module.exports = TuyaDiscovery;
+export default TuyaDiscovery;
+

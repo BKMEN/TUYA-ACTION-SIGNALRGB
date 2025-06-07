@@ -185,4 +185,4 @@ CryptoJS.enc.Base64 = {
     }
 };
 
-module.exports = CryptoJS;
+export default CryptoJS;

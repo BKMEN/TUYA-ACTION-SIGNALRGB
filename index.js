@@ -12,14 +12,10 @@ import TuyaDeviceModel from './models/TuyaDeviceModel.js';
 import DeviceList from './DeviceList.js';
 import service from './service.js';
 
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-// Cargar dependencias de CommonJS usando createRequire
-// Logger aplica color y prefijo a cada mensaje para dar "tonalidad" uniforme al plugin
-const logger = require('./utils/Logger.js');
+import logger from './utils/Logger.js';
 let fs;
 try {
-    fs = require('fs');
+    ({ default: fs } = await import('node:fs'));
 } catch (e) {
     fs = undefined;
 }
