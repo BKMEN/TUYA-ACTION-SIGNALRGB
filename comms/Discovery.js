@@ -16,7 +16,7 @@ try {
 }
 import EventEmitter from '../utils/EventEmitter.js';
 import crypto from 'node:crypto';
-import TuyaEncryption from '../utils/TuyaEncryption.js';
+import TuyaEncryption from '../negotiators/TuyaEncryption.js';
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
 
 class TuyaDiscovery extends EventEmitter {

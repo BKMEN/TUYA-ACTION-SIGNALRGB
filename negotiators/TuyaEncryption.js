@@ -4,6 +4,7 @@
  */
 
 import crypto from 'node:crypto';
+import TuyaEncryptor from './TuyaEncryptor.js';
 
 const TuyaEncryption = {
     /**
@@ -15,31 +16,9 @@ const TuyaEncryption = {
      * @returns {{ciphertext: Buffer, tag: Buffer}} - Texto cifrado y tag de autenticación
      */
     encryptGCM: function(data, key, iv, aad) {
-        // Convertir inputs a Buffers si son strings
-        const keyBuffer = Buffer.isBuffer(key) ? key : Buffer.from(key, 'hex');
-        const ivBuffer = Buffer.isBuffer(iv) ? iv : Buffer.from(iv, 'hex');
-        const aadBuffer = Buffer.isBuffer(aad) ? aad : Buffer.from(aad, 'hex');
-        const dataBuffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
-        
-        // Crear cifrador AES-GCM
-        const cipher = crypto.createCipheriv('aes-128-gcm', keyBuffer, ivBuffer);
-        
-        // Establecer AAD si se proporcionó
-        if (aadBuffer.length > 0) {
-            cipher.setAAD(aadBuffer);
-        }
-        
-        // Cifrar
-        let ciphertext = cipher.update(dataBuffer);
-        ciphertext = Buffer.concat([ciphertext, cipher.final()]);
-        
-        // Obtener tag
-        const tag = cipher.getAuthTag();
-        
-        return {
-            ciphertext: ciphertext,
-            tag: tag
-        };
+        const result = TuyaEncryptor.encrypt(data, Buffer.isBuffer(key) ? key.toString('hex') : key,
+            Buffer.isBuffer(iv) ? iv.toString('hex') : iv, aad);
+        return result;
     },
     
     /**
@@ -53,28 +32,14 @@ const TuyaEncryption = {
      */
     decryptGCM: function(ciphertext, key, iv, tag, aad) {
         try {
-            // Convertir inputs a Buffers si son strings
-            const keyBuffer = Buffer.isBuffer(key) ? key : Buffer.from(key, 'hex');
-            const ivBuffer = Buffer.isBuffer(iv) ? iv : Buffer.from(iv, 'hex');
-            const tagBuffer = Buffer.isBuffer(tag) ? tag : Buffer.from(tag, 'hex');
-            const aadBuffer = Buffer.isBuffer(aad) ? aad : Buffer.from(aad, 'hex');
-            const ciphertextBuffer = Buffer.isBuffer(ciphertext) ? ciphertext : Buffer.from(ciphertext, 'hex');
-            
-            // Crear descifrador AES-GCM
-            const decipher = crypto.createDecipheriv('aes-128-gcm', keyBuffer, ivBuffer);
-            
-            // Establecer tag y AAD
-            decipher.setAuthTag(tagBuffer);
-            
-            if (aadBuffer.length > 0) {
-                decipher.setAAD(aadBuffer);
-            }
-            
-            // Descifrar
-            let plaintext = decipher.update(ciphertextBuffer);
-            plaintext = Buffer.concat([plaintext, decipher.final()]);
-            
-            return plaintext;
+            const plain = TuyaEncryptor.decrypt(
+                ciphertext,
+                Buffer.isBuffer(key) ? key.toString('hex') : key,
+                Buffer.isBuffer(iv) ? iv.toString('hex') : iv,
+                tag,
+                aad
+            );
+            return plain;
         } catch (error) {
             console.error('Decryption failed:', error);
             return null;
