@@ -13,6 +13,7 @@ import DeviceList from './DeviceList.js';
 import service from './service.js';
 
 import logger from './utils/Logger.js';
+import { askLocalKey } from './utils/askKey.js';
 let fs;
 try {
     ({ default: fs } = await import('node:fs'));
@@ -96,7 +97,7 @@ let globalDiscoveryTimeout = 5000;
 
 // --- Funciones del Ciclo de Vida del Plugin Principal ---
 
-export function Initialize() {
+export async function Initialize() {
     if (typeof service === 'undefined' || typeof service.log !== 'function') {
         logError("❌ Error: 'service' no está disponible o no es válido.");
         return;
@@ -143,7 +144,7 @@ export function Initialize() {
             logInfo("Controllers changed event emitted");
         };
 
-        loadSavedDevices();
+        await loadSavedDevices();
 
         // Buscar dispositivos de forma automática al iniciar el plugin
         if (typeof service.startDiscovery === 'function') {
@@ -267,8 +268,8 @@ export class DiscoveryService {
                 timeout: globalDiscoveryTimeout
             });
 
-            this.internalDiscovery.on('device_found', (deviceData) => {
-                this.handleTuyaDiscovery(deviceData);
+            this.internalDiscovery.on('device_found', async (deviceData) => {
+                await this.handleTuyaDiscovery(deviceData);
                 // Optional: persist discovered devices for debugging if fs is available
                 try {
                     if (typeof fs !== 'undefined' && fs.appendFileSync) {
@@ -298,7 +299,7 @@ export class DiscoveryService {
         }
     }
 
-    handleTuyaDiscovery(deviceData) {
+    async handleTuyaDiscovery(deviceData) {
         if (!deviceData) {
             logError('DiscoveryService: handleTuyaDiscovery called with undefined data');
             return;
@@ -336,6 +337,15 @@ export class DiscoveryService {
                     deviceData.version = predefined.version || deviceData.version;
                     deviceData.enabled = true;
                 }
+                if (!deviceData.localKey && !deviceData.key) {
+                    const entered = await askLocalKey(deviceId);
+                    if (!entered) {
+                        logInfo(`No se proporcionó clave para el dispositivo ${deviceId}. Se omite.`);
+                        return;
+                    }
+                    deviceData.localKey = entered;
+                }
+
                 const newDeviceModel = new TuyaDeviceModel(deviceData);
                 if (!newDeviceModel) {
                     logError('DiscoveryService: failed to initialize TuyaDeviceModel');
@@ -445,7 +455,7 @@ export class DiscoveryService {
 
 // --- Funciones Auxiliares ---
 
-function loadSavedDevices() {
+async function loadSavedDevices() {
     try {
         const savedDeviceIdsJson = service.getSetting('tuyaDevices', 'deviceList', '[]');
         const deviceIds = JSON.parse(savedDeviceIdsJson);
@@ -453,12 +463,20 @@ function loadSavedDevices() {
         logInfo(`Found ${deviceIds.length} saved device IDs.`);
         let loadedCount = 0;
 
-        deviceIds.forEach(deviceId => {
+        for (const deviceId of deviceIds) {
             const configData = service.getSetting(deviceId, 'configData', '{}');
             const config = JSON.parse(configData);
             
             if (config.id) {
                 if (!controllers.find(c => c.device.id === config.id)) {
+                    if (!config.localKey) {
+                        const entered = await askLocalKey(config.id);
+                        if (!entered) {
+                            logInfo(`No key entered for saved device ${config.id}, skipping.`);
+                            continue;
+                        }
+                        config.localKey = entered;
+                    }
                     const deviceModel = new TuyaDeviceModel(config || {});
                     if (!deviceModel) {
                         logError('loadSavedDevices: failed to init device model for ' + deviceId);
@@ -482,7 +500,7 @@ function loadSavedDevices() {
                     }
                 }
             }
-        });
+        }
 
         service.controllers = controllers;
         if (typeof service.controllersChanged === 'function') {
