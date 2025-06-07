@@ -145,6 +145,15 @@ export function Initialize() {
 
         loadSavedDevices();
 
+        // Buscar dispositivos de forma automática al iniciar el plugin
+        if (typeof service.startDiscovery === 'function') {
+            try {
+                service.startDiscovery();
+            } catch (startErr) {
+                logError('Error starting discovery automatically: ' + startErr.message);
+            }
+        }
+
         logInfo("Plugin initialized successfully.");
     } catch (error) {
         logError("Error initializing plugin: " + error.message);

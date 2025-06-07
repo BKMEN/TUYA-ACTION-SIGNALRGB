@@ -17,6 +17,7 @@ requiere Node.js 14 o superior para ejecutar el proyecto.
 ## ⚡️ Características
 
 - **Descubrimiento automático** de dispositivos Tuya en red local.
+- El plugin inicia la búsqueda de dispositivos en cuanto se carga.
 - Control de **color RGB**, brillo y cantidad de LEDs.
 - Interfaz de usuario visual en QML (ajusta color, número de LEDs, estado en vivo).
 - Soporte tanto para **protocolo Tuya 3.3 como 3.4+** (cifrado GCM).
