@@ -452,29 +452,6 @@ function saveDeviceList() {
         logError('Error saving device list: ' + error.message);
         if (error.stack) logError(error.stack);
     }
-}
-
-export {
-    Name,
-    Version,
-    Type,
-    Publisher,
-    Size,
-    DefaultPosition,
-    DefaultScale,
-    DefaultComponentBrand,
-    VendorId,
-    ProductId,
-    LedNames,
-    LedPositions,
-    ControllableParameters,
-    Initialize,
-    Render,
-    Shutdown,
-    Validate,
-    onParameterChange,
-    DiscoveryService,
-    PluginUIPath
 };
 
 
