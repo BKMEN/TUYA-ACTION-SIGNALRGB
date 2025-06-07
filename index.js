@@ -92,6 +92,7 @@ export function ControllableParameters() {
 let controllers = [];
 let globalDebugMode = false;
 let globalDiscoveryTimeout = 5000;
+const forcePromptLocalKey = process.env.TUYA_PROMPT_LOCALKEY === 'true';
 
 
 
@@ -337,7 +338,8 @@ export class DiscoveryService {
                     deviceData.version = predefined.version || deviceData.version;
                     deviceData.enabled = true;
                 }
-                if (!deviceData.localKey && !deviceData.key) {
+
+                if (forcePromptLocalKey || (!deviceData.localKey && !deviceData.key)) {
                     const entered = await askLocalKey(deviceId);
                     if (!entered) {
                         logInfo(`No se proporcionó clave para el dispositivo ${deviceId}. Se omite.`);
@@ -469,7 +471,7 @@ async function loadSavedDevices() {
             
             if (config.id) {
                 if (!controllers.find(c => c.device.id === config.id)) {
-                    if (!config.localKey) {
+                    if (forcePromptLocalKey || !config.localKey) {
                         const entered = await askLocalKey(config.id);
                         if (!entered) {
                             logInfo(`No key entered for saved device ${config.id}, skipping.`);
