@@ -158,7 +158,7 @@ export function PluginUIPath() {
     // UI principal ubicado en la raíz del proyecto
     return "TuyaUI.qml";
 }
-// CORREGIR: Render debe recibir device como parámetro
+// Render recibe el dispositivo SignalRGB como parámetro
 export function Render(device) {
     try {
         controllers.forEach(controllerInstance => {
