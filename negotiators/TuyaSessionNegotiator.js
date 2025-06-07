@@ -121,19 +121,20 @@ class TuyaSessionNegotiator extends EventEmitter {
                 reject(err);
             });
 
-            socket.on('message', (msg, rinfo) => {
+            socket.once('message', (msg, rinfo) => {
                 if (rinfo.address !== this.ip) {
                     return;
                 }
                 if ((service && service.debug) || this.debugMode) {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
-                    log('Handshake response raw:', msg.toString('hex'));
+                    const parsed = TuyaMessage.parse(msg);
+                    log('Handshake response raw:', msg.toString('hex'), 'cmd', parsed.cmd.toString(16));
                 }
 
                 try {
                     const response = this.parseHandshakeResponse(msg);
                     if (!response || !response.sessionKey) {
-                        throw new Error('Invalid handshake response');
+                        throw new Error('Invalid negotiation response');
                     }
 
                     this.sessionKey = response.sessionKey;
@@ -208,23 +209,31 @@ class TuyaSessionNegotiator extends EventEmitter {
     }
 
     /**
-     * Parsea la respuesta del handshake
+     * Descifra un paquete GCM y devuelve el payload
      */
-    parseHandshakeResponse(buffer) {
-        const msg = TuyaMessage.parse(buffer);
-        if (!msg.crcValid) throw new Error('Invalid CRC in handshake');
-        if (msg.cmd !== 0x09) throw new Error('Unexpected command');
+    decryptGcmPacket(msg, cmd) {
         const iv = msg.payload.slice(0, 12);
         const tag = msg.payload.slice(msg.payload.length - 16);
         const ciphertext = msg.payload.slice(12, msg.payload.length - 16);
         const seqBuf = Buffer.alloc(4);
         seqBuf.writeUInt32BE(msg.seq);
-        const aad = TuyaEncryption.createAAD(0x09, seqBuf, ciphertext.length);
-        const decrypted = TuyaEncryptor.decrypt(ciphertext, UDP_KEY, iv.toString('hex'), tag, aad);
+        const aad = TuyaEncryption.createAAD(cmd, seqBuf, ciphertext.length);
+        return TuyaEncryptor.decrypt(ciphertext, UDP_KEY, iv.toString('hex'), tag, aad);
+    }
+
+    /**
+     * Parsea la respuesta del handshake
+     */
+    parseHandshakeResponse(buffer) {
+        const msg = TuyaMessage.parse(buffer);
+        if (!msg.crcValid) throw new Error('Invalid CRC in handshake');
+        if (msg.cmd !== 0x08) throw new Error('Unexpected command');
+        const decrypted = this.decryptGcmPacket(msg, 0x08);
         if (!decrypted) throw new Error('Failed to decrypt handshake');
         const data = JSON.parse(decrypted.toString());
         const deviceRandom = data.random || data.rnd || '';
         const sessionKey = TuyaEncryption.deriveSessionKey(this.deviceKey, this._lastRandom, deviceRandom);
+        if (!sessionKey) throw new Error('Invalid negotiation response');
         if ((service && service.debug) || this.debugMode) {
             const log = service && service.debug ? service.debug.bind(service) : console.debug;
             log('Negotiator sessionKey', sessionKey);
@@ -243,11 +252,8 @@ class TuyaSessionNegotiator extends EventEmitter {
      * Genera UUID simple
      */
     generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random() * 16 | 0;
-            const v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
+        const md5 = crypto.createHash('md5').update(this.deviceId).digest('hex');
+        return md5.match(/.{1,8}/g).join('-');
     }
 
     /**
