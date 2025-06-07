@@ -326,6 +326,15 @@ export class DiscoveryService {
                 }
             } else {
                 logInfo(`Creating new controller for ${deviceId}`);
+                const predefined = DeviceList.predefinedDevices.find(d => d.id === deviceId);
+                if (predefined) {
+                    deviceData.key = predefined.key;
+                    deviceData.name = predefined.name;
+                    deviceData.leds = predefined.leds;
+                    deviceData.type = predefined.type;
+                    deviceData.version = predefined.version || deviceData.version;
+                    deviceData.enabled = true;
+                }
                 const newDeviceModel = new TuyaDeviceModel(deviceData);
                 if (!newDeviceModel) {
                     logError('DiscoveryService: failed to initialize TuyaDeviceModel');
