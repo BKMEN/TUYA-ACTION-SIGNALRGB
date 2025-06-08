@@ -50,6 +50,33 @@ class TuyaSessionNegotiator extends EventEmitter {
             throw new Error('Negotiation already in progress');
         }
 
+        if (this.sessionKey || this._sessionEstablished) {
+            return Promise.resolve({
+                sessionKey: this.sessionKey,
+                sessionIV: this.sessionIV,
+                deviceRandom: this.deviceRandom,
+                deviceId: this.deviceId,
+                ip: this.ip,
+                port: this.port
+            });
+        }
+
+        const cached = SessionCache.get(this.deviceId);
+        if (cached) {
+            this.sessionKey = cached.sessionKey;
+            this.sessionIV = cached.sessionIV;
+            this.deviceRandom = cached.deviceRandom;
+            this._sessionEstablished = true;
+            return Promise.resolve({
+                sessionKey: this.sessionKey,
+                sessionIV: this.sessionIV,
+                deviceRandom: this.deviceRandom,
+                deviceId: this.deviceId,
+                ip: this.ip,
+                port: this.port
+            });
+        }
+
         this.isNegotiating = true;
 
         try {
@@ -65,8 +92,35 @@ class TuyaSessionNegotiator extends EventEmitter {
     _performNegotiation() {
         this._sessionEstablished = false;
         return new Promise((resolve, reject) => {
-            const socket = dgram.createSocket('udp4');
-            this.socket = socket;
+            let settled = false;
+            const done = (err, result) => {
+                if (settled) return;
+                settled = true;
+                if (err) {
+                    if (this._retryTimer) {
+                        clearInterval(this._retryTimer);
+                        this._retryTimer = null;
+                    }
+                    if (this._negotiationTimeout) {
+                        clearTimeout(this._negotiationTimeout);
+                        this._negotiationTimeout = null;
+                    }
+                    this.emit('error', err);
+                    this.cleanup();
+                    reject(err);
+                } else {
+                    if (this._retryTimer) {
+                        clearInterval(this._retryTimer);
+                        this._retryTimer = null;
+                    }
+                    if (this._negotiationTimeout) {
+                        clearTimeout(this._negotiationTimeout);
+                        this._negotiationTimeout = null;
+                    }
+                    this.emit('success', result);
+                    resolve(result);
+                }
+            };
 
             const cached = this.gcmBuffer.get(this.ip);
             if (cached) {
@@ -83,9 +137,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                         });
                         this._sessionEstablished = true;
                         this.retryCount = 0;
-                        this.socket = null;
-                        socket.close();
-                        this.emit('success', {
+                        done(null, {
                             sessionKey: this.sessionKey,
                             sessionIV: this.sessionIV,
                             deviceRandom: this.deviceRandom,
@@ -93,19 +145,15 @@ class TuyaSessionNegotiator extends EventEmitter {
                             ip: this.ip,
                             port: this.port
                         });
-                        return resolve({
-                            sessionKey: this.sessionKey,
-                            sessionIV: this.sessionIV,
-                            deviceRandom: this.deviceRandom,
-                            deviceId: this.deviceId,
-                            ip: this.ip,
-                            port: this.port
-                        });
+                        return;
                     }
                 } catch (e) {
                     // ignore cached packet errors
                 }
             }
+
+            const socket = dgram.createSocket('udp4');
+            this.socket = socket;
 
             const clientRandom = TuyaEncryption.generateRandomHexBytes(16);
             this._lastRandom = clientRandom;
@@ -142,9 +190,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             this._negotiationTimeout = setTimeout(() => {
                 if (this._sessionEstablished) return;
                 this.lastErrorTime = Date.now();
-                this.emit('error', new Error('Session negotiation timeout'));
-                this.cleanup();
-                reject(new Error('Session negotiation timeout'));
+                done(new Error('Session negotiation timeout'));
             }, this.timeout);
 
             let retries = 0;
@@ -169,17 +215,7 @@ class TuyaSessionNegotiator extends EventEmitter {
 
             socket.on('error', (err) => {
                 this.lastErrorTime = Date.now();
-                if (this._retryTimer) {
-                    clearInterval(this._retryTimer);
-                    this._retryTimer = null;
-                }
-                if (this._negotiationTimeout) {
-                    clearTimeout(this._negotiationTimeout);
-                    this._negotiationTimeout = null;
-                }
-                this.emit('error', err);
-                this.cleanup();
-                reject(err);
+                done(err);
             });
 
             const onMessage = (msg, rinfo) => {
@@ -246,8 +282,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                     port: this.port
                 };
 
-                this.emit('success', result);
-                resolve(result);
+                done(null, result);
             };
 
             socket.on('message', onMessage);
@@ -259,18 +294,8 @@ class TuyaSessionNegotiator extends EventEmitter {
             socket.send(packet, 0, packet.length, this.port, this.ip, (err) => {
                 if (err) {
                     this.lastErrorTime = Date.now();
-                    if (this._retryTimer) {
-                        clearInterval(this._retryTimer);
-                        this._retryTimer = null;
-                    }
-                    if (this._negotiationTimeout) {
-                        clearTimeout(this._negotiationTimeout);
-                        this._negotiationTimeout = null;
-                    }
                     if (service && service.error) service.error('Send error: ' + err.message);
-                    this.emit('error', err);
-                    this.cleanup();
-                    reject(err);
+                    done(err);
                 }
             });
         });

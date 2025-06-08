@@ -120,6 +120,11 @@ class TuyaController {
             return;
         }
 
+        if (this.negotiator && this.negotiator.isNegotiating) {
+            service.log('Negotiation already running for device: ' + this.device.id);
+            return;
+        }
+
         try {
             service.log('Starting negotiation for device: ' + this.device.id);
 
