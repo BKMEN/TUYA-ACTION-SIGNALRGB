@@ -38,6 +38,8 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.retryCount = 0;
         this.lastErrorTime = 0;
         this._sessionEstablished = false;
+        this._negotiationTimeout = null;
+        this._retryTimer = null;
     }
 
     /**
@@ -137,7 +139,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 log('Handshake CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
             }
 
-            const timeoutId = setTimeout(() => {
+            this._negotiationTimeout = setTimeout(() => {
                 if (this._sessionEstablished) return;
                 this.lastErrorTime = Date.now();
                 this.emit('error', new Error('Session negotiation timeout'));
@@ -146,13 +148,15 @@ class TuyaSessionNegotiator extends EventEmitter {
             }, this.timeout);
 
             let retries = 0;
-            const retryTimer = setInterval(() => {
+            this._retryTimer = setInterval(() => {
                 if (this.sessionKey || this._sessionEstablished) {
-                    clearInterval(retryTimer);
+                    clearInterval(this._retryTimer);
+                    this._retryTimer = null;
                     return;
                 }
                 if (retries >= this.maxRetries) {
-                    clearInterval(retryTimer);
+                    clearInterval(this._retryTimer);
+                    this._retryTimer = null;
                     return;
                 }
                 retries++;
@@ -165,8 +169,14 @@ class TuyaSessionNegotiator extends EventEmitter {
 
             socket.on('error', (err) => {
                 this.lastErrorTime = Date.now();
-                clearInterval(retryTimer);
-                clearTimeout(timeoutId);
+                if (this._retryTimer) {
+                    clearInterval(this._retryTimer);
+                    this._retryTimer = null;
+                }
+                if (this._negotiationTimeout) {
+                    clearTimeout(this._negotiationTimeout);
+                    this._negotiationTimeout = null;
+                }
                 this.emit('error', err);
                 this.cleanup();
                 reject(err);
@@ -213,8 +223,14 @@ class TuyaSessionNegotiator extends EventEmitter {
                     deviceRandom: this.deviceRandom
                 });
 
-                clearInterval(retryTimer);
-                clearTimeout(timeoutId);
+                if (this._retryTimer) {
+                    clearInterval(this._retryTimer);
+                    this._retryTimer = null;
+                }
+                if (this._negotiationTimeout) {
+                    clearTimeout(this._negotiationTimeout);
+                    this._negotiationTimeout = null;
+                }
                 socket.removeListener('message', onMessage);
                 socket.close();
                 this.socket = null;
@@ -243,8 +259,14 @@ class TuyaSessionNegotiator extends EventEmitter {
             socket.send(packet, 0, packet.length, this.port, this.ip, (err) => {
                 if (err) {
                     this.lastErrorTime = Date.now();
-                    clearInterval(retryTimer);
-                    clearTimeout(timeoutId);
+                    if (this._retryTimer) {
+                        clearInterval(this._retryTimer);
+                        this._retryTimer = null;
+                    }
+                    if (this._negotiationTimeout) {
+                        clearTimeout(this._negotiationTimeout);
+                        this._negotiationTimeout = null;
+                    }
                     if (service && service.error) service.error('Send error: ' + err.message);
                     this.emit('error', err);
                     this.cleanup();
@@ -365,6 +387,14 @@ class TuyaSessionNegotiator extends EventEmitter {
                 // Ignorar errores al cerrar
             }
             this.socket = null;
+        }
+        if (this._retryTimer) {
+            clearInterval(this._retryTimer);
+            this._retryTimer = null;
+        }
+        if (this._negotiationTimeout) {
+            clearTimeout(this._negotiationTimeout);
+            this._negotiationTimeout = null;
         }
         this.isNegotiating = false;
         this._lastRandom = null;

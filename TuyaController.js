@@ -115,11 +115,17 @@ class TuyaController {
             return;
         }
 
+        if (this.device.isReady()) {
+            service.log('Device already has an active session: ' + this.device.id);
+            return;
+        }
+
         try {
             service.log('Starting negotiation for device: ' + this.device.id);
 
             if (this.negotiator) {
                 this.negotiator.cleanup();
+                this.negotiator = null;
             }
 
             this.negotiator = new TuyaSessionNegotiator({
