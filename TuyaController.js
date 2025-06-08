@@ -17,23 +17,54 @@ try {
 
 class TuyaController {
     constructor(device) {
-        if (!device) {
+        this.devices = [];
+        this.device = null;
+
+        if (device) {
+            this.addDevice(device);
+        } else {
             if (typeof service !== 'undefined' && service.log) {
                 service.log('TuyaController constructor received undefined device, using empty model');
             }
-            device = {};
-        }
-
-        this.device = device instanceof TuyaDeviceModel ? device : new TuyaDeviceModel(device);
-
-        if (!this.device) {
-            throw new Error('TuyaController failed to initialize device model');
         }
 
         this.negotiator = null;
         this.encryptor = null;
         this.socket = null; // Socket persistente para comandos
         this.online = true;
+    }
+
+    addDevice(deviceConfig) {
+        const model = deviceConfig instanceof TuyaDeviceModel ? deviceConfig : new TuyaDeviceModel(deviceConfig || {});
+
+        this.devices.push(model);
+
+        // mantener compatibilidad con código que usa this.device
+        if (!this.device) {
+            this.device = model;
+        }
+
+        if (model.enabled && model.localKey) {
+            this.device = model;
+            this.startNegotiation();
+        }
+
+        return model;
+    }
+
+    connectToDevice(deviceId) {
+        const model = this.devices.find(d => d.id === deviceId);
+        if (!model) {
+            throw new Error('Device not found: ' + deviceId);
+        }
+
+        this.device = model;
+
+        if (model.enabled && model.localKey) {
+            this.startNegotiation();
+        } else {
+            throw new Error('Device missing local key or disabled');
+        }
     }
 
     // Método llamado desde QML para actualizar configuración
