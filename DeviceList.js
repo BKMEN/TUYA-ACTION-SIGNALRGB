@@ -10,13 +10,6 @@ const deviceTypes = [
 // Lista de dispositivos predefinidos
 const predefinedDevices = [
     {
-        id: 'example_device_1',
-        name: 'Tira LED Escritorio',
-        key: '',
-        leds: 30,
-        type: 'LED Strip'
-    },
-    {
         id: 'bfbe7bd231444751090bsq',
         name: 'Leds habitación (Barra Battletroon 1)',
         ip: '192.168.1.131',
@@ -70,7 +63,10 @@ const DeviceList = {
     deviceTypes,
     predefinedDevices,
     getDeviceTypeConfig,
-    getDeviceTypes
+    getDeviceTypes,
+    getDevices() {
+        return predefinedDevices;
+    }
 };
 
 // SOLO exportar DeviceList, SIN ProductId
