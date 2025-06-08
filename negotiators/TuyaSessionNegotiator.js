@@ -37,6 +37,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.lastAttempt = 0;
         this.retryCount = 0;
         this.lastErrorTime = 0;
+        this._sessionEstablished = false;
     }
 
     /**
@@ -60,6 +61,7 @@ class TuyaSessionNegotiator extends EventEmitter {
      * Realiza la negociación
      */
     _performNegotiation() {
+        this._sessionEstablished = false;
         return new Promise((resolve, reject) => {
             const socket = dgram.createSocket('udp4');
             this.socket = socket;
@@ -77,6 +79,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                             sessionIV: this.sessionIV,
                             deviceRandom: this.deviceRandom
                         });
+                        this._sessionEstablished = true;
                         this.retryCount = 0;
                         this.socket = null;
                         socket.close();
@@ -135,6 +138,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             }
 
             const timeoutId = setTimeout(() => {
+                if (this._sessionEstablished) return;
                 this.lastErrorTime = Date.now();
                 this.emit('error', new Error('Session negotiation timeout'));
                 this.cleanup();
@@ -143,7 +147,7 @@ class TuyaSessionNegotiator extends EventEmitter {
 
             let retries = 0;
             const retryTimer = setInterval(() => {
-                if (this.sessionKey) {
+                if (this.sessionKey || this._sessionEstablished) {
                     clearInterval(retryTimer);
                     return;
                 }
@@ -196,6 +200,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 this.sessionKey = response.sessionKey;
                 this.sessionIV = response.sessionIV;
                 this.deviceRandom = response.deviceRandom;
+                this._sessionEstablished = true;
 
                 if ((service && service.debug) || this.debugMode) {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
@@ -363,6 +368,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         }
         this.isNegotiating = false;
         this._lastRandom = null;
+        this._sessionEstablished = false;
     }
 }
 

@@ -117,7 +117,11 @@ class TuyaController {
 
         try {
             service.log('Starting negotiation for device: ' + this.device.id);
-            
+
+            if (this.negotiator) {
+                this.negotiator.cleanup();
+            }
+
             this.negotiator = new TuyaSessionNegotiator({
                 deviceId: this.device.id,
                 deviceKey: this.device.localKey,
