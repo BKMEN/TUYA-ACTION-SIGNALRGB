@@ -1,17 +1,40 @@
 import TuyaDiscovery from './comms/Discovery.js';
 import TuyaController from './TuyaController.js';
 import DeviceList from './DeviceList.js';
+import service from './service.js';
 
-globalThis.service = globalThis.service || {
+globalThis.service = globalThis.service || service;
+
+Object.assign(service, {
     log: console.log,
+    debug: console.debug,
     deviceError: (id, msg) => console.warn(`\u274c Error [${id}]: ${msg}`),
     deviceConfigured: (id) => console.log(`\u2705 Configurado [${id}]`),
     negotiationComplete: (id) => console.log(`\ud83d\udd10 Negociaci\u00f3n completada [${id}]`)
-};
+});
 
 if (typeof service.getSetting !== 'function') {
-    service.getSetting = (key, defaultValue) => {
-        console.log(`\u2699\ufe0f getSetting mock: ${key} -> ${defaultValue}`);
+    service.getSetting = (section, key, defaultValue = '') => {
+        console.log(`\u2699\ufe0f getSetting mock: ${section}, ${key} -> ${defaultValue}`);
+        if (section === 'tuyaDevices' && key === 'deviceList') {
+            const ids = DeviceList.getDevices().map(d => d.id);
+            return JSON.stringify(ids);
+        }
+        if (key === 'configData') {
+            const device = DeviceList.getDevices().find(d => d.id === section);
+            if (device) {
+                return JSON.stringify({
+                    id: device.id,
+                    ip: device.ip,
+                    localKey: device.key,
+                    version: device.version,
+                    productKey: device.productKey,
+                    leds: device.leds,
+                    type: device.type,
+                    enabled: device.enabled
+                });
+            }
+        }
         return defaultValue;
     };
 }
