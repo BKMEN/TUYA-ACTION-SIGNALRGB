@@ -10,13 +10,6 @@ const deviceTypes = [
 // Lista de dispositivos predefinidos
 const predefinedDevices = [
     {
-        id: 'example_device_1',
-        name: 'Tira LED Escritorio',
-        key: '',
-        leds: 30,
-        type: 'LED Strip'
-    },
-    {
         id: 'bfbe7bd231444751090bsq',
         name: 'Leds habitación (Barra Battletroon 1)',
         ip: '192.168.1.131',
@@ -24,7 +17,8 @@ const predefinedDevices = [
         version: '3.5',
         productKey: 'keyj3w8cmutjmwk5',
         leds: 40,
-        type: 'LED Strip'
+        type: 'LED Strip',
+        enabled: true
     },
     {
         id: 'bfbebb82be7220f985rawa',
@@ -34,7 +28,8 @@ const predefinedDevices = [
         version: '3.5',
         productKey: 'keyj3w8cmutjmwk5',
         leds: 36,
-        type: 'LED Strip'
+        type: 'LED Strip',
+        enabled: true
     },
     {
         id: 'bfde5007394a05833ahsda',
@@ -44,7 +39,8 @@ const predefinedDevices = [
         version: '3.5',
         productKey: 'keyj3w8cmutjmwk5',
         leds: 40,
-        type: 'LED Strip'
+        type: 'LED Strip',
+        enabled: true
     },
     {
         id: 'bfafad43febddb888apxbj',
@@ -54,7 +50,8 @@ const predefinedDevices = [
         version: '3.5',
         productKey: 'keyj3w8cmutjmwk5',
         leds: 72,
-        type: 'LED Strip'
+        type: 'LED Strip',
+        enabled: true
     }
 ];
 
@@ -70,7 +67,10 @@ const DeviceList = {
     deviceTypes,
     predefinedDevices,
     getDeviceTypeConfig,
-    getDeviceTypes
+    getDeviceTypes,
+    getDevices() {
+        return predefinedDevices;
+    }
 };
 
 // SOLO exportar DeviceList, SIN ProductId

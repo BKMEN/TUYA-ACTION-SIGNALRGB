@@ -51,3 +51,13 @@ requiere Node.js 14 o superior para ejecutar el proyecto.
    ```bash
    git clone https://github.com/BKMEN/TUYA-ACTION-SIGNALRGB.git
    ```
+
+### Ejecución rápida del descubrimiento
+
+Se incluye un pequeño script `run.js` para probar el módulo de descubrimiento de forma independiente. Ajusta la constante `EXPECTED_DEVICES` al número de dispositivos que esperas en tu red.
+
+```bash
+node run.js
+```
+
+El script detiene automáticamente la búsqueda cuando se encuentran todos los dispositivos esperados o cuando se agota un tiempo de espera de 5 segundos.
