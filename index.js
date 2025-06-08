@@ -375,6 +375,7 @@ export class DiscoveryService {
                         return;
                     }
                     deviceData.localKey = entered;
+                    deviceData.enabled = true;
                 }
 
                 const newDeviceModel = new TuyaDeviceModel(deviceData);
@@ -414,8 +415,7 @@ export class DiscoveryService {
                 logInfo('New device added to controllers list: ' + newDeviceModel.id);
                 saveDeviceList();
 
-                // Temporarily start negotiation regardless of LocalKey/Enabled state
-                if (/* newDeviceModel.localKey && newDeviceModel.enabled */ true) {
+                if (newDeviceModel.localKey && newDeviceModel.enabled) {
                     logInfo(`Attempting negotiation for new device: ${newDeviceModel.id}`);
                     newController.startNegotiation();
                 } else {
