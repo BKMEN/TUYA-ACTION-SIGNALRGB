@@ -226,9 +226,44 @@ class TuyaController {
             };
             
             return JSON.stringify(payload);
-            
+
         } catch (error) {
             service.log('Error building color payload: ' + error.message);
+            throw error;
+        }
+    }
+
+    buildPowerPayload(state) {
+        try {
+            const deviceConfig = DeviceList.getDeviceTypeConfig(this.device.deviceType);
+            const dpsPayload = {};
+            dpsPayload[deviceConfig.dps.power] = !!state;
+            const payload = {
+                dps: dpsPayload,
+                t: Math.floor(Date.now() / 1000)
+            };
+            return JSON.stringify(payload);
+        } catch (error) {
+            service.log('Error building power payload: ' + error.message);
+            throw error;
+        }
+    }
+
+    setPower(on) {
+        if (!this.device.isReady()) {
+            throw new Error('Device not ready for commands');
+        }
+
+        try {
+            const payload = this.buildPowerPayload(on);
+            const encryptedCommand = this.encryptor.encryptCommand(
+                payload,
+                this.device.getNextSequenceNumber()
+            );
+            this.sendCommand(encryptedCommand);
+            service.log(`Power ${on ? 'on' : 'off'} command sent to device: ` + this.device.id);
+        } catch (error) {
+            service.log('Error setting power: ' + error.message);
             throw error;
         }
     }
