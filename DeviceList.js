@@ -11,7 +11,7 @@ const deviceTypes = [
 const predefinedDevices = [
     {
         id: 'bfbe7bd231444751090bsq',
-        name: 'Leds habitación (Barra Battletroon 1)',
+        name: 'Leds habitación',
         ip: '192.168.1.131',
         key: 'dHb;IQrWT&tv?XCi',
         version: '3.5',
@@ -22,7 +22,7 @@ const predefinedDevices = [
     },
     {
         id: 'bfbebb82be7220f985rawa',
-        name: 'Escritorio (Barra Battletroon 2)',
+        name: 'Escritorio',
         ip: '192.168.1.130',
         key: 'EvKXuTB^A0(T`quq',
         version: '3.5',
@@ -33,7 +33,7 @@ const predefinedDevices = [
     },
     {
         id: 'bfde5007394a05833ahsda',
-        name: 'Leds habitación 2 (Barra Battletroon 3)',
+        name: 'Leds habitación 2',
         ip: '192.168.1.133',
         key: '81u+<zg)h)oNPVo/',
         version: '3.5',
@@ -44,7 +44,7 @@ const predefinedDevices = [
     },
     {
         id: 'bfafad43febddb888apxbj',
-        name: 'Monitor (Barra Battletroon 4)',
+        name: 'Monitor',
         ip: '192.168.1.129',
         key: 'OE4lO]Id<-ws`d;9',
         version: '3.5',
