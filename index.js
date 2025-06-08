@@ -258,6 +258,8 @@ export class DiscoveryService {
         logInfo("Tuya DiscoveryService constructor called.");
         this.internalDiscovery = null;
         this.negotiatorInstances = new Map();
+        this._discoveryQueue = [];
+        this._processingDiscovery = false;
         discoveryServiceInstance = this;
     }
 
@@ -269,16 +271,9 @@ export class DiscoveryService {
                 timeout: globalDiscoveryTimeout
             });
 
-            this.internalDiscovery.on('device_found', async (deviceData) => {
-                await this.handleTuyaDiscovery(deviceData);
-                // Optional: persist discovered devices for debugging if fs is available
-                try {
-                    if (typeof fs !== 'undefined' && fs.appendFileSync) {
-                        fs.appendFileSync('devices_found.json', JSON.stringify(deviceData, null, 2) + ',\n');
-                    }
-                } catch (e) {
-                    logError('Error writing devices_found.json: ' + e.message);
-                }
+            this.internalDiscovery.on('device_found', (deviceData) => {
+                this._discoveryQueue.push(deviceData);
+                this._processDiscoveryQueue();
             });
             this.internalDiscovery.on('error', (error) => {
                 logError('DiscoveryService Internal Error: ' + error.message);
@@ -340,6 +335,7 @@ export class DiscoveryService {
                 }
 
                 if (forcePromptLocalKey || (!deviceData.localKey && !deviceData.key)) {
+                    console.log('Esperando localKey...');
                     const entered = await askLocalKey(deviceId);
                     if (!entered) {
                         logInfo(`No se proporcionó clave para el dispositivo ${deviceId}. Se omite.`);
@@ -397,6 +393,23 @@ export class DiscoveryService {
             logError('Error in handleTuyaDiscovery: ' + error.message);
             if (error.stack) logError(error.stack);
         }
+    }
+
+    async _processDiscoveryQueue() {
+        if (this._processingDiscovery) return;
+        this._processingDiscovery = true;
+        while (this._discoveryQueue.length > 0) {
+            const data = this._discoveryQueue.shift();
+            await this.handleTuyaDiscovery(data);
+            try {
+                if (typeof fs !== 'undefined' && fs.appendFileSync) {
+                    fs.appendFileSync('devices_found.json', JSON.stringify(data, null, 2) + ',\n');
+                }
+            } catch (e) {
+                logError('Error writing devices_found.json: ' + e.message);
+            }
+        }
+        this._processingDiscovery = false;
     }
 
     Update(force) {
@@ -472,6 +485,7 @@ async function loadSavedDevices() {
             if (config.id) {
                 if (!controllers.find(c => c.device.id === config.id)) {
                     if (forcePromptLocalKey || !config.localKey) {
+                        console.log('Esperando localKey...');
                         const entered = await askLocalKey(config.id);
                         if (!entered) {
                             logInfo(`No key entered for saved device ${config.id}, skipping.`);
