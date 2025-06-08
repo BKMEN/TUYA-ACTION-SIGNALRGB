@@ -17,7 +17,8 @@ const predefinedDevices = [
         version: '3.5',
         productKey: 'keyj3w8cmutjmwk5',
         leds: 40,
-        type: 'LED Strip'
+        type: 'LED Strip',
+        enabled: true
     },
     {
         id: 'bfbebb82be7220f985rawa',
@@ -27,7 +28,8 @@ const predefinedDevices = [
         version: '3.5',
         productKey: 'keyj3w8cmutjmwk5',
         leds: 36,
-        type: 'LED Strip'
+        type: 'LED Strip',
+        enabled: true
     },
     {
         id: 'bfde5007394a05833ahsda',
@@ -37,7 +39,8 @@ const predefinedDevices = [
         version: '3.5',
         productKey: 'keyj3w8cmutjmwk5',
         leds: 40,
-        type: 'LED Strip'
+        type: 'LED Strip',
+        enabled: true
     },
     {
         id: 'bfafad43febddb888apxbj',
@@ -47,7 +50,8 @@ const predefinedDevices = [
         version: '3.5',
         productKey: 'keyj3w8cmutjmwk5',
         leds: 72,
-        type: 'LED Strip'
+        type: 'LED Strip',
+        enabled: true
     }
 ];
 

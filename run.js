@@ -2,6 +2,20 @@ import TuyaDiscovery from './comms/Discovery.js';
 import TuyaController from './TuyaController.js';
 import DeviceList from './DeviceList.js';
 
+globalThis.service = globalThis.service || {
+    log: console.log,
+    deviceError: (id, msg) => console.warn(`\u274c Error [${id}]: ${msg}`),
+    deviceConfigured: (id) => console.log(`\u2705 Configurado [${id}]`),
+    negotiationComplete: (id) => console.log(`\ud83d\udd10 Negociaci\u00f3n completada [${id}]`)
+};
+
+if (typeof service.getSetting !== 'function') {
+    service.getSetting = (key, defaultValue) => {
+        console.log(`\u2699\ufe0f getSetting mock: ${key} -> ${defaultValue}`);
+        return defaultValue;
+    };
+}
+
 // Configuraci\u00f3n
 const EXPECTED_DEVICES = 4; // Dispositivos esperados
 const TIMEOUT_MS = 5000;    // Tiempo m\u00e1ximo de espera
