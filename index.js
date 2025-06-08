@@ -14,6 +14,7 @@ import service from './service.js';
 
 import logger from './utils/Logger.js';
 import { askLocalKey } from './utils/askKey.js';
+import { hexToRgb } from './utils/ColorUtils.js';
 let fs;
 try {
     ({ default: fs } = await import('node:fs'));
@@ -85,13 +86,21 @@ export function LedPositions(controller) {
 export function ControllableParameters() {
     return [
         { property: "debugMode", group: "settings", label: "Debug Mode", type: "boolean", default: false },
-        { property: "discoveryTimeout", group: "settings", label: "Discovery Timeout (ms)", type: "int", min: 1000, max: 30000, default: 5000 }
+        { property: "discoveryTimeout", group: "settings", label: "Discovery Timeout (ms)", type: "int", min: 1000, max: 30000, default: 5000 },
+        { property: "lightingMode", group: "settings", label: "Lighting Mode", type: "combobox", values: ["Canvas", "Forced"], default: "Canvas" },
+        { property: "forcedColor", group: "settings", label: "Forced Color", type: "color", default: "#009bde" },
+        { property: "turnOff", group: "settings", label: "On Shutdown", type: "combobox", values: ["Do nothing", "Single color", "Turn device off"], default: "Do nothing" },
+        { property: "shutDownColor", group: "settings", label: "Shutdown Color", type: "color", default: "#8000FF" }
     ];
 }
 // --- Variables Globales del Plugin ---
 let controllers = [];
 let globalDebugMode = false;
 let globalDiscoveryTimeout = 5000;
+let globalLightingMode = 'Canvas';
+let globalForcedColor = '#009bde';
+let globalTurnOff = 'Do nothing';
+let globalShutDownColor = '#8000FF';
 const forcePromptLocalKey = process.env.TUYA_PROMPT_LOCALKEY === 'true';
 
 
@@ -177,8 +186,12 @@ export function Render(device) {
                 const ledColors = [];
                 const ledCount = controllerInstance.device.ledCount || 1;
 
-                // USAR: device pasado como parámetro
-                if (device && typeof device.getLed === 'function') {
+                if (globalLightingMode === 'Forced') {
+                    const rgb = hexToRgb(globalForcedColor);
+                    for (let i = 0; i < ledCount; i++) {
+                        ledColors.push(rgb);
+                    }
+                } else if (device && typeof device.getLed === 'function') {
                     for (let i = 0; i < ledCount; i++) {
                         const c = device.getLed(i);
                         ledColors.push({ r: c[0], g: c[1], b: c[2] });
@@ -215,6 +228,18 @@ export function onParameterChange(parameterName, value) {
                 discoveryServiceInstance.timeout = value;
             }
             break;
+        case "lightingMode":
+            globalLightingMode = value;
+            break;
+        case "forcedColor":
+            globalForcedColor = value;
+            break;
+        case "turnOff":
+            globalTurnOff = value;
+            break;
+        case "shutDownColor":
+            globalShutDownColor = value;
+            break;
     }
 }
 
@@ -222,8 +247,20 @@ export function Shutdown(SystemSuspending) {
     try {
         logInfo("Shutting down Tuya LED Controller Plugin. System Suspending: " + SystemSuspending);
         controllers.forEach(controller => {
-            if (SystemSuspending) {
-                // Opcional: apagar LEDs al suspender sistema
+            if (globalTurnOff === 'Single color') {
+                const rgb = hexToRgb(globalShutDownColor);
+                const arr = [];
+                const count = controller.device ? controller.device.ledCount || 1 : 1;
+                for (let i = 0; i < count; i++) arr.push(rgb);
+                try {
+                    controller.setColor(arr);
+                } catch (e) {
+                    logError('Error applying shutdown color: ' + e.message);
+                }
+            } else if (globalTurnOff === 'Turn device off') {
+                if (typeof controller.turnOff === 'function') {
+                    controller.turnOff();
+                }
             }
             if (typeof controller.cleanup === 'function') {
                 controller.cleanup();

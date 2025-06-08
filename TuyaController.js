@@ -252,6 +252,29 @@ class TuyaController {
         }
     }
 
+    turnOff() {
+        if (!this.device.isReady() || !this.encryptor) {
+            return;
+        }
+        try {
+            const deviceConfig = DeviceList.getDeviceTypeConfig(this.device.deviceType);
+            const dpsPayload = {};
+            dpsPayload[deviceConfig.dps.power] = false;
+            const payload = {
+                dps: dpsPayload,
+                t: Math.floor(Date.now() / 1000)
+            };
+            const encrypted = this.encryptor.encryptCommand(
+                JSON.stringify(payload),
+                this.device.getNextSequenceNumber()
+            );
+            this.sendCommand(encrypted);
+            service.log('Power off command sent to device: ' + this.device.id);
+        } catch (error) {
+            service.log('Error sending power off command: ' + error.message);
+        }
+    }
+
     setOffline() {
         this.online = false;
         if (this.negotiator) {
