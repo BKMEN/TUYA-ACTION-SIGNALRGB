@@ -197,6 +197,11 @@ class TuyaSessionNegotiator extends EventEmitter {
                 this.sessionIV = response.sessionIV;
                 this.deviceRandom = response.deviceRandom;
 
+                if ((service && service.debug) || this.debugMode) {
+                    const log = service && service.debug ? service.debug.bind(service) : console.debug;
+                    log(`GCM handshake response received for ${this.deviceId}`);
+                }
+
                 SessionCache.set(this.deviceId, {
                     sessionKey: this.sessionKey,
                     sessionIV: this.sessionIV,
