@@ -168,6 +168,7 @@ class TuyaController {
                 } else {
                     this.device.setSessionKey(sessionKey);
                 }
+                this.startHeartbeat();
                 this.encryptor = new TuyaCommandEncryptor(sessionKey);
 
                 this._negotiationPromise = null;
@@ -250,38 +251,27 @@ class TuyaController {
 
     buildColorPayload(rgbArray) {
         try {
-            // Implementación completa del formato de color Tuya
             if (!rgbArray || rgbArray.length === 0) {
                 throw new Error('Invalid RGB array');
             }
 
-            const rgb = rgbArray[0]; // Usar primer color
-            
-            // Obtener configuración DPS para el tipo de dispositivo
+            const rgb = rgbArray[0];
+
+            const colorHex = [rgb.r, rgb.g, rgb.b]
+                .map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, '0'))
+                .join('');
+
             const deviceConfig = DeviceList.getDeviceTypeConfig(this.device.deviceType);
-            
-            // Convertir RGB a HSV para formato Tuya
-            const hsv = this.rgbToHsv(rgb.r, rgb.g, rgb.b);
-            
-            // Crear string de color en formato hexadecimal HSV (12 dígitos)
-            const h = Math.round(hsv.h * 360).toString(16).padStart(4, '0');
-            const s = Math.round(hsv.s * 1000).toString(16).padStart(4, '0');
-            const v = Math.round(hsv.v * 1000).toString(16).padStart(4, '0');
-            
-            const colorString = h + s + v;
-            
-            // Construir payload DPS usando configuración del dispositivo
+
             const dpsPayload = {};
-            dpsPayload[deviceConfig.dps.power] = true;
-            dpsPayload[deviceConfig.dps.mode] = "colour";
-            dpsPayload[deviceConfig.dps.color] = colorString;
-            dpsPayload[deviceConfig.dps.brightness] = Math.round(hsv.v * 255);
-            
+            if (deviceConfig.dps.power) dpsPayload[deviceConfig.dps.power] = true;
+            dpsPayload[deviceConfig.dps.color] = colorHex;
+
             const payload = {
-                "dps": dpsPayload,
-                "t": Math.floor(Date.now() / 1000)
+                dps: dpsPayload,
+                t: Math.floor(Date.now() / 1000)
             };
-            
+
             return JSON.stringify(payload);
 
         } catch (error) {
@@ -375,11 +365,33 @@ class TuyaController {
         }
     }
 
+    startHeartbeat(intervalMs = 30000) {
+        this.stopHeartbeat();
+        this._heartbeatTimer = setInterval(() => {
+            if (!this.device.isReady() || !this.encryptor) return;
+            try {
+                const payload = JSON.stringify({ dps: {} });
+                const pkt = this.encryptor.encryptCommand(payload, this.device.getNextSequenceNumber());
+                this.sendCommand(pkt);
+            } catch (e) {
+                service.log('Heartbeat error: ' + e.message);
+            }
+        }, intervalMs);
+    }
+
+    stopHeartbeat() {
+        if (this._heartbeatTimer) {
+            clearInterval(this._heartbeatTimer);
+            this._heartbeatTimer = null;
+        }
+    }
+
     setOffline() {
         this.online = false;
         if (this.negotiator) {
             this.negotiator.cleanup();
         }
+        this.stopHeartbeat();
     }
 
     cleanup() {
@@ -387,7 +399,9 @@ class TuyaController {
             this.socket.close();
             this.socket = null;
         }
-        
+
+        this.stopHeartbeat();
+
         if (this.negotiator) {
             this.negotiator.cleanup();
             this.negotiator = null;
