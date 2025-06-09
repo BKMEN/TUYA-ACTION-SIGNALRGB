@@ -16,6 +16,8 @@ try {
 }
 
 class TuyaController {
+    // Mapa global de negociaciones activas por dispositivo
+    static activeNegotiations = new Map();
     constructor(device) {
         this.devices = [];
         this.device = null;
@@ -129,6 +131,11 @@ class TuyaController {
             return;
         }
 
+        if (TuyaController.activeNegotiations.has(this.device.id)) {
+            service.log('Global negotiation already running for device: ' + this.device.id);
+            return TuyaController.activeNegotiations.get(this.device.id);
+        }
+
         if (this.negotiator && this.negotiator.isNegotiating) {
             service.log('Negotiation already running for device: ' + this.device.id);
             return this._negotiationPromise;
@@ -155,7 +162,8 @@ class TuyaController {
                 this.encryptor = new TuyaCommandEncryptor(sessionKey);
 
                 this._negotiationPromise = null;
-                
+                TuyaController.activeNegotiations.delete(this.device.id);
+
                 service.log('Negotiation successful for device: ' + this.device.id);
                 
                 // Emitir evento para QML
@@ -168,6 +176,7 @@ class TuyaController {
                 service.log('Negotiation failed for device ' + this.device.id + ': ' + error.message);
 
                 this._negotiationPromise = null;
+                TuyaController.activeNegotiations.delete(this.device.id);
                 
                 // Emitir error para QML
                 if (typeof service.deviceError === 'function') {
@@ -185,6 +194,13 @@ class TuyaController {
                 this._negotiationPromise.catch(() => {});
             } else {
                 throw new Error('Negotiator instance has no start method');
+            }
+
+            if (this._negotiationPromise) {
+                TuyaController.activeNegotiations.set(this.device.id, this._negotiationPromise);
+                this._negotiationPromise.finally(() => {
+                    TuyaController.activeNegotiations.delete(this.device.id);
+                });
             }
             
         } catch (error) {

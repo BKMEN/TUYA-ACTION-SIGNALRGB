@@ -40,6 +40,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         this._sessionEstablished = false;
         this._negotiationTimeout = null;
         this._retryTimer = null;
+        this._uuid = null;
     }
 
     /**
@@ -92,10 +93,16 @@ class TuyaSessionNegotiator extends EventEmitter {
     _performNegotiation() {
         this._sessionEstablished = false;
         return new Promise((resolve, reject) => {
+            const startTime = Date.now();
             let settled = false;
+            let socket;
+            let onMessage;
             const done = (err, result) => {
                 if (settled) return;
                 settled = true;
+                if (socket && onMessage) {
+                    socket.removeListener('message', onMessage);
+                }
                 if (err) {
                     if (this._retryTimer) {
                         clearInterval(this._retryTimer);
@@ -152,7 +159,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 }
             }
 
-            const socket = dgram.createSocket('udp4');
+            socket = dgram.createSocket('udp4');
             this.socket = socket;
 
             const clientRandom = TuyaEncryption.generateRandomHexBytes(16);
@@ -162,8 +169,9 @@ class TuyaSessionNegotiator extends EventEmitter {
                 log(`Negotiator ${this.deviceId} random:`, clientRandom);
             }
 
+            this._uuid = this.generateUUID();
             const payload = {
-                uuid: this.generateUUID(),
+                uuid: this._uuid,
                 t: Math.floor(Date.now() / 1000),
                 gwId: this.deviceId,
                 random: clientRandom
@@ -200,6 +208,12 @@ class TuyaSessionNegotiator extends EventEmitter {
                     this._retryTimer = null;
                     return;
                 }
+                if (Date.now() - startTime > this.timeout) {
+                    clearInterval(this._retryTimer);
+                    this._retryTimer = null;
+                    done(new Error('Negotiation timed out'));
+                    return;
+                }
                 if (retries >= this.maxRetries) {
                     clearInterval(this._retryTimer);
                     this._retryTimer = null;
@@ -218,7 +232,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 done(err);
             });
 
-            const onMessage = (msg, rinfo) => {
+            onMessage = (msg, rinfo) => {
                 this.gcmBuffer.add(rinfo.address, msg);
                 if (rinfo.address !== this.ip) {
                     return;
@@ -235,7 +249,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 } catch (err) {
                     if ((service && service.debug) || this.debugMode) {
                         const log = service && service.debug ? service.debug.bind(service) : console.debug;
-                        log('Failed to parse handshake:', err.message);
+                        log('Failed to parse handshake:', err.message, msg.toString('hex'));
                     }
                     return;
                 }
@@ -267,7 +281,6 @@ class TuyaSessionNegotiator extends EventEmitter {
                     clearTimeout(this._negotiationTimeout);
                     this._negotiationTimeout = null;
                 }
-                socket.removeListener('message', onMessage);
                 socket.close();
                 this.socket = null;
                 this.retryCount = 0;
@@ -357,7 +370,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         const sessionKey = TuyaEncryption.deriveSessionKey(this.deviceKey, this._lastRandom, deviceRandom);
         if (!sessionKey) throw new Error('Invalid negotiation response');
         if (!data.uuid || !data.gwId) throw new Error('Missing handshake fields');
-        if (data.uuid !== this.generateUUID()) throw new Error('UUID mismatch');
+        if (this._uuid && data.uuid !== this._uuid) throw new Error('UUID mismatch');
         if (data.gwId !== this.deviceId) throw new Error('gwId mismatch');
         if (data.version && typeof data.version !== 'string') throw new Error('Invalid version');
         if ((service && service.debug) || this.debugMode) {
@@ -424,6 +437,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.isNegotiating = false;
         this._lastRandom = null;
         this._sessionEstablished = false;
+        this._uuid = null;
     }
 }
 
