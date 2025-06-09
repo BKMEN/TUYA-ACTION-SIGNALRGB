@@ -32,6 +32,8 @@ class TuyaController {
         this.encryptor = null;
         this.socket = null; // Socket persistente para comandos
         this.online = true;
+        this.pendingNegotiation = false;
+        this._negotiationPromise = null;
     }
 
     addDevice(deviceConfig) {
@@ -46,7 +48,9 @@ class TuyaController {
 
         if (model.enabled && model.localKey) {
             this.device = model;
-            this.startNegotiation();
+            try {
+                this.startNegotiation();
+            } catch (_) {}
         }
 
         return model;
@@ -61,7 +65,9 @@ class TuyaController {
         this.device = model;
 
         if (model.enabled && model.localKey) {
-            this.startNegotiation();
+            try {
+                this.startNegotiation();
+            } catch (_) {}
         } else {
             throw new Error('Device missing local key or disabled');
         }
@@ -89,7 +95,9 @@ class TuyaController {
                 
                 // Si está habilitado y tiene localKey, iniciar negociación
                 if (this.device.enabled && this.device.localKey) {
-                    this.startNegotiation();
+                    try {
+                        this.startNegotiation();
+                    } catch (_) {}
                 }
                 
                 return true;
@@ -112,6 +120,7 @@ class TuyaController {
     startNegotiation() {
         if (!this.device.localKey || !this.device.enabled) {
             service.log('Cannot start negotiation: missing localKey or device disabled');
+            this.pendingNegotiation = true;
             return;
         }
 
@@ -122,11 +131,12 @@ class TuyaController {
 
         if (this.negotiator && this.negotiator.isNegotiating) {
             service.log('Negotiation already running for device: ' + this.device.id);
-            return;
+            return this._negotiationPromise;
         }
 
         try {
             service.log('Starting negotiation for device: ' + this.device.id);
+            this.pendingNegotiation = false;
 
             if (this.negotiator) {
                 this.negotiator.cleanup();
@@ -143,6 +153,8 @@ class TuyaController {
             this.negotiator.on('success', (sessionKey) => {
                 this.device.setSessionKey(sessionKey);
                 this.encryptor = new TuyaCommandEncryptor(sessionKey);
+
+                this._negotiationPromise = null;
                 
                 service.log('Negotiation successful for device: ' + this.device.id);
                 
@@ -154,6 +166,8 @@ class TuyaController {
             
             this.negotiator.on('error', (error) => {
                 service.log('Negotiation failed for device ' + this.device.id + ': ' + error.message);
+
+                this._negotiationPromise = null;
                 
                 // Emitir error para QML
                 if (typeof service.deviceError === 'function') {
@@ -163,10 +177,12 @@ class TuyaController {
             
             // Iniciar proceso de negociación de sesión
             if (typeof this.negotiator.negotiateSession === 'function') {
-                this.negotiator.negotiateSession();
+                this._negotiationPromise = this.negotiator.negotiateSession();
+                this._negotiationPromise.catch(() => {});
             } else if (typeof this.negotiator.start === 'function') {
                 // Compatibilidad por si existe un método start en otras versiones
-                this.negotiator.start();
+                this._negotiationPromise = Promise.resolve(this.negotiator.start());
+                this._negotiationPromise.catch(() => {});
             } else {
                 throw new Error('Negotiator instance has no start method');
             }
