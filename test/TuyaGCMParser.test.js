@@ -14,7 +14,7 @@ import TuyaEncryption from '../negotiators/TuyaEncryption.js';
     const aad = TuyaEncryption.createAAD(0x08, seqBuf, payload.length);
     const enc = TuyaEncryptor.encrypt(payload, crypto.createHash('md5').update('yGAdlopoPVldABfn','utf8').digest('hex'), iv, aad);
     const encPayload = Buffer.concat([Buffer.from(iv,'hex'), enc.ciphertext, enc.tag]);
-    const packet = TuyaMessage.build('000055aa', seq, 0x08, encPayload);
+    const packet = TuyaMessage.build('000055aa', seq, 0x08, encPayload, '0000aa55');
     const result = TuyaGCMParser.parse(packet, 0x08);
     assert.ok(result && result.payload, 'parser should decrypt');
     console.log('TuyaGCMParser tests passed');

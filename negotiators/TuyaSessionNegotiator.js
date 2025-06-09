@@ -36,6 +36,8 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.retryInterval = options.retryInterval || 5000;
         this.debugMode = options.debugMode || false;
         this.gcmBuffer = options.gcmBuffer || gcmBuffer;
+        this.prefix = options.prefix || '00006699';
+        this.suffix = options.suffix || '00009966';
 
         this.sessionKey = null;
         this.sessionIV = null;
@@ -366,15 +368,16 @@ class TuyaSessionNegotiator extends EventEmitter {
      */
     buildHandshakePacket(payload) {
         console.group('📦 Building handshake packet');
-        console.log(' - Prefix:', '000055aa');
+        console.log(' - Prefix:', this.prefix);
         console.log(' - Sequence:', this.sequenceNumber + 1);
         console.log(' - Command:', '0x05');
         console.log(' - Payload length:', payload.length);
         const packet = TuyaMessage.build(
-            '000055aa',
+            this.prefix,
             ++this.sequenceNumber,
             0x05,
-            payload
+            payload,
+            this.suffix
         );
         const parsedTmp = TuyaMessage.parse(packet);
         console.log(' - CRC:', parsedTmp.crc.toString(16));
@@ -383,8 +386,8 @@ class TuyaSessionNegotiator extends EventEmitter {
         if (packet.length !== expectedLen) {
             console.log('Warning: handshake length mismatch', packet.length, '!=', expectedLen);
         }
-        if (packet.slice(-4).toString('hex') !== '0000aa55') {
-            console.log('Warning: handshake missing suffix 55AA');
+        if (packet.slice(-4).toString('hex') !== this.suffix) {
+            console.log('Warning: handshake missing suffix ' + this.suffix.toUpperCase());
         }
         if (service && service.debug) {
             const parsed = TuyaMessage.parse(packet);

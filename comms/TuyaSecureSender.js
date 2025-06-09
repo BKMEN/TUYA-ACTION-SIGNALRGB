@@ -27,7 +27,7 @@ class TuyaSecureSender {
             enc.ciphertext,
             enc.tag
         ]);
-        return TuyaMessage.build('000055aa', seq, 0x07, encPayload);
+        return TuyaMessage.build('000055aa', seq, 0x07, encPayload, '0000aa55');
     }
 
     send(dpPayload) {
