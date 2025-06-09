@@ -349,7 +349,11 @@ export class DiscoveryService {
                 existingController.device.updateFromDiscovery(deviceData);
                 if (!existingController.device.isReady() && existingController.device.localKey && existingController.device.enabled) {
                     logInfo(`Re-initiating negotiation for existing device: ${deviceId}`);
-                    existingController.startNegotiation();
+                    try {
+                        existingController.startNegotiation();
+                    } catch (negErr) {
+                        logError('Negotiation error for ' + deviceId + ': ' + negErr.message);
+                    }
                 }
                 if (typeof service.controllersChanged === 'function') {
                     service.controllersChanged();
@@ -414,10 +418,14 @@ export class DiscoveryService {
                 logInfo('New device added to controllers list: ' + newDeviceModel.id);
                 saveDeviceList();
 
-                // Temporarily start negotiation regardless of LocalKey/Enabled state
-                if (/* newDeviceModel.localKey && newDeviceModel.enabled */ true) {
+                // Only negotiate when device has a LocalKey and is enabled
+                if (newDeviceModel.localKey && newDeviceModel.enabled) {
                     logInfo(`Attempting negotiation for new device: ${newDeviceModel.id}`);
-                    newController.startNegotiation();
+                    try {
+                        newController.startNegotiation();
+                    } catch (negErr) {
+                        logError('Negotiation error for ' + newDeviceModel.id + ': ' + negErr.message);
+                    }
                 } else {
                     logInfo(`Device ${newDeviceModel.id} needs configuration (LocalKey/Enabled).`);
                 }
@@ -496,7 +504,13 @@ export class DiscoveryService {
         if (typeof service.controllersChanged === 'function') {
             service.controllersChanged();
         }
-        if (model.enabled && model.localKey) controller.startNegotiation();
+        if (model.enabled && model.localKey) {
+            try {
+                controller.startNegotiation();
+            } catch (negErr) {
+                logError('Negotiation error for ' + model.id + ': ' + negErr.message);
+            }
+        }
         return controller;
     }
 }
