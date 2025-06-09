@@ -120,9 +120,14 @@ class TuyaController {
     }
 
     startNegotiation() {
-        if (!this.device.localKey || !this.device.enabled) {
-            service.log('Cannot start negotiation: missing localKey or device disabled');
+        if (!this.device.localKey) {
+            service.log(`[SKIP] ${this.device.id} no tiene localKey aún. Esperando input del usuario.`);
             this.pendingNegotiation = true;
+            return;
+        }
+
+        if (!this.device.enabled) {
+            service.log('Cannot start negotiation: device disabled');
             return;
         }
 
@@ -153,8 +158,7 @@ class TuyaController {
             this.negotiator = new TuyaSessionNegotiator({
                 deviceId: this.device.id,
                 deviceKey: this.device.localKey,
-                ip: this.device.ip,
-                port: this.device.port
+                ip: this.device.ip
             });
             
             this.negotiator.on('success', (sessionKey) => {
