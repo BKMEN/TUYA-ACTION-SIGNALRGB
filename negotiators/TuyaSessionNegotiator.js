@@ -36,8 +36,9 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.retryInterval = options.retryInterval || 5000;
         this.debugMode = options.debugMode || false;
         this.gcmBuffer = options.gcmBuffer || gcmBuffer;
-        this.prefix = options.prefix || '00006699';
-        this.suffix = options.suffix || '00009966';
+        // Prefix y sufijo deben coincidir con el plugin original
+        this.prefix = options.prefix || '000055aa';
+        this.suffix = options.suffix || '0000aa55';
 
         this.sessionKey = null;
         this.sessionIV = null;
@@ -197,6 +198,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 gwId: this.deviceId,
                 random: clientRandom
             };
+            console.log('Handshake payload:', payload);
             console.log('Handshake Token:', this.deviceKey);
             console.log('Handshake UUID:', payload.uuid);
             console.log('Handshake RND:', clientRandom);
