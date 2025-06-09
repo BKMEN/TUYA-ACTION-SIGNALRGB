@@ -41,7 +41,11 @@ const TuyaEncryption = {
             );
             return plain;
         } catch (error) {
-            console.error('Decryption failed:', error);
+            if (typeof service !== 'undefined') {
+                service.log('❌ decryptGCM failed: ' + error.message);
+            } else {
+                console.error('Decryption failed:', error);
+            }
             return null;
         }
     },

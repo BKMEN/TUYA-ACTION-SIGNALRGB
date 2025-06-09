@@ -191,12 +191,22 @@ class TuyaSessionNegotiator extends EventEmitter {
             const enc = TuyaEncryptor.encrypt(JSON.stringify(payload), UDP_KEY, iv, aad);
             const encPayload = Buffer.concat([Buffer.from(iv,'hex'), enc.ciphertext, enc.tag]);
 
+            if (typeof service !== 'undefined') {
+                service.log(`🔑 Device ID: ${this.deviceId}`);
+                service.log(`🔑 Token: ${this.deviceKey}`);
+                service.log(`🔑 UUID: ${payload.uuid}`);
+                service.log(`🔑 RND: ${clientRandom}`);
+            }
+
             const packet = this.buildHandshakePacket(encPayload);
 
             const parsed = TuyaMessage.parse(packet);
             if ((service && service.debug) || this.debugMode) {
                 const log = service && service.debug ? service.debug.bind(service) : console.debug;
                 log('Handshake CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
+            }
+            if (typeof service !== 'undefined') {
+                service.log(`🔑 CRC: ${parsed.calcCrc.toString(16)}`);
             }
 
             this._negotiationTimeout = setTimeout(() => {
@@ -384,6 +394,12 @@ class TuyaSessionNegotiator extends EventEmitter {
         if ((service && service.debug) || this.debugMode) {
             const log = service && service.debug ? service.debug.bind(service) : console.debug;
             log('Negotiator sessionKey', sessionKey);
+        }
+        if (typeof TuyaNegotiationMessage.verifySessionKey === 'function') {
+            TuyaNegotiationMessage.verifySessionKey(sessionKey, this.sessionKey);
+        }
+        if (typeof TuyaNegotiationMessage.verifyNegotiationKey === 'function') {
+            TuyaNegotiationMessage.verifyNegotiationKey(deviceRandom, this.deviceRandom);
         }
         return { ...data, sessionKey, sessionIV: result.iv, deviceRandom };
     }

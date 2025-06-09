@@ -28,4 +28,22 @@ export default class TuyaNegotiationMessage {
         }
         return { data, sessionKey };
     }
+
+    static verifySessionKey(sessionKey, negotiationKey) {
+        if (typeof service !== 'undefined') {
+            service.log('🔍 Verificando sessionKey...');
+            service.log(` - sessionKey: ${sessionKey}`);
+            service.log(` - negotiationKey: ${negotiationKey}`);
+        }
+        return sessionKey === negotiationKey;
+    }
+
+    static verifyNegotiationKey(deviceRnd, negotiationKey) {
+        if (typeof service !== 'undefined') {
+            service.log('🔍 Verificando negotiationKey...');
+            service.log(` - deviceRnd: ${deviceRnd}`);
+            service.log(` - negotiationKey: ${negotiationKey}`);
+        }
+        return deviceRnd === negotiationKey;
+    }
 }
