@@ -21,8 +21,8 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.deviceId = options.deviceId;
         this.deviceKey = options.deviceKey;
         this.ip = options.ip;
-        // Handshake siempre se envía al puerto 6668, ignorando el valor recibido
-        this.port = 6668;
+        // Handshake siempre se envía al puerto 6669, ignorando el valor recibido
+        this.port = 6669;
         this.timeout = options.timeout || 10000;
         this.maxRetries = options.maxRetries || 3;
         this.retryInterval = options.retryInterval || 5000;
@@ -61,6 +61,10 @@ class TuyaSessionNegotiator extends EventEmitter {
                 ip: this.ip,
                 port: this.port
             });
+        }
+
+        if (!this.deviceKey || Buffer.from(this.deviceKey, 'utf8').length !== 16) {
+            throw new Error('Invalid device token length');
         }
 
         const cached = SessionCache.get(this.deviceId);
@@ -238,7 +242,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
                     log(`Negotiator retry ${retries} for ${this.deviceId}`);
                 }
-                socket.send(packet, 0, packet.length, 6668, this.ip);
+                socket.send(packet, 0, packet.length, 6669, this.ip);
             }, 2000);
 
             socket.on('error', (err) => {
@@ -322,11 +326,13 @@ class TuyaSessionNegotiator extends EventEmitter {
                 const log = service && service.debug ? service.debug.bind(service) : console.debug;
                 log('Sending handshake packet:', packet.toString('hex'));
             }
-            socket.send(packet, 0, packet.length, 6668, this.ip, (err) => {
+            socket.send(packet, 0, packet.length, 6669, this.ip, (err) => {
                 if (err) {
                     this.lastErrorTime = Date.now();
                     if (service && service.error) service.error('Send error: ' + err.message);
                     done(err);
+                } else if (service && typeof service.log === 'function') {
+                    service.log(`📤 Handshake enviado a ${this.ip}:6669 (${packet.length} bytes)`);
                 }
             });
         });

@@ -8,7 +8,8 @@ class TuyaDeviceModel {
         // Datos básicos del dispositivo
         this.id = discoveryData.gwId || discoveryData.id || '';
         this.ip = discoveryData.ip || '';
-        this.port = discoveryData.port || 6668;
+        // Puerto fijo para negociación GCM; se ignora el puerto recibido en el discovery
+        this.port = 6669;
         this.gwId = discoveryData.gwId || this.id;
         this.devId = discoveryData.devId || this.id;
         this.productKey = discoveryData.productKey || '';
@@ -101,7 +102,7 @@ class TuyaDeviceModel {
 
     updateFromDiscovery(discoveryData) {
         this.ip = discoveryData.ip || this.ip;
-        this.port = discoveryData.port || this.port;
+        // Ignorar el puerto reportado; mantener 6669
         this.version = discoveryData.version || this.version;
         this.lastSeen = Date.now();
     }
