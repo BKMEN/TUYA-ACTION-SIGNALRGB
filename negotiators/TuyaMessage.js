@@ -7,7 +7,7 @@ export default class TuyaMessage {
         return (crc ^ (-1)) >>> 0;
     }
 
-    static build(prefix, seq, cmd, payload) {
+    static build(prefix, seq, cmd, payload, suffix = '0000aa55') {
         const payloadBuf = Buffer.isBuffer(payload) ? payload : Buffer.from(payload);
         const buf = Buffer.alloc(16 + payloadBuf.length + 8);
         buf.write(prefix, 0, 4, 'hex');
@@ -17,7 +17,7 @@ export default class TuyaMessage {
         payloadBuf.copy(buf, 16);
         const crc = TuyaMessage.crc32(buf.slice(0, 16 + payloadBuf.length));
         buf.writeUInt32BE(crc, 16 + payloadBuf.length);
-        buf.write('0000aa55', 16 + payloadBuf.length + 4, 4, 'hex');
+        buf.write(suffix, 16 + payloadBuf.length + 4, 4, 'hex');
         return buf;
     }
 

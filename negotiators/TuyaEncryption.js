@@ -32,6 +32,9 @@ const TuyaEncryption = {
      */
     decryptGCM: function(ciphertext, key, iv, tag, aad) {
         try {
+            if (typeof service !== 'undefined') {
+                service.log('decryptGCM called');
+            }
             const plain = TuyaEncryptor.decrypt(
                 ciphertext,
                 Buffer.isBuffer(key) ? key.toString('hex') : key,
@@ -43,6 +46,7 @@ const TuyaEncryption = {
         } catch (error) {
             if (typeof service !== 'undefined') {
                 service.log('❌ decryptGCM failed: ' + error.message);
+                if (error.stack) service.log(error.stack);
             } else {
                 console.error('Decryption failed:', error);
             }

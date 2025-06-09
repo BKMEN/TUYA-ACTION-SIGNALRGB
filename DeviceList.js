@@ -55,6 +55,18 @@ const predefinedDevices = [
     }
 ];
 
+// Mapeo de IDs a nombres descriptivos
+const deviceAliases = {
+    'bfbe7bd231444751090bsq': 'Leds habitación',
+    'bfbebb82be7220f985rawa': 'Escritorio',
+    'bfde5007394a05833ahsda': 'Leds habitación 2',
+    'bfafad43febddb888apxbj': 'Monitor'
+};
+
+function getFriendlyName(id) {
+    return deviceAliases[id] || id;
+}
+
 function getDeviceTypeConfig(typeName) {
     return deviceTypes.find(type => type.name === typeName) || deviceTypes[0];
 }
@@ -70,7 +82,8 @@ const DeviceList = {
     getDeviceTypes,
     getDevices() {
         return predefinedDevices;
-    }
+    },
+    getFriendlyName
 };
 
 // SOLO exportar DeviceList, SIN ProductId
