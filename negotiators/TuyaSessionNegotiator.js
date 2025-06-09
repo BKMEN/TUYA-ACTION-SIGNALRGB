@@ -368,26 +368,33 @@ class TuyaSessionNegotiator extends EventEmitter {
      */
     buildHandshakePacket(payload) {
         console.group('📦 Building handshake packet');
-        console.log(' - Prefix:', this.prefix);
-        console.log(' - Sequence:', this.sequenceNumber + 1);
-        console.log(' - Command:', '0x05');
-        console.log(' - Payload length:', payload.length);
-        const packet = TuyaMessage.build(
-            this.prefix,
-            ++this.sequenceNumber,
-            0x05,
-            payload,
-            this.suffix
-        );
-        const parsedTmp = TuyaMessage.parse(packet);
-        console.log(' - CRC:', parsedTmp.crc.toString(16));
-        console.log(' - Suffix:', parsedTmp.suffix);
-        const expectedLen = 16 + payload.length + 8;
-        if (packet.length !== expectedLen) {
-            console.log('Warning: handshake length mismatch', packet.length, '!=', expectedLen);
-        }
-        if (packet.slice(-4).toString('hex') !== this.suffix) {
-            console.log('Warning: handshake missing suffix ' + this.suffix.toUpperCase());
+console.log(' - Prefix:', this.prefix || '000055aa');
+console.log(' - Sequence:', this.sequenceNumber + 1);
+console.log(' - Command:', '0x05');
+console.log(' - Payload length:', payload.length);
+
+const packet = TuyaMessage.build(
+    this.prefix,
+    ++this.sequenceNumber,
+    0x05,
+    payload,
+    this.suffix
+);
+
+const parsedTmp = TuyaMessage.parse(packet);
+
+console.log(' - CRC:', parsedTmp.crc.toString(16));
+console.log(' - Suffix:', parsedTmp.suffix);
+
+const expectedLen = 16 + payload.length + 8;
+if (packet.length !== expectedLen) {
+    console.warn('⚠️ Warning: handshake length mismatch', packet.length, '!=', expectedLen);
+}
+
+if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
+    console.warn('⚠️ Warning: handshake missing suffix', (this.suffix || '0000aa55').toUpperCase());
+}
+
         }
         if (service && service.debug) {
             const parsed = TuyaMessage.parse(packet);
