@@ -18,7 +18,15 @@ import EventEmitter from '../utils/EventEmitter.js';
 import crypto from 'node:crypto';
 import TuyaEncryption from '../negotiators/TuyaEncryption.js';
 import gcmBuffer from '../negotiators/GCMBuffer.js';
+import DeviceList from '../DeviceList.js';
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
+
+function friendly(id) {
+    if (DeviceList && typeof DeviceList.getFriendlyName === 'function') {
+        return DeviceList.getFriendlyName(id);
+    }
+    return id;
+}
 
 class TuyaDiscovery extends EventEmitter {
     constructor(config = {}) {
@@ -87,7 +95,7 @@ class TuyaDiscovery extends EventEmitter {
                     this.emit('stopped');
                     const summary = [];
                     for (const dev of this.devices.values()) {
-                        summary.push({ id: dev.id, ip: dev.ip, status: 'found' });
+                        summary.push({ id: friendly(dev.id), ip: dev.ip, status: 'found' });
                     }
                     console.table(summary);
                     resolve();
@@ -122,7 +130,7 @@ class TuyaDiscovery extends EventEmitter {
                 console.log("📦 Dispositivo descubierto:", deviceInfo); // DEBUG
                 this.devices.set(deviceInfo.id, deviceInfo);
                 this.emit('device_found', deviceInfo);
-                console.log(`✅ Dispositivo descubierto: ${deviceInfo.id} (${deviceInfo.ip})`);
+                console.log(`✅ Dispositivo descubierto: ${friendly(deviceInfo.id)} (${deviceInfo.ip})`);
             }
         } catch (error) {
             console.error('Error processing discovery message:', error);

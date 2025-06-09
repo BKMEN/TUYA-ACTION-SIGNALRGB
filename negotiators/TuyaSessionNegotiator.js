@@ -12,8 +12,16 @@ import TuyaMessage from './TuyaMessage.js';
 import TuyaGCMParser from './TuyaGCMParser.js';
 import gcmBuffer from './GCMBuffer.js';
 import SessionCache from './SessionCache.js';
+import DeviceList from '../DeviceList.js';
 
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest('hex');
+
+function friendly(id) {
+    if (DeviceList && typeof DeviceList.getFriendlyName === 'function') {
+        return DeviceList.getFriendlyName(id);
+    }
+    return id;
+}
 
 class TuyaSessionNegotiator extends EventEmitter {
     constructor(options = {}) {
@@ -112,7 +120,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                     if (service && typeof service.log === 'function') {
                         service.log(`❌ No se pudo negociar sesión con ${this.deviceId} (${this.ip})`);
                     }
-                    console.log(`Negotiation failed for device: ${this.deviceId}`);
+                    console.log(`Negotiation failed for device: ${friendly(this.deviceId)}`);
                     if (this._retryTimer) {
                         clearInterval(this._retryTimer);
                         this._retryTimer = null;
@@ -179,6 +187,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             }
 
             this._uuid = this.generateUUID();
+            console.group('🤝 Handshake params');
             console.log('Negotiator UUID:', this._uuid);
             const payload = {
                 uuid: this._uuid,
@@ -189,6 +198,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             console.log('Handshake Token:', this.deviceKey);
             console.log('Handshake UUID:', payload.uuid);
             console.log('Handshake RND:', clientRandom);
+            console.groupEnd();
 
             if ((service && service.debug) || this.debugMode) {
                 const log = service && service.debug ? service.debug.bind(service) : console.debug;
@@ -221,7 +231,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             this._negotiationTimeout = setTimeout(() => {
                 if (this._sessionEstablished) return;
                 this.lastErrorTime = Date.now();
-                console.log(`Negotiation timeout for device ${this.deviceId}`);
+                console.log(`Negotiation timeout for device ${friendly(this.deviceId)}`);
                 done(new Error('Session negotiation timeout'));
             }, this.timeout);
 
@@ -282,7 +292,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                     const failPrev = msg.toString('hex');
                     log('Failed to parse handshake:', err.message, failPrev.slice(0,32) + (failPrev.length>32?'...':''));
                     }
-                    console.log(`Negotiation failed for device: ${this.deviceId}`);
+                    console.log(`Negotiation failed for device: ${friendly(this.deviceId)}`);
                     return;
                 }
 
@@ -327,6 +337,8 @@ class TuyaSessionNegotiator extends EventEmitter {
                     port: this.port
                 };
 
+                console.log(`✅ Negotiation succeeded for ${friendly(this.deviceId)}`);
+
                 done(null, result);
             };
 
@@ -353,8 +365,10 @@ class TuyaSessionNegotiator extends EventEmitter {
      * Construye paquete de handshake
      */
     buildHandshakePacket(payload) {
-        console.log('Building handshake packet...');
+        console.group('📦 Building handshake packet');
+        console.log(' - Prefix:', '000055aa');
         console.log(' - Sequence:', this.sequenceNumber + 1);
+        console.log(' - Command:', '0x05');
         console.log(' - Payload length:', payload.length);
         const packet = TuyaMessage.build(
             '000055aa',
@@ -362,6 +376,9 @@ class TuyaSessionNegotiator extends EventEmitter {
             0x05,
             payload
         );
+        const parsedTmp = TuyaMessage.parse(packet);
+        console.log(' - CRC:', parsedTmp.crc.toString(16));
+        console.log(' - Suffix:', parsedTmp.suffix);
         const expectedLen = 16 + payload.length + 8;
         if (packet.length !== expectedLen) {
             console.log('Warning: handshake length mismatch', packet.length, '!=', expectedLen);
@@ -373,6 +390,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             const parsed = TuyaMessage.parse(packet);
             service.debug('Handshake packet CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
         }
+        console.groupEnd();
         return packet;
     }
 
