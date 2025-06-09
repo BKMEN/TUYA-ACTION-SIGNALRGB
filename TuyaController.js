@@ -161,8 +161,13 @@ class TuyaController {
                 ip: this.device.ip
             });
             
-            this.negotiator.on('success', (sessionKey) => {
-                this.device.setSessionKey(sessionKey);
+            this.negotiator.on('success', (result) => {
+                const { sessionKey, deviceRandom } = result || {};
+                if (typeof this.device.startSession === 'function') {
+                    this.device.startSession(sessionKey, deviceRandom);
+                } else {
+                    this.device.setSessionKey(sessionKey);
+                }
                 this.encryptor = new TuyaCommandEncryptor(sessionKey);
 
                 this._negotiationPromise = null;
@@ -177,6 +182,7 @@ class TuyaController {
             });
             
             this.negotiator.on('error', (error) => {
+                service.log(`❌ No se pudo negociar sesión con ${this.device.id} (${this.device.ip})`);
                 service.log('Negotiation failed for device ' + this.device.id + ': ' + error.message);
 
                 this._negotiationPromise = null;

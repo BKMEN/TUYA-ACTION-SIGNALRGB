@@ -105,6 +105,9 @@ class TuyaSessionNegotiator extends EventEmitter {
                     socket.removeListener('message', onMessage);
                 }
                 if (err) {
+                    if (service && typeof service.log === 'function') {
+                        service.log(`❌ No se pudo negociar sesión con ${this.deviceId} (${this.ip})`);
+                    }
                     if (this._retryTimer) {
                         clearInterval(this._retryTimer);
                         this._retryTimer = null;

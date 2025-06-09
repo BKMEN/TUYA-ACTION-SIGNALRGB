@@ -22,6 +22,8 @@ class TuyaDeviceModel {
         
         // Estado de conexión
         this.sessionKey = null;
+        this.negotiationKey = null;
+        this.isConnected = false;
         this.initialized = false;
         this.sequenceNumber = 0;
         
@@ -107,6 +109,17 @@ class TuyaDeviceModel {
     setSessionKey(sessionKey) {
         this.sessionKey = sessionKey;
         this.initialized = true;
+        this.saveSettings();
+    }
+
+    startSession(sessionKey, negotiationKey) {
+        this.sessionKey = sessionKey;
+        this.negotiationKey = negotiationKey;
+        this.isConnected = true;
+        this.initialized = true;
+        if (typeof service !== 'undefined') {
+            service.log(`✅ Sesión negociada con ${this.id} (${this.ip})`);
+        }
         this.saveSettings();
     }
 
