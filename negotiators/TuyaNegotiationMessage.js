@@ -35,6 +35,7 @@ export default class TuyaNegotiationMessage {
             service.log(` - sessionKey: ${sessionKey}`);
             service.log(` - negotiationKey: ${negotiationKey}`);
         }
+        console.log('[verifySessionKey]', sessionKey, negotiationKey);
         return sessionKey === negotiationKey;
     }
 
@@ -44,6 +45,7 @@ export default class TuyaNegotiationMessage {
             service.log(` - deviceRnd: ${deviceRnd}`);
             service.log(` - negotiationKey: ${negotiationKey}`);
         }
+        console.log('[verifyNegotiationKey]', deviceRnd, negotiationKey);
         return deviceRnd === negotiationKey;
     }
 }
