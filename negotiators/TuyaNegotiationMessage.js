@@ -35,6 +35,9 @@ export default class TuyaNegotiationMessage {
             service.log(` - sessionKey: ${sessionKey}`);
             service.log(` - negotiationKey: ${negotiationKey}`);
         }
+        const calculatedCRC = TuyaMessage.crc32(Buffer.from(sessionKey, 'hex'));
+        const receivedCRC = TuyaMessage.crc32(Buffer.from(negotiationKey, 'hex'));
+        console.log('🔍 Verifying session key with CRC:', calculatedCRC.toString(16), 'vs', receivedCRC.toString(16));
         return sessionKey === negotiationKey;
     }
 
@@ -44,6 +47,7 @@ export default class TuyaNegotiationMessage {
             service.log(` - deviceRnd: ${deviceRnd}`);
             service.log(` - negotiationKey: ${negotiationKey}`);
         }
+        console.log('[verifyNegotiationKey]', deviceRnd, negotiationKey);
         return deviceRnd === negotiationKey;
     }
 }

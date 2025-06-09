@@ -36,8 +36,9 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.retryInterval = options.retryInterval || 5000;
         this.debugMode = options.debugMode || false;
         this.gcmBuffer = options.gcmBuffer || gcmBuffer;
-        this.prefix = options.prefix || '00006699';
-        this.suffix = options.suffix || '00009966';
+        // Prefix y sufijo deben coincidir con el plugin original
+        this.prefix = options.prefix || '000055aa';
+        this.suffix = options.suffix || '0000aa55';
 
         this.sessionKey = null;
         this.sessionIV = null;
@@ -197,6 +198,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 gwId: this.deviceId,
                 random: clientRandom
             };
+            console.log('Handshake payload:', payload);
             console.log('Handshake Token:', this.deviceKey);
             console.log('Handshake UUID:', payload.uuid);
             console.log('Handshake RND:', clientRandom);
@@ -270,10 +272,16 @@ class TuyaSessionNegotiator extends EventEmitter {
 
             onMessage = (msg, rinfo) => {
                 this.gcmBuffer.add(rinfo.address, msg);
+                const hexMsg = msg.toString('hex');
+                if (service && typeof service.log === 'function') {
+                    service.log(`📥 UDP packet from ${rinfo.address}: ${hexMsg}`);
+                } else {
+                    console.log('📥 UDP packet from', rinfo.address + ':', hexMsg);
+                }
                 if ((service && service.debug) || this.debugMode) {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
-                const preview = msg.toString('hex');
-                log('Handshake packet received:', preview.slice(0,32) + (preview.length>32?'...':''), 'from', rinfo.address);
+                    const preview = hexMsg;
+                    log('Handshake packet received:', preview.slice(0,32) + (preview.length>32?'...':''), 'from', rinfo.address);
                 }
                 if (rinfo.address !== this.ip) {
                     return;
@@ -304,6 +312,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 this.sessionKey = response.sessionKey;
                 this.sessionIV = response.sessionIV;
                 this.deviceRandom = response.deviceRandom;
+                console.log('🔑 Stored sessionKey', this.sessionKey);
                 this._sessionEstablished = true;
 
                 if ((service && service.debug) || this.debugMode) {
@@ -346,18 +355,27 @@ class TuyaSessionNegotiator extends EventEmitter {
 
             socket.on('message', onMessage);
 
+            if (service && typeof service.log === 'function') {
+                service.log('🔔 Waiting for handshake response...');
+            } else {
+                console.log('🔔 Waiting for handshake response...');
+            }
+
+            const pktPrev = packet.toString('hex');
             if ((service && service.debug) || this.debugMode) {
                 const log = service && service.debug ? service.debug.bind(service) : console.debug;
-                const pktPrev = packet.toString('hex');
                 log('Sending handshake packet:', pktPrev.slice(0,32) + (pktPrev.length>32?'...':''));
+            }
+            if (service && typeof service.log === 'function') {
+                service.log(`📤 Handshake enviado a ${this.ip}:6669 (${packet.length} bytes)`);
+            } else {
+                console.log(`📤 Handshake sent to ${this.ip}:6669 (${packet.length} bytes)`);
             }
             socket.send(packet, 0, packet.length, 6669, this.ip, (err) => {
                 if (err) {
                     this.lastErrorTime = Date.now();
                     if (service && service.error) service.error('Send error: ' + err.message);
                     done(err);
-                } else if (service && typeof service.log === 'function') {
-                    service.log(`📤 Handshake enviado a ${this.ip}:6669 (${packet.length} bytes)`);
                 }
             });
         });

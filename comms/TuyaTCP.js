@@ -11,6 +11,13 @@ class TuyaTCP {
         this.host = host;
         this.port = port;
         this.socket = null;
+        this._handleData = null;
+    }
+
+    setDataHandler(fn) {
+        if (typeof fn === 'function') {
+            this._handleData = fn;
+        }
     }
 
     /**
@@ -19,7 +26,15 @@ class TuyaTCP {
      */
     connect() {
         return new Promise((resolve, reject) => {
-            this.socket = net.createConnection(this.port, this.host, resolve);
+            this.socket = net.createConnection(this.port, this.host, () => {
+                this.socket.on('data', data => {
+                    console.log('📨 TCP DATA RECEIVED:', data.toString('hex'));
+                    if (typeof this._handleData === 'function') {
+                        this._handleData(data);
+                    }
+                });
+                resolve();
+            });
             this.socket.once('error', err => {
                 reject(err);
             });

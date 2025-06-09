@@ -13,6 +13,9 @@ class TuyaSecureSender {
         this.sequence = 0;
         this.debugMode = options.debugMode || false;
         this.socket = dgram.createSocket('udp4');
+        this.socket.on('message', (msg, rinfo) => {
+            console.log('📩 UDP RESPONSE:', msg.toString('hex'), 'from', rinfo.address);
+        });
     }
 
     buildPacket(payload) {
