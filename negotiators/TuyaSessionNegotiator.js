@@ -310,6 +310,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 this.sessionKey = response.sessionKey;
                 this.sessionIV = response.sessionIV;
                 this.deviceRandom = response.deviceRandom;
+                console.log('🔑 Stored sessionKey', this.sessionKey);
                 this._sessionEstablished = true;
 
                 if ((service && service.debug) || this.debugMode) {
