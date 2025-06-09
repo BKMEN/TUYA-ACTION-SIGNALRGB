@@ -395,7 +395,6 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
     console.warn('⚠️ Warning: handshake missing suffix', (this.suffix || '0000aa55').toUpperCase());
 }
 
-        }
         if (service && service.debug) {
             const parsed = TuyaMessage.parse(packet);
             service.debug('Handshake packet CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
