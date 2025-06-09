@@ -85,6 +85,11 @@ class TuyaDiscovery extends EventEmitter {
                     this.isRunning = false;
                     this.socket = null;
                     this.emit('stopped');
+                    const summary = [];
+                    for (const dev of this.devices.values()) {
+                        summary.push({ id: dev.id, ip: dev.ip, status: 'found' });
+                    }
+                    console.table(summary);
                     resolve();
                 });
             } else {
@@ -251,6 +256,7 @@ class TuyaDiscovery extends EventEmitter {
                 });
 
                 const broadcastAddress = '255.255.255.255';
+                console.log('Broadcasting on:', broadcastAddress + ':' + this.discoveryPort);
                 
                 this.socket.send(
                     discoveryMessage,

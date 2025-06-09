@@ -112,6 +112,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                     if (service && typeof service.log === 'function') {
                         service.log(`❌ No se pudo negociar sesión con ${this.deviceId} (${this.ip})`);
                     }
+                    console.log(`Negotiation failed for device: ${this.deviceId}`);
                     if (this._retryTimer) {
                         clearInterval(this._retryTimer);
                         this._retryTimer = null;
@@ -178,12 +179,16 @@ class TuyaSessionNegotiator extends EventEmitter {
             }
 
             this._uuid = this.generateUUID();
+            console.log('Negotiator UUID:', this._uuid);
             const payload = {
                 uuid: this._uuid,
                 t: Math.floor(Date.now() / 1000),
                 gwId: this.deviceId,
                 random: clientRandom
             };
+            console.log('Handshake Token:', this.deviceKey);
+            console.log('Handshake UUID:', payload.uuid);
+            console.log('Handshake RND:', clientRandom);
 
             if ((service && service.debug) || this.debugMode) {
                 const log = service && service.debug ? service.debug.bind(service) : console.debug;
@@ -216,6 +221,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             this._negotiationTimeout = setTimeout(() => {
                 if (this._sessionEstablished) return;
                 this.lastErrorTime = Date.now();
+                console.log(`Negotiation timeout for device ${this.deviceId}`);
                 done(new Error('Session negotiation timeout'));
             }, this.timeout);
 
@@ -254,7 +260,8 @@ class TuyaSessionNegotiator extends EventEmitter {
                 this.gcmBuffer.add(rinfo.address, msg);
                 if ((service && service.debug) || this.debugMode) {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
-                    log('Handshake packet received:', msg.toString('hex'), 'from', rinfo.address);
+                const preview = msg.toString('hex');
+                log('Handshake packet received:', preview.slice(0,32) + (preview.length>32?'...':''), 'from', rinfo.address);
                 }
                 if (rinfo.address !== this.ip) {
                     return;
@@ -262,7 +269,8 @@ class TuyaSessionNegotiator extends EventEmitter {
                 if ((service && service.debug) || this.debugMode) {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
                     const parsed = TuyaMessage.parse(msg);
-                    log('Handshake response raw:', msg.toString('hex'), 'cmd', parsed.cmd.toString(16));
+                    const rawPrev = msg.toString('hex');
+                    log('Handshake response raw:', rawPrev.slice(0,32) + (rawPrev.length>32?'...':''), 'cmd', parsed.cmd.toString(16));
                 }
 
                 let response;
@@ -271,8 +279,10 @@ class TuyaSessionNegotiator extends EventEmitter {
                 } catch (err) {
                     if ((service && service.debug) || this.debugMode) {
                         const log = service && service.debug ? service.debug.bind(service) : console.debug;
-                        log('Failed to parse handshake:', err.message, msg.toString('hex'));
+                    const failPrev = msg.toString('hex');
+                    log('Failed to parse handshake:', err.message, failPrev.slice(0,32) + (failPrev.length>32?'...':''));
                     }
+                    console.log(`Negotiation failed for device: ${this.deviceId}`);
                     return;
                 }
 
@@ -324,7 +334,8 @@ class TuyaSessionNegotiator extends EventEmitter {
 
             if ((service && service.debug) || this.debugMode) {
                 const log = service && service.debug ? service.debug.bind(service) : console.debug;
-                log('Sending handshake packet:', packet.toString('hex'));
+                const pktPrev = packet.toString('hex');
+                log('Sending handshake packet:', pktPrev.slice(0,32) + (pktPrev.length>32?'...':''));
             }
             socket.send(packet, 0, packet.length, 6669, this.ip, (err) => {
                 if (err) {
@@ -342,12 +353,22 @@ class TuyaSessionNegotiator extends EventEmitter {
      * Construye paquete de handshake
      */
     buildHandshakePacket(payload) {
+        console.log('Building handshake packet...');
+        console.log(' - Sequence:', this.sequenceNumber + 1);
+        console.log(' - Payload length:', payload.length);
         const packet = TuyaMessage.build(
             '000055aa',
             ++this.sequenceNumber,
             0x05,
             payload
         );
+        const expectedLen = 16 + payload.length + 8;
+        if (packet.length !== expectedLen) {
+            console.log('Warning: handshake length mismatch', packet.length, '!=', expectedLen);
+        }
+        if (packet.slice(-4).toString('hex') !== '0000aa55') {
+            console.log('Warning: handshake missing suffix 55AA');
+        }
         if (service && service.debug) {
             const parsed = TuyaMessage.parse(packet);
             service.debug('Handshake packet CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
@@ -384,10 +405,14 @@ class TuyaSessionNegotiator extends EventEmitter {
      */
     parseHandshakeResponse(buffer) {
         const result = TuyaGCMParser.parse(buffer, 0x08);
-        if (!result) throw new Error('Invalid handshake packet');
+        if (!result) {
+            console.log('HMAC mismatch');
+            throw new Error('Invalid handshake packet');
+        }
         if ((service && service.debug) || this.debugMode) {
             const log = service && service.debug ? service.debug.bind(service) : console.debug;
-            log('Handshake decrypted:', result.payload.toString('hex'));
+            const decPrev = result.payload.toString('hex');
+            log('Handshake decrypted:', decPrev.slice(0,32) + (decPrev.length>32?'...':''));
         }
         const data = JSON.parse(result.payload.toString());
         const deviceRandom = data.random || data.rnd || '';
@@ -402,7 +427,8 @@ class TuyaSessionNegotiator extends EventEmitter {
             log('Negotiator sessionKey', sessionKey);
         }
         if (typeof TuyaNegotiationMessage.verifySessionKey === 'function') {
-            TuyaNegotiationMessage.verifySessionKey(sessionKey, this.sessionKey);
+            const ok = TuyaNegotiationMessage.verifySessionKey(sessionKey, this.sessionKey);
+            console.log(ok ? 'HMAC OK' : 'HMAC mismatch');
         }
         if (typeof TuyaNegotiationMessage.verifyNegotiationKey === 'function') {
             TuyaNegotiationMessage.verifyNegotiationKey(deviceRandom, this.deviceRandom);
