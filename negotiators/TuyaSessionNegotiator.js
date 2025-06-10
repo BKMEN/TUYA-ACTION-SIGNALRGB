@@ -321,7 +321,8 @@ class TuyaSessionNegotiator extends EventEmitter {
 
                 let response;
                 try {
-                    response = this.parseHandshakeResponse(msg);
+                    response = this.processHandshakeResponse(msg, rinfo);
+                    if (!response) return;
                 } catch (err) {
                     if ((service && service.debug) || this.debugMode) {
                         const log = service && service.debug ? service.debug.bind(service) : console.debug;
@@ -468,6 +469,19 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
     }
 
     /**
+     * Filtra y procesa una respuesta de negociación.
+     * Retorna false si el paquete no corresponde a una respuesta válida.
+     */
+    processHandshakeResponse(message, rinfo = { address: '' }) {
+        const command = message.readUInt32BE(8);
+        if (command !== 6) {
+            console.log(`[NEGOTIATOR] Ignorando paquete con comando ${command} de ${rinfo.address}`);
+            return false;
+        }
+        return this.parseHandshakeResponse(message);
+    }
+
+    /**
      * Descifra un paquete GCM y devuelve el payload
      */
     decryptGcmPacket(msg, cmd) {
@@ -533,7 +547,8 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         if (this.sessionKey || this._sessionEstablished) return;
         let response;
         try {
-            response = this.parseHandshakeResponse(buffer);
+            response = this.processHandshakeResponse(buffer, rinfo);
+            if (!response) return;
         } catch (err) {
             this.emit('error', err);
             return;
