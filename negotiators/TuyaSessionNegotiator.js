@@ -255,12 +255,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 service.log(`🔑 CRC: ${parsed.calcCrc.toString(16)}`);
             }
 
-            this._negotiationTimeout = setTimeout(() => {
-                if (this._sessionEstablished) return;
-                this.lastErrorTime = Date.now();
-                console.log(`Negotiation timeout for device ${friendly(this.deviceId)}`);
-                done(new Error('Session negotiation timeout'));
-            }, this.timeout);
+
 
             let retries = 0;
             this._retryTimer = setInterval(() => {

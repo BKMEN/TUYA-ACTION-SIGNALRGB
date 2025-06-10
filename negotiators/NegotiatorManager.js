@@ -50,6 +50,31 @@ class NegotiatorManager extends EventEmitter {
         }
     }
 
+    /**
+     * Inicia la negociación para un conjunto de dispositivos de forma concurrente.
+     * @param {Array<{deviceId:string, deviceKey:string, ip:string, controller:any}>} devices
+     * @param {number} timeout Tiempo máximo global
+     */
+    startBatchNegotiation(devices = [], timeout = 10000) {
+        const pending = new Map();
+        for (const opts of devices) {
+            const negotiator = this.create(opts);
+            pending.set(opts.deviceId, negotiator);
+            negotiator.start().then(() => {
+                pending.delete(opts.deviceId);
+            }).catch(() => {
+                pending.delete(opts.deviceId);
+            });
+        }
+        setTimeout(() => {
+            for (const [id, n] of pending.entries()) {
+                n.emit('error', new Error('Session negotiation timeout'));
+                n.cleanup();
+                pending.delete(id);
+            }
+        }, timeout);
+    }
+
     getFailureCount(deviceId) {
         return this.failCounts.get(deviceId) || 0;
     }
