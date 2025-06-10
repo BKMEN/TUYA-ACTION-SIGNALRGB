@@ -35,15 +35,15 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.listenPort = options.listenPort || 40001;
         // Dirección y puerto destino para el broadcast de negociación
         this.broadcastAddress = options.broadcastAddress || '192.168.1.255';
-        this.broadcastPort = options.broadcastPort || 6667;
+        this.broadcastPort = options.broadcastPort || 40001;
         this.timeout = options.timeout || 10000;
         this.maxRetries = options.maxRetries || 3;
         this.retryInterval = options.retryInterval || 5000;
         this.debugMode = options.debugMode || false;
         this.gcmBuffer = options.gcmBuffer || gcmBuffer;
-        // Prefix y sufijo deben coincidir con el plugin original
-        this.prefix = options.prefix || '000055aa';
-        this.suffix = options.suffix || '0000aa55';
+        // Prefix y sufijo para protocolo 3.5
+        this.prefix = options.prefix || '00006699';
+        this.suffix = options.suffix || '00009966';
 
         this.sessionKey = null;
         this.sessionIV = null;
