@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import TuyaMessage from './TuyaMessage.js';
 import TuyaEncryption from './TuyaEncryption.js';
-import TuyaEncryptor from './TuyaEncryptor.js';
+import { TuyaEncryptor } from './TuyaEncryptor.js';
 
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest('hex');
 

@@ -6,8 +6,8 @@ import EventEmitter from '../utils/EventEmitter.js';
 import dgram from 'node:dgram';
 import crypto from 'node:crypto';
 import TuyaEncryption from './TuyaEncryption.js';
-import TuyaEncryptor from './TuyaEncryptor.js';
-import TuyaNegotiationMessage from './TuyaNegotiationMessage.js';
+import { TuyaEncryptor } from './TuyaEncryptor.js';
+import { buildNegotiationPacket } from './TuyaNegotiationMessage.js';
 import TuyaMessage from './TuyaMessage.js';
 import TuyaGCMParser from './TuyaGCMParser.js';
 import gcmBuffer from './GCMBuffer.js';
@@ -227,23 +227,15 @@ class TuyaSessionNegotiator extends EventEmitter {
                 log(`Negotiator ${this.deviceId} UUID:`, payload.uuid);
             }
 
-            const iv = crypto.randomBytes(12).toString('hex');
-            const aad = TuyaEncryption.createAAD(0x05, Buffer.alloc(4), Buffer.byteLength(JSON.stringify(payload)));
-            const enc = TuyaEncryptor.encrypt(JSON.stringify(payload), UDP_KEY, iv, aad);
-            const encPayload = Buffer.concat([Buffer.from(iv,'hex'), enc.ciphertext, enc.tag]);
+            const deviceInfo = {
+                id: this.deviceId,
+                localKey: this.deviceKey,
+                uuid: payload.uuid,
+                random: clientRandom,
+                ts: payload.t
+            };
 
-            console.log('nonce:', iv);
-            console.log('aad:', aad.toString('hex'));
-            console.log('tag:', enc.tag.toString('hex'));
-
-            if (typeof service !== 'undefined') {
-                service.log(`🔑 Device ID: ${this.deviceId}`);
-                service.log(`🔑 Token: ${this.deviceKey}`);
-                service.log(`🔑 UUID: ${payload.uuid}`);
-                service.log(`🔑 RND: ${clientRandom}`);
-            }
-
-            const packet = this.buildHandshakePacket(encPayload);
+            const packet = buildNegotiationPacket(deviceInfo);
             this.logNegotiationPacket(packet);
 
             const parsed = TuyaMessage.parse(packet);
@@ -418,50 +410,6 @@ class TuyaSessionNegotiator extends EventEmitter {
     /**
      * Construye paquete de handshake
      */
-    buildHandshakePacket(payload) {
-        console.group('📦 Building handshake packet');
-console.log(' - Prefix:', this.prefix || '000055aa');
-console.log(' - Sequence:', this.sequenceNumber + 1);
-console.log(' - Command:', '0x05');
-console.log(' - Payload length:', payload.length);
-
-const packet = TuyaMessage.build(
-    this.prefix,
-    ++this.sequenceNumber,
-    0x05,
-    payload,
-    this.suffix
-);
-
-const parsedTmp = TuyaMessage.parse(packet);
-
-console.log(' - CRC:', parsedTmp.crc.toString(16));
-console.log(' - Suffix:', parsedTmp.suffix);
-
-const expectedLen = 16 + payload.length + 8;
-if (packet.length !== expectedLen) {
-    console.warn('⚠️ Warning: handshake length mismatch', packet.length, '!=', expectedLen);
-}
-
-if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
-    console.warn('⚠️ Warning: handshake missing suffix', (this.suffix || '0000aa55').toUpperCase());
-}
-
-        if (service && service.debug) {
-            const parsed = TuyaMessage.parse(packet);
-            service.debug('Handshake packet CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
-        }
-        console.groupEnd();
-        return packet;
-    }
-
-    /**
-     * Deriva la clave de sesión usando MD5 como en el protocolo oficial
-     */
-    deriveSessionKey(clientRandom, deviceRandom) {
-        const input = Buffer.from(this.deviceKey + clientRandom + deviceRandom, 'hex');
-        return crypto.createHash('md5').update(input).digest('hex');
-    }
 
     /**
      * Filtra y procesa una respuesta de negociación.
@@ -523,13 +471,6 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         if ((service && service.debug) || this.debugMode) {
             const log = service && service.debug ? service.debug.bind(service) : console.debug;
             log('Negotiator sessionKey', sessionKey);
-        }
-        if (typeof TuyaNegotiationMessage.verifySessionKey === 'function') {
-            const ok = TuyaNegotiationMessage.verifySessionKey(sessionKey, this.sessionKey);
-            console.log(ok ? 'HMAC OK' : 'HMAC mismatch');
-        }
-        if (typeof TuyaNegotiationMessage.verifyNegotiationKey === 'function') {
-            TuyaNegotiationMessage.verifyNegotiationKey(deviceRandom, this.deviceRandom);
         }
         return { ...data, sessionKey, sessionIV: result.iv, deviceRandom };
     }
