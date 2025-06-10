@@ -61,7 +61,13 @@ class TuyaDiscovery extends EventEmitter {
                     const header = msg.toString('hex', 0, 4);
 
                     if (header === '00006699') {
-                        // Standard GCM discovery packet
+                        const command = msg.readUInt32BE(8);
+                        if (command === 0x06) {
+                            // Paquete de negociación v3.5
+                            this.emit('negotiation_packet', msg, rinfo);
+                            return;
+                        }
+                        // Paquete de descubrimiento cifrado
                         this.handleDiscoveryMessage(msg, rinfo);
                         return;
                     }
@@ -69,7 +75,7 @@ class TuyaDiscovery extends EventEmitter {
                     if (header === '000055aa') {
                         const command = msg.readUInt32BE(8);
                         if (command === 0x06) {
-                            // Handshake response, route to negotiator
+                            // Handshake response (protocolo antiguo)
                             this.emit('negotiation_packet', msg, rinfo);
                             return;
                         }
