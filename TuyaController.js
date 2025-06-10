@@ -50,9 +50,6 @@ class TuyaController {
 
         if (model.enabled && model.localKey) {
             this.device = model;
-            try {
-                this.startNegotiation();
-            } catch (_) {}
         }
 
         return model;
@@ -66,13 +63,11 @@ class TuyaController {
 
         this.device = model;
 
-        if (model.enabled && model.localKey) {
-            try {
-                this.startNegotiation();
-            } catch (_) {}
-        } else {
+        if (!(model.enabled && model.localKey)) {
             throw new Error('Device missing local key or disabled');
         }
+
+        // negotiation will be handled in batch elsewhere
     }
 
     // Método llamado desde QML para actualizar configuración
@@ -95,12 +90,7 @@ class TuyaController {
                     service.deviceConfigured(this.device.id);
                 }
                 
-                // Si está habilitado y tiene localKey, iniciar negociación
-                if (this.device.enabled && this.device.localKey) {
-                    try {
-                        this.startNegotiation();
-                    } catch (_) {}
-                }
+                // La negociación por lotes será gestionada externamente
                 
                 return true;
             } else {
@@ -162,7 +152,7 @@ class TuyaController {
                 // Difunde la negociación para que cualquier dispositivo responda
                 broadcastAddress: '192.168.1.255',
                 listenPort: 40001,
-                broadcastPort: 6667
+                broadcastPort: 40001
             });
             
             this.negotiator.on('success', (result) => {

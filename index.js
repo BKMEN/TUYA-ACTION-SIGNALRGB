@@ -355,14 +355,7 @@ export class DiscoveryService {
             if (existingController) {
                 logInfo(`Device ${deviceId} already exists. Updating info.`);
                 existingController.device.updateFromDiscovery(deviceData);
-                if (!existingController.device.isReady() && existingController.device.localKey && existingController.device.enabled) {
-                    logInfo(`Re-initiating negotiation for existing device: ${deviceId}`);
-                    try {
-                        existingController.startNegotiation();
-                    } catch (negErr) {
-                        logError('Negotiation error for ' + deviceId + ': ' + negErr.message);
-                    }
-                }
+                // La negociación se realizará de forma global tras el descubrimiento
                 if (typeof service.controllersChanged === 'function') {
                     service.controllersChanged();
                 }
@@ -426,17 +419,7 @@ export class DiscoveryService {
                 logInfo('New device added to controllers list: ' + newDeviceModel.id);
                 saveDeviceList();
 
-                // Only negotiate when device has a LocalKey and is enabled
-                if (newDeviceModel.localKey && newDeviceModel.enabled) {
-                    logInfo(`Attempting negotiation for new device: ${newDeviceModel.id}`);
-                    try {
-                        newController.startNegotiation();
-                    } catch (negErr) {
-                        logError('Negotiation error for ' + newDeviceModel.id + ': ' + negErr.message);
-                    }
-                } else {
-                    logInfo(`Device ${newDeviceModel.id} needs configuration (LocalKey/Enabled).`);
-                }
+                // La negociación global se ejecutará tras finalizar el descubrimiento
             }
         } catch (error) {
             logError('Error in handleTuyaDiscovery: ' + error.message);
@@ -512,13 +495,7 @@ export class DiscoveryService {
         if (typeof service.controllersChanged === 'function') {
             service.controllersChanged();
         }
-        if (model.enabled && model.localKey) {
-            try {
-                controller.startNegotiation();
-            } catch (negErr) {
-                logError('Negotiation error for ' + model.id + ': ' + negErr.message);
-            }
-        }
+        // La negociación se iniciará de forma global cuando finalice el descubrimiento
         return controller;
     }
 }
@@ -561,14 +538,7 @@ async function loadSavedDevices() {
                         logInfo('Warning: no localKey stored for ' + deviceModel.id);
                     }
                     
-                    if (deviceModel.enabled && deviceModel.localKey && !deviceModel.isReady()) {
-                        logInfo(`Attempting negotiation for saved device: ${deviceModel.id}`);
-                        try {
-                            controller.startNegotiation();
-                        } catch (negErr) {
-                            logError('Negotiation error for ' + deviceModel.id + ': ' + negErr.message);
-                        }
-                    }
+                    // La negociación global se realizará tras el descubrimiento
                 }
             }
         }

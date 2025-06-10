@@ -35,15 +35,15 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.listenPort = options.listenPort || 40001;
         // Dirección y puerto destino para el broadcast de negociación
         this.broadcastAddress = options.broadcastAddress || '192.168.1.255';
-        this.broadcastPort = options.broadcastPort || 6667;
+        this.broadcastPort = options.broadcastPort || 40001;
         this.timeout = options.timeout || 10000;
         this.maxRetries = options.maxRetries || 3;
         this.retryInterval = options.retryInterval || 5000;
         this.debugMode = options.debugMode || false;
         this.gcmBuffer = options.gcmBuffer || gcmBuffer;
         // Prefix y sufijo deben coincidir con el plugin original
-        this.prefix = options.prefix || '000055aa';
-        this.suffix = options.suffix || '0000aa55';
+        this.prefix = options.prefix || '00006699';
+        this.suffix = options.suffix || '00009966';
 
         this.sessionKey = null;
         this.sessionIV = null;
@@ -255,12 +255,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 service.log(`🔑 CRC: ${parsed.calcCrc.toString(16)}`);
             }
 
-            this._negotiationTimeout = setTimeout(() => {
-                if (this._sessionEstablished) return;
-                this.lastErrorTime = Date.now();
-                console.log(`Negotiation timeout for device ${friendly(this.deviceId)}`);
-                done(new Error('Session negotiation timeout'));
-            }, this.timeout);
+
 
             let retries = 0;
             this._retryTimer = setInterval(() => {
@@ -321,7 +316,8 @@ class TuyaSessionNegotiator extends EventEmitter {
 
                 let response;
                 try {
-                    response = this.parseHandshakeResponse(msg);
+                    response = this.processHandshakeResponse(msg, rinfo);
+                    if (!response) return;
                 } catch (err) {
                     if ((service && service.debug) || this.debugMode) {
                         const log = service && service.debug ? service.debug.bind(service) : console.debug;
@@ -468,6 +464,19 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
     }
 
     /**
+     * Filtra y procesa una respuesta de negociación.
+     * Retorna false si el paquete no corresponde a una respuesta válida.
+     */
+    processHandshakeResponse(message, rinfo = { address: '' }) {
+        const command = message.readUInt32BE(8);
+        if (command !== 6) {
+            console.log(`[NEGOTIATOR] Ignorando paquete con comando ${command} de ${rinfo.address}`);
+            return false;
+        }
+        return this.parseHandshakeResponse(message);
+    }
+
+    /**
      * Descifra un paquete GCM y devuelve el payload
      */
     decryptGcmPacket(msg, cmd) {
@@ -489,7 +498,8 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
     parseHandshakeResponse(buffer) {
         const parsedMsg = TuyaMessage.parse(buffer);
         console.log('crc:', parsedMsg.crc.toString(16));
-        const result = TuyaGCMParser.parse(buffer, 0x08);
+        // As per the v3.5 protocol the negotiation response uses command 0x06
+        const result = TuyaGCMParser.parse(buffer, 0x06);
         if (!result) {
             console.log('HMAC mismatch');
             throw new Error('Invalid handshake packet');
@@ -532,7 +542,8 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         if (this.sessionKey || this._sessionEstablished) return;
         let response;
         try {
-            response = this.parseHandshakeResponse(buffer);
+            response = this.processHandshakeResponse(buffer, rinfo);
+            if (!response) return;
         } catch (err) {
             this.emit('error', err);
             return;
