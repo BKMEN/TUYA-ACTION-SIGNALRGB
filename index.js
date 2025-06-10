@@ -321,6 +321,14 @@ export class DiscoveryService {
                 }
             });
 
+            this.internalDiscovery.on('negotiation_packet', (msg, rinfo) => {
+                controllers.forEach(ctrl => {
+                    if (ctrl.negotiator && typeof ctrl.negotiator.processResponse === 'function') {
+                        ctrl.negotiator.processResponse(msg, rinfo);
+                    }
+                });
+            });
+
             logInfo("Tuya DiscoveryService internal components initialized.");
         } catch (e) {
             logError("Error in DiscoveryService.Initialize: " + e.message);

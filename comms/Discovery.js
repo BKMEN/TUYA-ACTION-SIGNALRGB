@@ -58,6 +58,24 @@ class TuyaDiscovery extends EventEmitter {
                 this.socket = udp.createSocket('udp4');
                 
                 this.socket.on('message', (msg, rinfo) => {
+                    const header = msg.toString('hex', 0, 4);
+
+                    if (header === '00006699') {
+                        // Standard GCM discovery packet
+                        this.handleDiscoveryMessage(msg, rinfo);
+                        return;
+                    }
+
+                    if (header === '000055aa') {
+                        const command = msg.readUInt32BE(8);
+                        if (command === 0x06) {
+                            // Handshake response, route to negotiator
+                            this.emit('negotiation_packet', msg, rinfo);
+                            return;
+                        }
+                    }
+
+                    // Fallback to original handler for unsupported packets
                     this.handleDiscoveryMessage(msg, rinfo);
                 });
 

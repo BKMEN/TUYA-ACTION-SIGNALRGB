@@ -525,6 +525,59 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
     }
 
     /**
+     * Procesa una respuesta recibida desde el router UDP
+     * Se utiliza cuando los paquetes llegan a otro socket
+     */
+    processResponse(buffer, rinfo = { address: '' }) {
+        if (this.sessionKey || this._sessionEstablished) return;
+        let response;
+        try {
+            response = this.parseHandshakeResponse(buffer);
+        } catch (err) {
+            this.emit('error', err);
+            return;
+        }
+        if (!response || !response.sessionKey) return;
+        if (response.gwId && response.gwId !== this.deviceId) return;
+
+        this.ip = rinfo.address || this.ip;
+        this.sessionKey = response.sessionKey;
+        this.sessionIV = response.sessionIV;
+        this.deviceRandom = response.deviceRandom;
+        this._sessionEstablished = true;
+
+        SessionCache.set(this.deviceId, {
+            sessionKey: this.sessionKey,
+            sessionIV: this.sessionIV,
+            deviceRandom: this.deviceRandom
+        });
+
+        if (this._retryTimer) {
+            clearInterval(this._retryTimer);
+            this._retryTimer = null;
+        }
+        if (this._negotiationTimeout) {
+            clearTimeout(this._negotiationTimeout);
+            this._negotiationTimeout = null;
+        }
+        if (this.socket) {
+            try { this.socket.close(); } catch (_) {}
+            this.socket = null;
+        }
+        this.retryCount = 0;
+
+        const result = {
+            sessionKey: this.sessionKey,
+            sessionIV: this.sessionIV,
+            deviceRandom: this.deviceRandom,
+            deviceId: this.deviceId,
+            ip: this.ip,
+            port: this.port
+        };
+        this.emit('success', result);
+    }
+
+    /**
      * Genera string hexadecimal aleatorio
      */
     generateRandomHex(length) {
