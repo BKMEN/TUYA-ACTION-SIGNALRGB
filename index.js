@@ -15,7 +15,6 @@ import service from './service.js';
 import logger from './utils/Logger.js';
 import { askLocalKey } from './utils/askKey.js';
 import { hexToRgb } from './utils/ColorUtils.js';
-import { getNegotiator, removeNegotiator } from './negotiators/NegotiationRouter.js';
 let fs;
 try {
     ({ default: fs } = await import('node:fs'));
@@ -319,17 +318,6 @@ export class DiscoveryService {
                 logInfo("DiscoveryService Internal: Discovery stopped.");
                 if (typeof service.discoveryComplete === 'function') {
                     service.discoveryComplete();
-                }
-            });
-
-            this.internalDiscovery.on('negotiation_packet', (msg, rinfo) => {
-                const crc = msg.toString('hex', 16, 20);
-                const negotiator = getNegotiator(crc);
-                if (negotiator && typeof negotiator.processResponse === 'function') {
-                    negotiator.processResponse(msg, rinfo);
-                    removeNegotiator(crc);
-                } else {
-                    logger.debug(`[Router] Unmatched negotiation CRC: ${crc}`);
                 }
             });
 
