@@ -56,6 +56,16 @@ class TuyaSessionNegotiator extends EventEmitter {
     }
 
     /**
+     * Imprime el paquete final de negociación en formato hex
+     * para poder comparar con el log del plugin original
+     * @param {Buffer} buffer Paquete a emitir
+     */
+    logNegotiationPacket(buffer) {
+        if (!buffer) return;
+        console.log('Broadcasting negotiation:', buffer.toString('hex'));
+    }
+
+    /**
      * Inicia negociación de sesión
      */
     async negotiateSession() {
@@ -214,6 +224,10 @@ class TuyaSessionNegotiator extends EventEmitter {
             const enc = TuyaEncryptor.encrypt(JSON.stringify(payload), UDP_KEY, iv, aad);
             const encPayload = Buffer.concat([Buffer.from(iv,'hex'), enc.ciphertext, enc.tag]);
 
+            console.log('nonce:', iv);
+            console.log('aad:', aad.toString('hex'));
+            console.log('tag:', enc.tag.toString('hex'));
+
             if (typeof service !== 'undefined') {
                 service.log(`🔑 Device ID: ${this.deviceId}`);
                 service.log(`🔑 Token: ${this.deviceKey}`);
@@ -222,6 +236,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             }
 
             const packet = this.buildHandshakePacket(encPayload);
+            this.logNegotiationPacket(packet);
 
             const parsed = TuyaMessage.parse(packet);
             if ((service && service.debug) || this.debugMode) {
@@ -449,6 +464,8 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
      * Parsea la respuesta del handshake
      */
     parseHandshakeResponse(buffer) {
+        const parsedMsg = TuyaMessage.parse(buffer);
+        console.log('crc:', parsedMsg.crc.toString(16));
         const result = TuyaGCMParser.parse(buffer, 0x08);
         if (!result) {
             console.log('HMAC mismatch');
@@ -460,6 +477,9 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
             log('Handshake decrypted:', decPrev.slice(0,32) + (decPrev.length>32?'...':''));
         }
         const data = JSON.parse(result.payload.toString());
+        console.log('Handshake JSON:', data);
+        if (data.sessionToken) console.log('sessionToken:', data.sessionToken);
+        if (data.sessionHmac) console.log('sessionHmac:', data.sessionHmac);
         const deviceRandom = data.random || data.rnd || '';
         const sessionKey = TuyaEncryption.deriveSessionKey(this.deviceKey, this._lastRandom, deviceRandom);
         if (!sessionKey) throw new Error('Invalid negotiation response');
