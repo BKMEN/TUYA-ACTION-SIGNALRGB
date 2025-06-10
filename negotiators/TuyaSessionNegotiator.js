@@ -477,6 +477,9 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
             log('Handshake decrypted:', decPrev.slice(0,32) + (decPrev.length>32?'...':''));
         }
         const data = JSON.parse(result.payload.toString());
+        console.log('Handshake JSON:', data);
+        if (data.sessionToken) console.log('sessionToken:', data.sessionToken);
+        if (data.sessionHmac) console.log('sessionHmac:', data.sessionHmac);
         const deviceRandom = data.random || data.rnd || '';
         const sessionKey = TuyaEncryption.deriveSessionKey(this.deviceKey, this._lastRandom, deviceRandom);
         if (!sessionKey) throw new Error('Invalid negotiation response');
