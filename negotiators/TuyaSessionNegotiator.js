@@ -35,15 +35,16 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.listenPort = options.listenPort || 40001;
         // Dirección y puerto destino para el broadcast de negociación
         this.broadcastAddress = options.broadcastAddress || '192.168.1.255';
-        this.broadcastPort = options.broadcastPort || 6667;
+        // Puerto utilizado por el protocolo de negociación v3.5
+        this.broadcastPort = options.broadcastPort || 40001;
         this.timeout = options.timeout || 10000;
         this.maxRetries = options.maxRetries || 3;
         this.retryInterval = options.retryInterval || 5000;
         this.debugMode = options.debugMode || false;
         this.gcmBuffer = options.gcmBuffer || gcmBuffer;
-        // Prefix y sufijo deben coincidir con el plugin original
-        this.prefix = options.prefix || '000055aa';
-        this.suffix = options.suffix || '0000aa55';
+        // Encabezados de protocolo usados en la negociación por lotes
+        this.prefix = options.prefix || '00006699';
+        this.suffix = options.suffix || '00009966';
 
         this.sessionKey = null;
         this.sessionIV = null;
@@ -68,6 +69,15 @@ class TuyaSessionNegotiator extends EventEmitter {
     logNegotiationPacket(buffer) {
         if (!buffer) return;
         console.log('Broadcasting negotiation:', buffer.toString('hex'));
+    }
+
+    /**
+     * Negociación por lotes de múltiples dispositivos
+     */
+    negotiateDeviceBatch(devices = []) {
+        const batch = devices.map(d => d.id).join(', ');
+        console.log(`Negotiating device batch: ${batch}`);
+        // TODO: construir y enviar un único paquete para todos
     }
 
     /**
@@ -590,6 +600,13 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
     generateUUID() {
         const md5 = crypto.createHash('md5').update(this.deviceId).digest('hex');
         return md5.match(/.{1,8}/g).join('-');
+    }
+
+    /**
+     * Genera token de sesión similar al plugin funcional
+     */
+    generateSessionToken() {
+        return '60' + crypto.randomBytes(15).toString('hex');
     }
 
     /**

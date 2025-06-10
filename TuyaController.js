@@ -162,7 +162,7 @@ class TuyaController {
                 // Difunde la negociación para que cualquier dispositivo responda
                 broadcastAddress: '192.168.1.255',
                 listenPort: 40001,
-                broadcastPort: 6667
+                broadcastPort: 40001
             });
             
             this.negotiator.on('success', (result) => {
