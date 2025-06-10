@@ -13,6 +13,7 @@ import TuyaGCMParser from './TuyaGCMParser.js';
 import gcmBuffer from './GCMBuffer.js';
 import SessionCache from './SessionCache.js';
 import DeviceList from '../DeviceList.js';
+import { registerNegotiator, removeNegotiator } from './NegotiationRouter.js';
 
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest('hex');
 
@@ -58,6 +59,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         this._negotiationTimeout = null;
         this._retryTimer = null;
         this._uuid = null;
+        this.expectedCrc = null;
     }
 
     /**
@@ -134,6 +136,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 if (socket && onMessage) {
                     socket.removeListener('message', onMessage);
                 }
+                removeNegotiator(this.expectedCrc);
                 if (err) {
                     if (service && typeof service.log === 'function') {
                         service.log(`❌ No se pudo negociar sesión con ${this.deviceId} (${this.ip})`);
@@ -244,6 +247,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             }
 
             const packet = this.buildHandshakePacket(encPayload);
+            registerNegotiator(this.expectedCrc, this);
             this.logNegotiationPacket(packet);
 
             const parsed = TuyaMessage.parse(packet);
@@ -438,6 +442,7 @@ const packet = TuyaMessage.build(
 );
 
 const parsedTmp = TuyaMessage.parse(packet);
+this.expectedCrc = parsedTmp.calcCrc.toString(16);
 
 console.log(' - CRC:', parsedTmp.crc.toString(16));
 console.log(' - Suffix:', parsedTmp.suffix);
@@ -457,6 +462,10 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         }
         console.groupEnd();
         return packet;
+    }
+
+    getExpectedCrc() {
+        return this.expectedCrc;
     }
 
     /**
@@ -539,6 +548,8 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         }
         if (!response || !response.sessionKey) return;
         if (response.gwId && response.gwId !== this.deviceId) return;
+
+        removeNegotiator(this.expectedCrc);
 
         this.ip = rinfo.address || this.ip;
         this.sessionKey = response.sessionKey;
