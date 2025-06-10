@@ -158,7 +158,11 @@ class TuyaController {
             this.negotiator = new TuyaSessionNegotiator({
                 deviceId: this.device.id,
                 deviceKey: this.device.localKey,
-                ip: this.device.ip
+                ip: this.device.ip,
+                // Difunde la negociación para que cualquier dispositivo responda
+                broadcastAddress: '192.168.1.255',
+                listenPort: 40001,
+                broadcastPort: 6667
             });
             
             this.negotiator.on('success', (result) => {
