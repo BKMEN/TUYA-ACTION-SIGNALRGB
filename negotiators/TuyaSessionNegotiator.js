@@ -24,6 +24,8 @@ function friendly(id) {
 }
 
 class TuyaSessionNegotiator extends EventEmitter {
+    static activeNegotiators = new Map();
+
     constructor(options = {}) {
         super();
         this.deviceId = options.deviceId;
@@ -127,12 +129,11 @@ class TuyaSessionNegotiator extends EventEmitter {
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
             let settled = false;
-            let onPacketReceived;
             const done = (err, result) => {
                 if (settled) return;
                 settled = true;
-                if (service && service.internalDiscovery && onPacketReceived) {
-                    service.internalDiscovery.removeListener('standard_packet', onPacketReceived);
+                if (this.expectedCrc) {
+                    TuyaSessionNegotiator.activeNegotiators.delete(this.expectedCrc);
                 }
                 if (err) {
                     if (service && typeof service.log === 'function') {
@@ -196,7 +197,7 @@ class TuyaSessionNegotiator extends EventEmitter {
 
             const checkSocketAndProceed = (attempts = 0) => {
                 if (service && service.internalDiscovery && service.internalDiscovery.socket) {
-                    onPacketReceived = this.executeNegotiationLogic(service, done, startTime);
+                    this.executeNegotiationLogic(service, done, startTime);
                 } else {
                     if (attempts < 10) {
                         console.log(`[Negotiator] El socket de descubrimiento no está listo. Reintentando... (${attempts + 1})`);
@@ -260,6 +261,9 @@ class TuyaSessionNegotiator extends EventEmitter {
 
         const packet = this.buildHandshakePacket(encPayload);
         this.logNegotiationPacket(packet);
+        if (this.expectedCrc) {
+            TuyaSessionNegotiator.activeNegotiators.set(this.expectedCrc, this);
+        }
 
         const parsed = TuyaMessage.parse(packet);
         if ((service && service.debug) || this.debugMode) {
@@ -270,50 +274,13 @@ class TuyaSessionNegotiator extends EventEmitter {
             service.log(`🔑 CRC: ${parsed.calcCrc.toString(16)}`);
         }
 
-        const onPacketReceived = (msg, rinfo) => {
-            if (rinfo.address !== this.ip) return;
-            this.gcmBuffer.add(rinfo.address, msg);
-            try {
-                const response = this.parseHandshakeResponse(msg);
-                if (response && response.sessionKey) {
-                    discoveryEmitter.removeListener('standard_packet', onPacketReceived);
-                    clearTimeout(this._negotiationTimeout);
-                    this.ip = rinfo.address;
-                    this.sessionKey = response.sessionKey;
-                    this.sessionIV = response.sessionIV;
-                    this.deviceRandom = response.deviceRandom;
-                    this._sessionEstablished = true;
-                    SessionCache.set(this.deviceId, {
-                        sessionKey: this.sessionKey,
-                        sessionIV: this.sessionIV,
-                        deviceRandom: this.deviceRandom
-                    });
-                    if (this._retryTimer) {
-                        clearInterval(this._retryTimer);
-                        this._retryTimer = null;
-                    }
-                    this.retryCount = 0;
-                    done(null, {
-                        sessionKey: this.sessionKey,
-                        sessionIV: this.sessionIV,
-                        deviceRandom: this.deviceRandom,
-                        deviceId: this.deviceId,
-                        ip: this.ip,
-                        port: this.port
-                    });
-                }
-            } catch (error) {
-                console.error('[Negotiator] Error al parsear la respuesta:', error);
-            }
-        };
-
-        discoveryEmitter.on('standard_packet', onPacketReceived);
-
         this._negotiationTimeout = setTimeout(() => {
-            discoveryEmitter.removeListener('standard_packet', onPacketReceived);
             if (this._sessionEstablished) return;
             this.lastErrorTime = Date.now();
             console.error(`[Negotiator] Timeout final para ${this.deviceId}. Limpiando listener.`);
+            if (this.expectedCrc) {
+                TuyaSessionNegotiator.activeNegotiators.delete(this.expectedCrc);
+            }
             done(new Error('Session negotiation timeout'));
         }, this.timeout);
 
@@ -356,8 +323,6 @@ class TuyaSessionNegotiator extends EventEmitter {
         }
 
         sendPacket();
-
-        return onPacketReceived;
     }
 
     /**
@@ -480,6 +445,9 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         try {
             response = this.parseHandshakeResponse(buffer);
         } catch (err) {
+            if (this.expectedCrc) {
+                TuyaSessionNegotiator.activeNegotiators.delete(this.expectedCrc);
+            }
             this.emit('error', err);
             return;
         }
@@ -520,6 +488,9 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
             ip: this.ip,
             port: this.port
         };
+        if (this.expectedCrc) {
+            TuyaSessionNegotiator.activeNegotiators.delete(this.expectedCrc);
+        }
         this.emit('success', result);
     }
 
@@ -581,6 +552,23 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         this._lastRandom = null;
         this._sessionEstablished = false;
         this._uuid = null;
+        if (this.expectedCrc) {
+            TuyaSessionNegotiator.activeNegotiators.delete(this.expectedCrc);
+        }
+    }
+
+    static routeResponse(buffer, rinfo) {
+        let parsed;
+        try {
+            parsed = TuyaMessage.parse(buffer);
+        } catch (_) {
+            return;
+        }
+        const crc = parsed.crc.toString(16);
+        const negotiator = TuyaSessionNegotiator.activeNegotiators.get(crc);
+        if (negotiator) {
+            negotiator.processResponse(buffer, rinfo);
+        }
     }
 }
 

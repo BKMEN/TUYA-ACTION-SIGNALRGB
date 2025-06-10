@@ -18,6 +18,7 @@ import EventEmitter from '../utils/EventEmitter.js';
 import crypto from 'node:crypto';
 import TuyaEncryption from '../negotiators/TuyaEncryption.js';
 import gcmBuffer from '../negotiators/GCMBuffer.js';
+import TuyaSessionNegotiator from '../negotiators/TuyaSessionNegotiator.js';
 import DeviceList from '../DeviceList.js';
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
 
@@ -60,20 +61,24 @@ class TuyaDiscovery extends EventEmitter {
                 this.socket.on('message', (msg, rinfo) => {
                     const header = msg.toString('hex', 0, 4);
 
+                    // Ruta 1: Paquetes de descubrimiento
                     if (header === '00006699') {
-                        // Esto está bien, lo dejamos como está.
+                        console.log('[Router en Discovery.js] Paquete 6699 detectado. Pasando a handleDiscoveryMessage.');
                         this.handleDiscoveryMessage(msg, rinfo);
                         return;
                     }
 
+                    // Ruta 2: Respuestas de negociación
                     if (header === '000055aa') {
-                        // ¡Cambio importante! En lugar de ignorarlo, lo emitimos.
-                        // Cualquier paquete 55aa es una respuesta a un comando y no nos
-                        // corresponde procesarlo aquí. Lo pasamos al sistema de eventos.
-                        console.log(`[Router en Discovery.js] Paquete 55aa detectado. Emitiendo 'standard_packet'...`);
-                        this.emit('standard_packet', msg, rinfo);
-                        return;
+                        const command = msg.readUInt32BE(8);
+                        if (command === 0x06) {
+                            console.log('[Router en Discovery.js] Paquete de respuesta de negociación (55aa/cmd 6) detectado. Emitiendo evento...');
+                            TuyaSessionNegotiator.routeResponse(msg, rinfo);
+                            return;
+                        }
                     }
+
+                    console.log(`[Router en Discovery.js] Paquete ignorado con header: ${header}`);
                 });
 
                 this.socket.on('error', (err) => {
