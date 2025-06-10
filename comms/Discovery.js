@@ -34,9 +34,8 @@ class TuyaDiscovery extends EventEmitter {
         this.isRunning = false;
         // Port used to send the broadcast discovery request
         this.discoveryPort = config.port || 6666;
-        // Port where we listen for responses. Tuya devices usually reply on
-        // 6667, but allow overriding via config.
-        this.listenPort = config.listenPort || 6667;
+        // Port where we listen for negotiation responses (v3.5 uses 40001)
+        this.listenPort = config.listenPort || 40001;
         // Destination port for the broadcast request (defaults to 6666)
         this.broadcastPort = config.broadcastPort || 6666;
         this.devices = new Map();
@@ -61,18 +60,16 @@ class TuyaDiscovery extends EventEmitter {
                     const header = msg.toString('hex', 0, 4);
 
                     if (header === '00006699') {
-                        // Standard GCM discovery packet
-                        this.handleDiscoveryMessage(msg, rinfo);
-                        return;
-                    }
-
-                    if (header === '000055aa') {
                         const command = msg.readUInt32BE(8);
                         if (command === 0x06) {
-                            // Handshake response, route to negotiator
+                            // Respuesta de negociación v3.5
                             this.emit('negotiation_packet', msg, rinfo);
                             return;
                         }
+
+                        // Paquete de descubrimiento GCM
+                        this.handleDiscoveryMessage(msg, rinfo);
+                        return;
                     }
 
                     // Fallback to original handler for unsupported packets
@@ -213,7 +210,7 @@ class TuyaDiscovery extends EventEmitter {
 
         // Verificar prefijo Tuya
         const prefix = message.slice(0, 4).toString('hex');
-        if (prefix !== '000055aa') {
+        if (prefix !== '00006699') {
             return null;
         }
 
