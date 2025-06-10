@@ -49,7 +49,8 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.sessionIV = null;
         this.deviceRandom = null;
         this.sequenceNumber = 0;
-        this.socket = null;
+        this.socket = options.socket || null;
+        this._externalSocket = !!options.socket;
         this.isNegotiating = false;
         this.lastAttempt = 0;
         this.retryCount = 0;
@@ -647,12 +648,14 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
      */
     cleanup() {
         if (this.socket) {
-            try {
-                this.socket.close();
-            } catch (error) {
-                // Ignorar errores al cerrar
+            if (!this._externalSocket) {
+                try {
+                    this.socket.close();
+                } catch (error) {
+                    // Ignorar errores al cerrar
+                }
             }
-            this.socket = null;
+            if (!this._externalSocket) this.socket = null;
         }
         if (this._retryTimer) {
             clearInterval(this._retryTimer);
