@@ -49,7 +49,8 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.sessionIV = null;
         this.deviceRandom = null;
         this.sequenceNumber = 0;
-        this.socket = null;
+        this.socket = options.socket || null;
+        this._externalSocket = !!options.socket;
         this.isNegotiating = false;
         this.lastAttempt = 0;
         this.retryCount = 0;
@@ -58,6 +59,10 @@ class TuyaSessionNegotiator extends EventEmitter {
         this._negotiationTimeout = null;
         this._retryTimer = null;
         this._uuid = null;
+        this._uuidCrc = null;
+        this._resolve = null;
+        this._reject = null;
+        this._onMessage = null;
     }
 
     /**
@@ -126,13 +131,16 @@ class TuyaSessionNegotiator extends EventEmitter {
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
             let settled = false;
-            let socket;
-            let onMessage;
+            let socket = this.socket;
+            let onMessage = this._onMessage;
+            this._resolve = resolve;
+            this._reject = reject;
             const done = (err, result) => {
                 if (settled) return;
                 settled = true;
                 if (socket && onMessage) {
                     socket.removeListener('message', onMessage);
+                    this._onMessage = null;
                 }
                 if (err) {
                     if (service && typeof service.log === 'function') {
@@ -194,11 +202,13 @@ class TuyaSessionNegotiator extends EventEmitter {
                 }
             }
 
-            socket = dgram.createSocket('udp4');
-            this.socket = socket;
-            socket.bind(this.listenPort, '0.0.0.0', () => {
-                socket.setBroadcast(true);
-            });
+            if (!socket) {
+                socket = dgram.createSocket('udp4');
+                this.socket = socket;
+                socket.bind(this.listenPort, '0.0.0.0', () => {
+                    socket.setBroadcast(true);
+                });
+            }
 
             const clientRandom = TuyaEncryption.generateRandomHexBytes(16);
             this._lastRandom = clientRandom;
@@ -208,10 +218,12 @@ class TuyaSessionNegotiator extends EventEmitter {
             }
 
             this._uuid = this.generateUUID();
+            this._uuidCrc = this.calculateUuidCrc(this._uuid);
             console.group('🤝 Handshake params');
             console.log('Negotiator UUID:', this._uuid);
             const payload = {
                 uuid: this._uuid,
+                crc: this._uuidCrc,
                 t: Math.floor(Date.now() / 1000),
                 gwId: this.deviceId,
                 random: clientRandom
@@ -219,6 +231,7 @@ class TuyaSessionNegotiator extends EventEmitter {
             console.log('Handshake payload:', payload);
             console.log('Handshake Token:', this.deviceKey);
             console.log('Handshake UUID:', payload.uuid);
+            console.log('Handshake CRC:', this._uuidCrc.toString(16));
             console.log('Handshake RND:', clientRandom);
             console.groupEnd();
 
@@ -362,8 +375,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                     clearTimeout(this._negotiationTimeout);
                     this._negotiationTimeout = null;
                 }
-                socket.close();
-                this.socket = null;
+                // Mantener el socket abierto para seguir escuchando
                 this.retryCount = 0;
 
                 if (service && service.debug) service.debug('Negotiator session established');
@@ -381,7 +393,10 @@ class TuyaSessionNegotiator extends EventEmitter {
                 done(null, result);
             };
 
-            socket.on('message', onMessage);
+            if (!this._onMessage) {
+                this._onMessage = onMessage;
+                socket.on('message', this._onMessage);
+            }
 
             if (service && typeof service.log === 'function') {
                 service.log('🔔 Waiting for handshake response...');
@@ -503,6 +518,12 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         console.log('Handshake JSON:', data);
         if (data.sessionToken) console.log('sessionToken:', data.sessionToken);
         if (data.sessionHmac) console.log('sessionHmac:', data.sessionHmac);
+        if (data.crc) {
+            const calc = this.calculateUuidCrc(data.uuid);
+            if (calc !== Number(data.crc)) {
+                throw new Error('CRC mismatch');
+            }
+        }
         const deviceRandom = data.random || data.rnd || '';
         const sessionKey = TuyaEncryption.deriveSessionKey(this.deviceKey, this._lastRandom, deviceRandom);
         if (!sessionKey) throw new Error('Invalid negotiation response');
@@ -560,10 +581,7 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
             clearTimeout(this._negotiationTimeout);
             this._negotiationTimeout = null;
         }
-        if (this.socket) {
-            try { this.socket.close(); } catch (_) {}
-            this.socket = null;
-        }
+        // Mantener el socket abierto para seguir escuchando otros paquetes
         this.retryCount = 0;
 
         const result = {
@@ -574,6 +592,11 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
             ip: this.ip,
             port: this.port
         };
+        if (this._resolve) {
+            this._resolve(result);
+            this._resolve = null;
+            this._reject = null;
+        }
         this.emit('success', result);
     }
 
@@ -590,6 +613,15 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
     generateUUID() {
         const md5 = crypto.createHash('md5').update(this.deviceId).digest('hex');
         return md5.match(/.{1,8}/g).join('-');
+    }
+
+    /**
+     * Calcula un CRC32 simple a partir de la UUID
+     * @param {string} uuid
+     * @returns {number}
+     */
+    calculateUuidCrc(uuid) {
+        return TuyaMessage.crc32(Buffer.from(uuid));
     }
 
     /**
@@ -616,12 +648,14 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
      */
     cleanup() {
         if (this.socket) {
-            try {
-                this.socket.close();
-            } catch (error) {
-                // Ignorar errores al cerrar
+            if (!this._externalSocket) {
+                try {
+                    this.socket.close();
+                } catch (error) {
+                    // Ignorar errores al cerrar
+                }
             }
-            this.socket = null;
+            if (!this._externalSocket) this.socket = null;
         }
         if (this._retryTimer) {
             clearInterval(this._retryTimer);

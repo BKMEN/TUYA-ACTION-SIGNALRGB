@@ -53,6 +53,35 @@ class NegotiatorManager extends EventEmitter {
     getFailureCount(deviceId) {
         return this.failCounts.get(deviceId) || 0;
     }
+
+    /**
+     * Negotiates a batch of devices using a shared UDP socket
+     * @param {Array<object>} devices - array of { deviceId, deviceKey, ip }
+     * @param {object} options
+     * @returns {Promise<Array>}
+     */
+    async negotiateBatch(devices, options = {}) {
+        if (!Array.isArray(devices) || devices.length === 0) {
+            return [];
+        }
+        const dgram = await import('node:dgram');
+        const socket = dgram.createSocket('udp4');
+        const listenPort = options.listenPort || 40001;
+        await new Promise(res => socket.bind(listenPort, '0.0.0.0', res));
+        socket.setBroadcast(true);
+        const negotiators = devices.map(info => this.create({
+            ...info,
+            listenPort,
+            broadcastAddress: options.broadcastAddress,
+            broadcastPort: options.broadcastPort,
+            socket
+        }));
+        const results = await Promise.allSettled(
+            negotiators.map(n => n.negotiateSession())
+        );
+        try { socket.close(); } catch (_) {}
+        return results;
+    }
 }
 
 export default NegotiatorManager;
