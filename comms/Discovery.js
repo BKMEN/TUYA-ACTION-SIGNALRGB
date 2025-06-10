@@ -18,6 +18,7 @@ import EventEmitter from '../utils/EventEmitter.js';
 import crypto from 'node:crypto';
 import TuyaEncryption from '../negotiators/TuyaEncryption.js';
 import gcmBuffer from '../negotiators/GCMBuffer.js';
+import TuyaSessionNegotiator from '../negotiators/TuyaSessionNegotiator.js';
 import DeviceList from '../DeviceList.js';
 const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest();
 
@@ -60,23 +61,24 @@ class TuyaDiscovery extends EventEmitter {
                 this.socket.on('message', (msg, rinfo) => {
                     const header = msg.toString('hex', 0, 4);
 
+                    // Ruta 1: Paquetes de descubrimiento
                     if (header === '00006699') {
-                        // Standard GCM discovery packet
+                        console.log('[Router en Discovery.js] Paquete 6699 detectado. Pasando a handleDiscoveryMessage.');
                         this.handleDiscoveryMessage(msg, rinfo);
                         return;
                     }
 
+                    // Ruta 2: Respuestas de negociación
                     if (header === '000055aa') {
                         const command = msg.readUInt32BE(8);
                         if (command === 0x06) {
-                            // Handshake response, route to negotiator
-                            this.emit('negotiation_packet', msg, rinfo);
+                            console.log('[Router en Discovery.js] Paquete de respuesta de negociación (55aa/cmd 6) detectado. Emitiendo evento...');
+                            TuyaSessionNegotiator.routeResponse(msg, rinfo);
                             return;
                         }
                     }
 
-                    // Fallback to original handler for unsupported packets
-                    this.handleDiscoveryMessage(msg, rinfo);
+                    console.log(`[Router en Discovery.js] Paquete ignorado con header: ${header}`);
                 });
 
                 this.socket.on('error', (err) => {
