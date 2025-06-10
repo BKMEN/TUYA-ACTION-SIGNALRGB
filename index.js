@@ -15,6 +15,8 @@ import service from './service.js';
 import logger from './utils/Logger.js';
 import { askLocalKey } from './utils/askKey.js';
 import { hexToRgb } from './utils/ColorUtils.js';
+import NegotiatorManager from './negotiators/NegotiatorManager.js';
+import TuyaCommandEncryptor from './Crypto/TuyaCommandEncryptor.js';
 let fs;
 try {
     ({ default: fs } = await import('node:fs'));
@@ -149,6 +151,9 @@ export async function Initialize() {
         };
         service.discoveryComplete = () => {
             logInfo("Discovery process completed");
+            batchNegotiateControllers().catch(err => {
+                logError('Batch negotiation error: ' + err.message);
+            });
         };
         service.controllersChanged = () => {
             logInfo("Controllers changed event emitted");
@@ -355,13 +360,8 @@ export class DiscoveryService {
             if (existingController) {
                 logInfo(`Device ${deviceId} already exists. Updating info.`);
                 existingController.device.updateFromDiscovery(deviceData);
-                if (!existingController.device.isReady() && existingController.device.localKey && existingController.device.enabled) {
-                    logInfo(`Re-initiating negotiation for existing device: ${deviceId}`);
-                    try {
-                        existingController.startNegotiation();
-                    } catch (negErr) {
-                        logError('Negotiation error for ' + deviceId + ': ' + negErr.message);
-                    }
+                if (!existingController.device.isReady() && (!existingController.device.localKey || !existingController.device.enabled)) {
+                    logInfo(`Device ${deviceId} requires configuration before negotiation.`);
                 }
                 if (typeof service.controllersChanged === 'function') {
                     service.controllersChanged();
@@ -426,15 +426,7 @@ export class DiscoveryService {
                 logInfo('New device added to controllers list: ' + newDeviceModel.id);
                 saveDeviceList();
 
-                // Only negotiate when device has a LocalKey and is enabled
-                if (newDeviceModel.localKey && newDeviceModel.enabled) {
-                    logInfo(`Attempting negotiation for new device: ${newDeviceModel.id}`);
-                    try {
-                        newController.startNegotiation();
-                    } catch (negErr) {
-                        logError('Negotiation error for ' + newDeviceModel.id + ': ' + negErr.message);
-                    }
-                } else {
+                if (!newDeviceModel.localKey || !newDeviceModel.enabled) {
                     logInfo(`Device ${newDeviceModel.id} needs configuration (LocalKey/Enabled).`);
                 }
             }
@@ -561,13 +553,8 @@ async function loadSavedDevices() {
                         logInfo('Warning: no localKey stored for ' + deviceModel.id);
                     }
                     
-                    if (deviceModel.enabled && deviceModel.localKey && !deviceModel.isReady()) {
-                        logInfo(`Attempting negotiation for saved device: ${deviceModel.id}`);
-                        try {
-                            controller.startNegotiation();
-                        } catch (negErr) {
-                            logError('Negotiation error for ' + deviceModel.id + ': ' + negErr.message);
-                        }
+                    if (!deviceModel.enabled || !deviceModel.localKey) {
+                        logInfo(`Device ${deviceModel.id} loaded without LocalKey or disabled.`);
                     }
                 }
             }
@@ -594,5 +581,48 @@ function saveDeviceList() {
         if (error.stack) logError(error.stack);
     }
 };
+
+async function batchNegotiateControllers() {
+    const negotiable = controllers.filter(c => {
+        return c.device && c.device.enabled && c.device.localKey && !c.device.isReady();
+    });
+    if (negotiable.length === 0) {
+        logInfo('No devices pending negotiation.');
+        return;
+    }
+    const mgr = new NegotiatorManager();
+    const devices = negotiable.map(c => ({
+        deviceId: c.device.id,
+        deviceKey: c.device.localKey,
+        ip: c.device.ip,
+        controller: c
+    }));
+    logInfo(`Starting batch negotiation for ${devices.length} devices`);
+    const results = await mgr.negotiateBatch(devices, { broadcastAddress: '192.168.1.255', broadcastPort: 6667 });
+    results.forEach((res, idx) => {
+        const ctrl = negotiable[idx];
+        if (res.status === 'fulfilled') {
+            const { sessionKey, deviceRandom } = res.value || {};
+            if (typeof ctrl.device.startSession === 'function') {
+                ctrl.device.startSession(sessionKey, deviceRandom);
+            } else if (typeof ctrl.device.setSessionKey === 'function') {
+                ctrl.device.setSessionKey(sessionKey);
+            }
+            ctrl.encryptor = new TuyaCommandEncryptor(sessionKey);
+            if (typeof ctrl.startHeartbeat === 'function') {
+                ctrl.startHeartbeat();
+            }
+            if (typeof service.negotiationComplete === 'function') {
+                service.negotiationComplete(ctrl.device.id);
+            }
+        } else if (res.status === 'rejected') {
+            const err = res.reason;
+            logError('Negotiation failed for ' + ctrl.device.id + ': ' + err.message);
+            if (typeof service.deviceError === 'function') {
+                service.deviceError(ctrl.device.id, err.message);
+            }
+        }
+    });
+}
 
 
