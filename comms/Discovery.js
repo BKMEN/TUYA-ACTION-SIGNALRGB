@@ -60,23 +60,27 @@ class TuyaDiscovery extends EventEmitter {
                 this.socket.on('message', (msg, rinfo) => {
                     const header = msg.toString('hex', 0, 4);
 
+                    // Ruta 1: Si es un paquete de descubrimiento GCM (6699)
                     if (header === '00006699') {
-                        // Standard GCM discovery packet
+                        console.log('[Router en Discovery.js] Paquete 6699 detectado. Pasando a handleDiscoveryMessage.');
                         this.handleDiscoveryMessage(msg, rinfo);
-                        return;
+                        return; // Termina aquí
                     }
 
+                    // Ruta 2: Si es un paquete de comando estándar (55aa)
                     if (header === '000055aa') {
                         const command = msg.readUInt32BE(8);
-                        if (command === 0x06) {
-                            // Handshake response, route to negotiator
+                        if (command === 0x06) { // 0x06 = Respuesta de Negociación
+                            console.log('[Router en Discovery.js] Paquete de respuesta de negociación (55aa/cmd 6) detectado. Emitiendo evento...');
                             this.emit('negotiation_packet', msg, rinfo);
-                            return;
+                            return; // Termina aquí
                         }
                     }
 
-                    // Fallback to original handler for unsupported packets
-                    this.handleDiscoveryMessage(msg, rinfo);
+                    // Si el paquete no es ninguno de los dos tipos que nos interesan,
+                    // lo ignoramos para evitar que sea procesado incorrectamente.
+                    // Este es el cambio clave: hemos eliminado el "fallback" que causaba el error.
+                    console.log(`[Router en Discovery.js] Paquete ignorado con header: ${header}`);
                 });
 
                 this.socket.on('error', (err) => {
