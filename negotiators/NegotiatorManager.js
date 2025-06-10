@@ -7,6 +7,7 @@ class NegotiatorManager extends EventEmitter {
         this.negotiators = new Map();
         this.failCounts = new Map();
         this.controllers = new Map();
+        this.crcMap = new Map();
     }
 
     create(options) {
@@ -17,6 +18,7 @@ class NegotiatorManager extends EventEmitter {
         this.negotiators.set(id, negotiator);
         this.failCounts.set(id, 0);
         if (options.controller) this.controllers.set(id, options.controller);
+        if (options.crc) this.crcMap.set(options.crc, id);
         negotiator.on('success', data => {
             this.failCounts.set(id, 0);
             this.emit('negotiation_success', data);
@@ -47,11 +49,26 @@ class NegotiatorManager extends EventEmitter {
             this.negotiators.delete(deviceId);
             this.failCounts.delete(deviceId);
             this.controllers.delete(deviceId);
+            for (const [crc, id] of this.crcMap.entries()) {
+                if (id === deviceId) {
+                    this.crcMap.delete(crc);
+                    break;
+                }
+            }
         }
     }
 
     getFailureCount(deviceId) {
         return this.failCounts.get(deviceId) || 0;
+    }
+
+    routeResponse(crc, buffer, rinfo) {
+        const id = this.crcMap.get(crc);
+        if (!id) return;
+        const negotiator = this.negotiators.get(id);
+        if (negotiator && typeof negotiator.processResponse === 'function') {
+            negotiator.processResponse(buffer, rinfo);
+        }
     }
 }
 
