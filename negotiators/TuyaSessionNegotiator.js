@@ -29,8 +29,13 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.deviceId = options.deviceId;
         this.deviceKey = options.deviceKey;
         this.ip = options.ip;
-        // Handshake siempre se envía al puerto 6669, ignorando el valor recibido
+        // Puerto por defecto para comandos tras la negociación
         this.port = 6669;
+        // Puerto local donde escucharemos las respuestas de negociación
+        this.listenPort = options.listenPort || 40001;
+        // Dirección y puerto destino para el broadcast de negociación
+        this.broadcastAddress = options.broadcastAddress || '192.168.1.255';
+        this.broadcastPort = options.broadcastPort || 6667;
         this.timeout = options.timeout || 10000;
         this.maxRetries = options.maxRetries || 3;
         this.retryInterval = options.retryInterval || 5000;
@@ -191,6 +196,9 @@ class TuyaSessionNegotiator extends EventEmitter {
 
             socket = dgram.createSocket('udp4');
             this.socket = socket;
+            socket.bind(this.listenPort, '0.0.0.0', () => {
+                socket.setBroadcast(true);
+            });
 
             const clientRandom = TuyaEncryption.generateRandomHexBytes(16);
             this._lastRandom = clientRandom;
@@ -277,7 +285,13 @@ class TuyaSessionNegotiator extends EventEmitter {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
                     log(`Negotiator retry ${retries} for ${this.deviceId}`);
                 }
-                socket.send(packet, 0, packet.length, 6669, this.ip);
+                socket.send(
+                    packet,
+                    0,
+                    packet.length,
+                    this.broadcastPort,
+                    this.broadcastAddress
+                );
             }, 2000);
 
             socket.on('error', (err) => {
@@ -297,9 +311,6 @@ class TuyaSessionNegotiator extends EventEmitter {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
                     const preview = hexMsg;
                     log('Handshake packet received:', preview.slice(0,32) + (preview.length>32?'...':''), 'from', rinfo.address);
-                }
-                if (rinfo.address !== this.ip) {
-                    return;
                 }
                 if ((service && service.debug) || this.debugMode) {
                     const log = service && service.debug ? service.debug.bind(service) : console.debug;
@@ -323,6 +334,8 @@ class TuyaSessionNegotiator extends EventEmitter {
 
                 if (!response || !response.sessionKey) return;
                 if (response.gwId && response.gwId !== this.deviceId) return;
+                // Guardar IP del dispositivo que respondió
+                this.ip = rinfo.address;
 
                 this.sessionKey = response.sessionKey;
                 this.sessionIV = response.sessionIV;
@@ -382,11 +395,21 @@ class TuyaSessionNegotiator extends EventEmitter {
                 log('Sending handshake packet:', pktPrev.slice(0,32) + (pktPrev.length>32?'...':''));
             }
             if (service && typeof service.log === 'function') {
-                service.log(`📤 Handshake enviado a ${this.ip}:6669 (${packet.length} bytes)`);
+                service.log(
+                    `📤 Handshake broadcast ${this.broadcastAddress}:${this.broadcastPort} (${packet.length} bytes)`
+                );
             } else {
-                console.log(`📤 Handshake sent to ${this.ip}:6669 (${packet.length} bytes)`);
+                console.log(
+                    `📤 Handshake broadcast ${this.broadcastAddress}:${this.broadcastPort} (${packet.length} bytes)`
+                );
             }
-            socket.send(packet, 0, packet.length, 6669, this.ip, (err) => {
+            socket.send(
+                packet,
+                0,
+                packet.length,
+                this.broadcastPort,
+                this.broadcastAddress,
+                (err) => {
                 if (err) {
                     this.lastErrorTime = Date.now();
                     if (service && service.error) service.error('Send error: ' + err.message);
