@@ -58,6 +58,14 @@ class TuyaDiscovery extends EventEmitter {
                 this.socket = udp.createSocket('udp4');
                 
                 this.socket.on('message', (msg, rinfo) => {
+                    const prefix = msg.slice(0, 4);
+                    if (prefix.equals(Buffer.from([0x00, 0x00, 0x55, 0xaa]))) {
+                        const cmd = msg.readUInt32BE(8);
+                        if (cmd === 0x06) {
+                            this.emit('negotiation_packet', msg, rinfo);
+                            return;
+                        }
+                    }
                     this.handleDiscoveryMessage(msg, rinfo);
                 });
 
