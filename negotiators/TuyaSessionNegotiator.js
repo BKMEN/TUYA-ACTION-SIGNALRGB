@@ -239,16 +239,16 @@ class TuyaSessionNegotiator extends EventEmitter {
             const packet = buildNegotiationPacket(deviceInfo);
             this.logNegotiationPacket(packet);
 
-            const parsed = TuyaMessage.parse(packet);
+            const crc = packet.readUInt32BE(12);
             if (this.manager && typeof this.manager.registerCRC === 'function') {
-                this.manager.registerCRC(parsed.calcCrc, this.deviceId);
+                this.manager.registerCRC(crc, this.deviceId);
             }
             if ((service && service.debug) || this.debugMode) {
                 const log = service && service.debug ? service.debug.bind(service) : console.debug;
-                log('Handshake CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
+                log('Handshake CRC', crc.toString(16));
             }
             if (typeof service !== 'undefined') {
-                service.log(`🔑 CRC: ${parsed.calcCrc.toString(16)}`);
+                service.log(`🔑 CRC: ${crc.toString(16)}`);
             }
 
 
