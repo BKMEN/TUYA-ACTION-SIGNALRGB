@@ -6,8 +6,8 @@ import EventEmitter from '../utils/EventEmitter.js';
 import dgram from 'node:dgram';
 import crypto from 'node:crypto';
 import TuyaEncryption from './TuyaEncryption.js';
-import TuyaEncryptor from './TuyaEncryptor.js';
-import TuyaNegotiationMessage from './TuyaNegotiationMessage.js';
+import { TuyaEncryptor } from './TuyaEncryptor.js';
+import { buildNegotiationPacket } from './TuyaNegotiationMessage.js';
 import TuyaMessage from './TuyaMessage.js';
 import TuyaGCMParser from './TuyaGCMParser.js';
 import gcmBuffer from './GCMBuffer.js';
@@ -28,6 +28,7 @@ class TuyaSessionNegotiator extends EventEmitter {
         super();
         this.deviceId = options.deviceId;
         this.deviceKey = options.deviceKey;
+        this.manager = options.manager;
         this.ip = options.ip;
         // Puerto por defecto para comandos tras la negociación
         this.port = 6669;
@@ -35,15 +36,15 @@ class TuyaSessionNegotiator extends EventEmitter {
         this.listenPort = options.listenPort || 40001;
         // Dirección y puerto destino para el broadcast de negociación
         this.broadcastAddress = options.broadcastAddress || '192.168.1.255';
-        this.broadcastPort = options.broadcastPort || 6667;
+        this.broadcastPort = options.broadcastPort || 40001;
         this.timeout = options.timeout || 10000;
         this.maxRetries = options.maxRetries || 3;
         this.retryInterval = options.retryInterval || 5000;
         this.debugMode = options.debugMode || false;
         this.gcmBuffer = options.gcmBuffer || gcmBuffer;
         // Prefix y sufijo deben coincidir con el plugin original
-        this.prefix = options.prefix || '000055aa';
-        this.suffix = options.suffix || '0000aa55';
+        this.prefix = options.prefix || '00006699';
+        this.suffix = options.suffix || '00009966';
 
         this.sessionKey = null;
         this.sessionIV = null;
@@ -227,26 +228,21 @@ class TuyaSessionNegotiator extends EventEmitter {
                 log(`Negotiator ${this.deviceId} UUID:`, payload.uuid);
             }
 
-            const iv = crypto.randomBytes(12).toString('hex');
-            const aad = TuyaEncryption.createAAD(0x05, Buffer.alloc(4), Buffer.byteLength(JSON.stringify(payload)));
-            const enc = TuyaEncryptor.encrypt(JSON.stringify(payload), UDP_KEY, iv, aad);
-            const encPayload = Buffer.concat([Buffer.from(iv,'hex'), enc.ciphertext, enc.tag]);
+            const deviceInfo = {
+                id: this.deviceId,
+                localKey: this.deviceKey,
+                uuid: payload.uuid,
+                random: clientRandom,
+                ts: payload.t
+            };
 
-            console.log('nonce:', iv);
-            console.log('aad:', aad.toString('hex'));
-            console.log('tag:', enc.tag.toString('hex'));
-
-            if (typeof service !== 'undefined') {
-                service.log(`🔑 Device ID: ${this.deviceId}`);
-                service.log(`🔑 Token: ${this.deviceKey}`);
-                service.log(`🔑 UUID: ${payload.uuid}`);
-                service.log(`🔑 RND: ${clientRandom}`);
-            }
-
-            const packet = this.buildHandshakePacket(encPayload);
+            const packet = buildNegotiationPacket(deviceInfo);
             this.logNegotiationPacket(packet);
 
             const parsed = TuyaMessage.parse(packet);
+            if (this.manager && typeof this.manager.registerCRC === 'function') {
+                this.manager.registerCRC(parsed.calcCrc, this.deviceId);
+            }
             if ((service && service.debug) || this.debugMode) {
                 const log = service && service.debug ? service.debug.bind(service) : console.debug;
                 log('Handshake CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
@@ -255,12 +251,7 @@ class TuyaSessionNegotiator extends EventEmitter {
                 service.log(`🔑 CRC: ${parsed.calcCrc.toString(16)}`);
             }
 
-            this._negotiationTimeout = setTimeout(() => {
-                if (this._sessionEstablished) return;
-                this.lastErrorTime = Date.now();
-                console.log(`Negotiation timeout for device ${friendly(this.deviceId)}`);
-                done(new Error('Session negotiation timeout'));
-            }, this.timeout);
+
 
             let retries = 0;
             this._retryTimer = setInterval(() => {
@@ -321,7 +312,8 @@ class TuyaSessionNegotiator extends EventEmitter {
 
                 let response;
                 try {
-                    response = this.parseHandshakeResponse(msg);
+                    response = this.processHandshakeResponse(msg, rinfo);
+                    if (!response) return;
                 } catch (err) {
                     if ((service && service.debug) || this.debugMode) {
                         const log = service && service.debug ? service.debug.bind(service) : console.debug;
@@ -422,49 +414,18 @@ class TuyaSessionNegotiator extends EventEmitter {
     /**
      * Construye paquete de handshake
      */
-    buildHandshakePacket(payload) {
-        console.group('📦 Building handshake packet');
-console.log(' - Prefix:', this.prefix || '000055aa');
-console.log(' - Sequence:', this.sequenceNumber + 1);
-console.log(' - Command:', '0x05');
-console.log(' - Payload length:', payload.length);
-
-const packet = TuyaMessage.build(
-    this.prefix,
-    ++this.sequenceNumber,
-    0x05,
-    payload,
-    this.suffix
-);
-
-const parsedTmp = TuyaMessage.parse(packet);
-
-console.log(' - CRC:', parsedTmp.crc.toString(16));
-console.log(' - Suffix:', parsedTmp.suffix);
-
-const expectedLen = 16 + payload.length + 8;
-if (packet.length !== expectedLen) {
-    console.warn('⚠️ Warning: handshake length mismatch', packet.length, '!=', expectedLen);
-}
-
-if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
-    console.warn('⚠️ Warning: handshake missing suffix', (this.suffix || '0000aa55').toUpperCase());
-}
-
-        if (service && service.debug) {
-            const parsed = TuyaMessage.parse(packet);
-            service.debug('Handshake packet CRC', parsed.crc.toString(16), 'calc', parsed.calcCrc.toString(16));
-        }
-        console.groupEnd();
-        return packet;
-    }
 
     /**
-     * Deriva la clave de sesión usando MD5 como en el protocolo oficial
+     * Filtra y procesa una respuesta de negociación.
+     * Retorna false si el paquete no corresponde a una respuesta válida.
      */
-    deriveSessionKey(clientRandom, deviceRandom) {
-        const input = Buffer.from(this.deviceKey + clientRandom + deviceRandom, 'hex');
-        return crypto.createHash('md5').update(input).digest('hex');
+    processHandshakeResponse(message, rinfo = { address: '' }) {
+        const command = message.readUInt32BE(8);
+        if (command !== 6) {
+            console.log(`[NEGOTIATOR] Ignorando paquete con comando ${command} de ${rinfo.address}`);
+            return false;
+        }
+        return this.parseHandshakeResponse(message);
     }
 
     /**
@@ -489,7 +450,8 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
     parseHandshakeResponse(buffer) {
         const parsedMsg = TuyaMessage.parse(buffer);
         console.log('crc:', parsedMsg.crc.toString(16));
-        const result = TuyaGCMParser.parse(buffer, 0x08);
+        // As per the v3.5 protocol the negotiation response uses command 0x06
+        const result = TuyaGCMParser.parse(buffer, 0x06);
         if (!result) {
             console.log('HMAC mismatch');
             throw new Error('Invalid handshake packet');
@@ -514,13 +476,6 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
             const log = service && service.debug ? service.debug.bind(service) : console.debug;
             log('Negotiator sessionKey', sessionKey);
         }
-        if (typeof TuyaNegotiationMessage.verifySessionKey === 'function') {
-            const ok = TuyaNegotiationMessage.verifySessionKey(sessionKey, this.sessionKey);
-            console.log(ok ? 'HMAC OK' : 'HMAC mismatch');
-        }
-        if (typeof TuyaNegotiationMessage.verifyNegotiationKey === 'function') {
-            TuyaNegotiationMessage.verifyNegotiationKey(deviceRandom, this.deviceRandom);
-        }
         return { ...data, sessionKey, sessionIV: result.iv, deviceRandom };
     }
 
@@ -532,7 +487,8 @@ if (packet.slice(-4).toString('hex') !== (this.suffix || '0000aa55')) {
         if (this.sessionKey || this._sessionEstablished) return;
         let response;
         try {
-            response = this.parseHandshakeResponse(buffer);
+            response = this.processHandshakeResponse(buffer, rinfo);
+            if (!response) return;
         } catch (err) {
             this.emit('error', err);
             return;

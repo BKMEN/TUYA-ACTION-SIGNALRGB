@@ -1,6 +1,6 @@
 import dgram from 'node:dgram';
 import crypto from 'node:crypto';
-import TuyaEncryptor from '../negotiators/TuyaEncryptor.js';
+import { TuyaEncryptor } from '../negotiators/TuyaEncryptor.js';
 import TuyaEncryption from '../negotiators/TuyaEncryption.js';
 import TuyaMessage from '../negotiators/TuyaMessage.js';
 
