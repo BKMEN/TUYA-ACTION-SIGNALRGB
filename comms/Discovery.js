@@ -40,7 +40,7 @@ class TuyaDiscovery extends EventEmitter {
         // Destination port for the broadcast request (defaults to 6666)
         this.broadcastPort = config.broadcastPort || 6666;
         this.devices = new Map();
-        this.socket = null;
+        this.socket = config.socket || null;
         this.config = config;
     }
 
@@ -54,14 +54,22 @@ class TuyaDiscovery extends EventEmitter {
 
         return new Promise((resolve, reject) => {
             try {
-                // Crear socket UDP usando SignalRGB UDP
-                this.socket = udp.createSocket('udp4');
+                // Crear socket UDP si no se proporcionó uno
+                if (!this.socket) {
+                    this.socket = udp.createSocket('udp4');
+                }
                 
                 this.socket.on('message', (msg, rinfo) => {
                     const header = msg.toString('hex', 0, 4);
 
                     if (header === '00006699') {
-                        // Standard GCM discovery packet
+                        if (msg.length >= 12) {
+                            const cmd = msg.readUInt32BE(8);
+                            if (cmd === 0x06) {
+                                this.emit('negotiation_packet', msg, rinfo);
+                                return;
+                            }
+                        }
                         this.handleDiscoveryMessage(msg, rinfo);
                         return;
                     }
@@ -69,7 +77,7 @@ class TuyaDiscovery extends EventEmitter {
                     if (header === '000055aa') {
                         const command = msg.readUInt32BE(8);
                         if (command === 0x06) {
-                            // Handshake response, route to negotiator
+                            // Handshake response legacy
                             this.emit('negotiation_packet', msg, rinfo);
                             return;
                         }
@@ -106,7 +114,7 @@ class TuyaDiscovery extends EventEmitter {
         }
 
         return new Promise((resolve) => {
-            if (this.socket) {
+            if (this.socket && !this.config.socket) {
                 this.socket.close(() => {
                     this.isRunning = false;
                     this.socket = null;

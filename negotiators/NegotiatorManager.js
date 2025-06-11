@@ -2,12 +2,13 @@ import EventEmitter from '../utils/EventEmitter.js';
 import TuyaSessionNegotiator from './TuyaSessionNegotiator.js';
 
 class NegotiatorManager extends EventEmitter {
-    constructor() {
+    constructor(options = {}) {
         super();
         this.negotiators = new Map();
         this.failCounts = new Map();
         this.controllers = new Map();
         this.crcMap = new Map();
+        this.socket = options.socket || null;
     }
 
     create(options) {
@@ -17,10 +18,22 @@ class NegotiatorManager extends EventEmitter {
         const negotiator = new TuyaSessionNegotiator({ ...options, manager: this });
         this.negotiators.set(id, negotiator);
         this.failCounts.set(id, 0);
-        if (options.controller) this.controllers.set(id, options.controller);
+        if (options.controller) {
+            this.controllers.set(id, options.controller);
+            options.controller.negotiator = negotiator;
+        }
         negotiator.on('success', data => {
             this.failCounts.set(id, 0);
-            this.emit('negotiation_success', data);
+            const ctrl = this.controllers.get(id);
+            if (ctrl && ctrl.device) {
+                const { sessionKey, deviceRandom } = data;
+                if (typeof ctrl.device.startSession === 'function') {
+                    ctrl.device.startSession(sessionKey, deviceRandom);
+                } else if (typeof ctrl.device.setSessionKey === 'function') {
+                    ctrl.device.setSessionKey(sessionKey);
+                }
+            }
+            this.emit('negotiation_success', { ...data, deviceId: id });
         });
         negotiator.on('error', err => {
             const count = (this.failCounts.get(id) || 0) + 1;
@@ -57,23 +70,40 @@ class NegotiatorManager extends EventEmitter {
      * @param {number} timeout Tiempo máximo global
      */
     startBatchNegotiation(devices = [], timeout = 10000) {
-        const pending = new Map();
+        if (!this.socket) throw new Error('UDP socket not set');
+        const pending = new Set();
         for (const opts of devices) {
             const negotiator = this.create(opts);
-            pending.set(opts.deviceId, negotiator);
-            negotiator.start().then(() => {
-                pending.delete(opts.deviceId);
-            }).catch(() => {
-                pending.delete(opts.deviceId);
-            });
+            pending.add(opts.deviceId);
+            const { packet } = negotiator.buildRequest();
+            this.socket.send(packet, 40001, '255.255.255.255');
         }
-        setTimeout(() => {
-            for (const [id, n] of pending.entries()) {
-                n.emit('error', new Error('Session negotiation timeout'));
-                n.cleanup();
-                pending.delete(id);
+        const timer = setTimeout(() => {
+            for (const id of pending) {
+                const n = this.negotiators.get(id);
+                if (n) {
+                    n.emit('error', new Error('Session negotiation timeout'));
+                    n.cleanup();
+                }
             }
         }, timeout);
+        const finishCheck = () => {
+            if (pending.size === 0) {
+                clearTimeout(timer);
+                this.off('negotiation_success', onSuccess);
+                this.off('negotiation_error', onError);
+            }
+        };
+        const onSuccess = data => {
+            pending.delete(data.deviceId);
+            finishCheck();
+        };
+        const onError = (id) => {
+            pending.delete(id);
+            finishCheck();
+        };
+        this.on('negotiation_success', onSuccess);
+        this.on('negotiation_error', onError);
     }
 
     getFailureCount(deviceId) {

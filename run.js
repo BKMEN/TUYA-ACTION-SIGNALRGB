@@ -1,3 +1,4 @@
+import dgram from 'node:dgram';
 import TuyaDiscovery from './comms/Discovery.js';
 import TuyaController from './TuyaController.js';
 import NegotiatorManager from './negotiators/NegotiatorManager.js';
@@ -44,14 +45,18 @@ if (typeof service.getSetting !== 'function') {
 const EXPECTED_DEVICES = 4; // Dispositivos esperados
 const TIMEOUT_MS = 5000;    // Tiempo m\u00e1ximo de espera
 
-// Crear instancia de descubrimiento
-const discovery = new TuyaDiscovery();
+// Socket UDP compartido
+const udpSocket = dgram.createSocket('udp4');
+udpSocket.bind(() => udpSocket.setBroadcast(true));
+
+// Crear instancia de descubrimiento usando el socket compartido
+const discovery = new TuyaDiscovery({ socket: udpSocket });
 let found = 0;
 const discovered = [];
 
 // Crear controlador
 const controller = new TuyaController();
-const manager = new NegotiatorManager();
+const manager = new NegotiatorManager({ socket: udpSocket });
 
 // Escuchar cuando se encuentra un dispositivo
 
