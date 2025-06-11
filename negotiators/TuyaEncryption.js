@@ -4,7 +4,7 @@
  */
 
 import crypto from 'node:crypto';
-import TuyaEncryptor from './TuyaEncryptor.js';
+import { TuyaEncryptor } from './TuyaEncryptor.js';
 
 const TuyaEncryption = {
     /**

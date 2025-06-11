@@ -25,21 +25,48 @@ export default class TuyaMessage {
         if (!Buffer.isBuffer(buffer) || buffer.length < 20) {
             throw new Error('Packet too short');
         }
-        const prefix = buffer.slice(0,4).toString('hex');
+        const prefix = buffer.slice(0, 4).toString('hex');
         if (prefix !== '000055aa' && prefix !== '00006699') {
             throw new Error('Invalid prefix');
         }
         const seq = buffer.readUInt32BE(4);
         const cmd = buffer.readUInt32BE(8);
-        const len = buffer.readUInt32BE(12);
-        if (buffer.length < 16 + len + 8) {
-            throw new Error('Incomplete packet');
+
+        let len, payload, crc, calc, suffix;
+
+        if (prefix === '000055aa') {
+            // Legacy layout: len then CRC
+            len = buffer.readUInt32BE(12);
+            if (buffer.length < 16 + len + 8) {
+                throw new Error('Incomplete packet');
+            }
+            payload = buffer.slice(16, 16 + len);
+            crc = buffer.readUInt32BE(16 + len);
+            calc = TuyaMessage.crc32(buffer.slice(0, 16 + len));
+            suffix = buffer.slice(16 + len + 4, 16 + len + 8).toString('hex');
+        } else {
+            // v3.5 layout: crc then len
+            crc = buffer.readUInt32BE(12);
+            len = buffer.readUInt32BE(16);
+            if (buffer.length < 20 + len + 4) {
+                throw new Error('Incomplete packet');
+            }
+            payload = buffer.slice(20, 20 + len);
+            calc = TuyaMessage.crc32(buffer.slice(16, 20 + len));
+            suffix = buffer.slice(20 + len, 20 + len + 4).toString('hex');
         }
-        const payload = buffer.slice(16,16+len);
-        const crc = buffer.readUInt32BE(16+len);
-        const calc = TuyaMessage.crc32(buffer.slice(0,16+len));
-        const suffix = buffer.slice(16+len+4,16+len+8).toString('hex');
-        return {prefix, seq, cmd, len, payload, crc, calcCrc: calc, crcValid: crc===calc, suffix};
+
+        return {
+            prefix,
+            seq,
+            cmd,
+            len,
+            payload,
+            crc,
+            calcCrc: calc,
+            crcValid: crc === calc,
+            suffix,
+        };
     }
 }
 

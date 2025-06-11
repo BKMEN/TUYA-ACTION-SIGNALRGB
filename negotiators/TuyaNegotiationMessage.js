@@ -1,53 +1,52 @@
-import crypto from 'node:crypto';
-import TuyaEncryptor from './TuyaEncryptor.js';
+import crypto from 'crypto';
 import TuyaMessage from './TuyaMessage.js';
-import TuyaEncryption from './TuyaEncryption.js';
 
-const UDP_KEY = crypto.createHash('md5').update('yGAdlopoPVldABfn', 'utf8').digest('hex');
+// Packet constants as used in Tuya v3.5
+const HEADER = Buffer.from('00006699', 'hex');
+const TAIL = Buffer.from('00009966', 'hex');
+const MESSAGE_TYPE_NEGOTIATION = 5;
 
-export default class TuyaNegotiationMessage {
-    static parse(buffer, deviceKey, clientRandom) {
-        const msg = TuyaMessage.parse(buffer);
-        if (!msg.crcValid) throw new Error('Invalid CRC in handshake');
-        if (msg.cmd !== 0x06) throw new Error('Unexpected command');
-        const iv = msg.payload.slice(0,12);
-        const tag = msg.payload.slice(msg.payload.length - 16);
-        const ciphertext = msg.payload.slice(12, msg.payload.length - 16);
-        const seqBuf = Buffer.alloc(4);
-        seqBuf.writeUInt32BE(msg.seq);
-        const aad = TuyaEncryption.createAAD(0x06, seqBuf, ciphertext.length);
-        const decrypted = TuyaEncryptor.decrypt(ciphertext, UDP_KEY, iv.toString('hex'), tag, aad);
-        if (!decrypted) throw new Error('Failed to decrypt handshake');
-        const data = JSON.parse(decrypted.toString());
-        if (!data.random || typeof data.random !== 'string' || data.random.length < 8) {
-            throw new Error('Invalid handshake random');
-        }
-        const sessionKey = TuyaEncryption.deriveSessionKey(deviceKey, clientRandom, data.random);
-        if (!sessionKey || sessionKey.length !== 32) {
-            throw new Error('Invalid session key');
-        }
-        return { data, sessionKey };
-    }
+/**
+ * Build a negotiation packet following the v3.5 specification.
+ * @param {object} device Device info containing id, localKey, uuid and random.
+ * @param {number} sequence Optional sequence number (defaults to 1)
+ * @returns {Buffer} Negotiation packet ready to broadcast
+ */
+function buildNegotiationPacket(device, sequence = 1) {
+    const payloadJson = JSON.stringify({
+        gwId: device.id,
+        random: device.random,
+        t: device.ts,
+        uuid: device.uuid.replace(/-/g, '')
+    });
 
-    static verifySessionKey(sessionKey, negotiationKey) {
-        if (typeof service !== 'undefined') {
-            service.log('🔍 Verificando sessionKey...');
-            service.log(` - sessionKey: ${sessionKey}`);
-            service.log(` - negotiationKey: ${negotiationKey}`);
-        }
-        const calculatedCRC = TuyaMessage.crc32(Buffer.from(sessionKey, 'hex'));
-        const receivedCRC = TuyaMessage.crc32(Buffer.from(negotiationKey, 'hex'));
-        console.log('🔍 Verifying session key with CRC:', calculatedCRC.toString(16), 'vs', receivedCRC.toString(16));
-        return sessionKey === negotiationKey;
-    }
+    const payloadBuf = Buffer.from(payloadJson, 'utf8');
 
-    static verifyNegotiationKey(deviceRnd, negotiationKey) {
-        if (typeof service !== 'undefined') {
-            service.log('🔍 Verificando negotiationKey...');
-            service.log(` - deviceRnd: ${deviceRnd}`);
-            service.log(` - negotiationKey: ${negotiationKey}`);
-        }
-        console.log('[verifyNegotiationKey]', deviceRnd, negotiationKey);
-        return deviceRnd === negotiationKey;
-    }
+    const key = Buffer.from(device.localKey, 'utf8');
+    const iv = Buffer.from(device.random, 'hex');
+    const cipher = crypto.createCipheriv('aes-128-gcm', key, iv);
+    const encrypted = Buffer.concat([cipher.update(payloadBuf), cipher.final()]);
+    const tag = cipher.getAuthTag();
+
+    const finalPayload = Buffer.concat([iv, encrypted, tag]);
+
+    const seqBuf = Buffer.alloc(4); seqBuf.writeUInt32BE(sequence);
+    const cmdBuf = Buffer.alloc(4); cmdBuf.writeUInt32BE(MESSAGE_TYPE_NEGOTIATION);
+    const lenBuf = Buffer.alloc(4); lenBuf.writeUInt32BE(finalPayload.length);
+
+    // CRC calculated over [len][payload]
+    const crcVal = TuyaMessage.crc32(Buffer.concat([lenBuf, finalPayload]));
+    const crcBuf = Buffer.alloc(4); crcBuf.writeUInt32BE(crcVal);
+
+    return Buffer.concat([
+        HEADER,
+        seqBuf,
+        cmdBuf,
+        crcBuf,
+        lenBuf,
+        finalPayload,
+        TAIL
+    ]);
 }
+
+export { buildNegotiationPacket };

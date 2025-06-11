@@ -6,10 +6,12 @@
 
 
 // Cargar dependencias usando la sintaxis de import
+import dgram from 'node:dgram';
 import TuyaDiscoveryServiceInternal from './comms/Discovery.js';
 import TuyaController from './TuyaController.js';
 import TuyaDeviceModel from './models/TuyaDeviceModel.js';
 import DeviceList from './DeviceList.js';
+import NegotiatorManager from './negotiators/NegotiatorManager.js';
 import service from './service.js';
 
 import logger from './utils/Logger.js';
@@ -102,6 +104,21 @@ let globalForcedColor = '#009bde';
 let globalTurnOff = 'Do nothing';
 let globalShutDownColor = '#8000FF';
 const forcePromptLocalKey = process.env.TUYA_PROMPT_LOCALKEY === 'true';
+
+const udpSocket = dgram.createSocket('udp4');
+udpSocket.bind(() => udpSocket.setBroadcast(true));
+const negotiationManager = new NegotiatorManager({ socket: udpSocket });
+
+negotiationManager.on('negotiation_success', ({ deviceId }) => {
+    if (typeof service.negotiationComplete === 'function') {
+        service.negotiationComplete(deviceId);
+    }
+});
+negotiationManager.on('negotiation_error', (id, err) => {
+    if (typeof service.deviceError === 'function') {
+        service.deviceError(id, err.message);
+    }
+});
 
 
 
@@ -301,7 +318,8 @@ export class DiscoveryService {
         try {
             this.internalDiscovery = new TuyaDiscoveryServiceInternal({
                 debugMode: globalDebugMode,
-                timeout: globalDiscoveryTimeout
+                timeout: globalDiscoveryTimeout,
+                socket: udpSocket
             });
 
             this.internalDiscovery.on('device_found', (deviceData) => {
@@ -319,14 +337,19 @@ export class DiscoveryService {
                 if (typeof service.discoveryComplete === 'function') {
                     service.discoveryComplete();
                 }
+                const devs = controllers.map(c => ({
+                    deviceId: c.device.id,
+                    deviceKey: c.device.localKey,
+                    ip: c.device.ip,
+                    controller: c
+                }));
+                if (devs.length) {
+                    negotiationManager.startBatchNegotiation(devs, 15000);
+                }
             });
 
             this.internalDiscovery.on('negotiation_packet', (msg, rinfo) => {
-                controllers.forEach(ctrl => {
-                    if (ctrl.negotiator && typeof ctrl.negotiator.processResponse === 'function') {
-                        ctrl.negotiator.processResponse(msg, rinfo);
-                    }
-                });
+                negotiationManager.routeResponse(msg, rinfo);
             });
 
             logInfo("Tuya DiscoveryService internal components initialized.");
@@ -355,14 +378,7 @@ export class DiscoveryService {
             if (existingController) {
                 logInfo(`Device ${deviceId} already exists. Updating info.`);
                 existingController.device.updateFromDiscovery(deviceData);
-                if (!existingController.device.isReady() && existingController.device.localKey && existingController.device.enabled) {
-                    logInfo(`Re-initiating negotiation for existing device: ${deviceId}`);
-                    try {
-                        existingController.startNegotiation();
-                    } catch (negErr) {
-                        logError('Negotiation error for ' + deviceId + ': ' + negErr.message);
-                    }
-                }
+                // La negociación se realizará de forma global tras el descubrimiento
                 if (typeof service.controllersChanged === 'function') {
                     service.controllersChanged();
                 }
@@ -426,17 +442,7 @@ export class DiscoveryService {
                 logInfo('New device added to controllers list: ' + newDeviceModel.id);
                 saveDeviceList();
 
-                // Only negotiate when device has a LocalKey and is enabled
-                if (newDeviceModel.localKey && newDeviceModel.enabled) {
-                    logInfo(`Attempting negotiation for new device: ${newDeviceModel.id}`);
-                    try {
-                        newController.startNegotiation();
-                    } catch (negErr) {
-                        logError('Negotiation error for ' + newDeviceModel.id + ': ' + negErr.message);
-                    }
-                } else {
-                    logInfo(`Device ${newDeviceModel.id} needs configuration (LocalKey/Enabled).`);
-                }
+                // La negociación global se ejecutará tras finalizar el descubrimiento
             }
         } catch (error) {
             logError('Error in handleTuyaDiscovery: ' + error.message);
@@ -462,11 +468,7 @@ export class DiscoveryService {
     }
 
     Update(force) {
-        controllers.forEach(controller => {
-            if (controller.negotiator && typeof controller.negotiator.handleQueue === 'function') {
-                controller.negotiator.handleQueue(Date.now());
-            }
-        });
+        // no-op in refactored version
     }
 
     Start() {
@@ -512,13 +514,7 @@ export class DiscoveryService {
         if (typeof service.controllersChanged === 'function') {
             service.controllersChanged();
         }
-        if (model.enabled && model.localKey) {
-            try {
-                controller.startNegotiation();
-            } catch (negErr) {
-                logError('Negotiation error for ' + model.id + ': ' + negErr.message);
-            }
-        }
+        // La negociación se iniciará de forma global cuando finalice el descubrimiento
         return controller;
     }
 }
@@ -561,14 +557,7 @@ async function loadSavedDevices() {
                         logInfo('Warning: no localKey stored for ' + deviceModel.id);
                     }
                     
-                    if (deviceModel.enabled && deviceModel.localKey && !deviceModel.isReady()) {
-                        logInfo(`Attempting negotiation for saved device: ${deviceModel.id}`);
-                        try {
-                            controller.startNegotiation();
-                        } catch (negErr) {
-                            logError('Negotiation error for ' + deviceModel.id + ': ' + negErr.message);
-                        }
-                    }
+                    // La negociación global se realizará tras el descubrimiento
                 }
             }
         }

@@ -1,5 +1,7 @@
+import dgram from 'node:dgram';
 import TuyaDiscovery from './comms/Discovery.js';
 import TuyaController from './TuyaController.js';
+import NegotiatorManager from './negotiators/NegotiatorManager.js';
 import DeviceList from './DeviceList.js';
 import service from './service.js';
 
@@ -43,41 +45,24 @@ if (typeof service.getSetting !== 'function') {
 const EXPECTED_DEVICES = 4; // Dispositivos esperados
 const TIMEOUT_MS = 5000;    // Tiempo m\u00e1ximo de espera
 
-// Crear instancia de descubrimiento
-const discovery = new TuyaDiscovery();
+// Socket UDP compartido
+const udpSocket = dgram.createSocket('udp4');
+udpSocket.bind(() => udpSocket.setBroadcast(true));
+
+// Crear instancia de descubrimiento usando el socket compartido
+const discovery = new TuyaDiscovery({ socket: udpSocket });
 let found = 0;
+const discovered = [];
 
 // Crear controlador
 const controller = new TuyaController();
+const manager = new NegotiatorManager({ socket: udpSocket });
 
 // Escuchar cuando se encuentra un dispositivo
 
-discovery.on('device_found', async (device) => {
+discovery.on('device_found', (device) => {
     found += 1;
-
-    // Buscar configuraci\u00f3n local del dispositivo (con key) en DeviceList
-    const config = DeviceList.getDevices().find(d => d.id === device.id);
-    if (config && config.key) {
-        // Si hay key, fusionar con los datos descubiertos
-        const fullDevice = {
-            ...device,
-            ...config,
-            leds: config.leds || 30,
-            type: config.type || 'LED Strip',
-        };
-
-        // Agregar al controlador y conectar
-        try {
-            controller.addDevice(fullDevice);
-            await controller.connectToDevice(fullDevice.id);
-            console.log(`\ud83c\udf89 Dispositivo ${fullDevice.name} listo para usarse`);
-        } catch (err) {
-            console.error(`\u274c Error al conectar con ${fullDevice.name}:`, err.message);
-        }
-    } else {
-        console.warn(`\u26a0\ufe0f Dispositivo ${device.id} descubierto sin clave definida. Saltando...`);
-    }
-
+    discovered.push(device);
     stopIfNeeded();
 });
 
@@ -91,7 +76,33 @@ function stopIfNeeded() {
 
 // Logs de control
 discovery.on('started', () => console.log('\ud83d\ude80 Descubrimiento iniciado'));
-discovery.on('stopped', () => console.log('\ud83d\ude91 Descubrimiento detenido'));
+discovery.on('stopped', () => {
+    console.log('\ud83d\ude91 Descubrimiento detenido');
+    const devicesToNegotiate = [];
+    for (const d of discovered) {
+        const config = DeviceList.getDevices().find(x => x.id === d.id);
+        if (!config || !config.key) {
+            console.warn(`\u26a0\ufe0f Dispositivo ${d.id} sin clave, se omite`);
+            continue;
+        }
+        const full = { ...d, ...config, leds: config.leds || 30, type: config.type || 'LED Strip' };
+        controller.addDevice(full);
+        devicesToNegotiate.push({
+            deviceId: full.id,
+            deviceKey: full.key,
+            ip: full.ip,
+            controller
+        });
+    }
+        if (devicesToNegotiate.length) {
+            manager.startBatchNegotiation(devicesToNegotiate, 10000);
+        }
+});
+
+// Route negotiation responses using CRC mapping
+discovery.on('negotiation_packet', (msg, rinfo) => {
+    manager.routeResponse(msg, rinfo);
+});
 
 // Iniciar descubrimiento
 await discovery.start();

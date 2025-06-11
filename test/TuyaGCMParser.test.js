@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import TuyaGCMParser from '../negotiators/TuyaGCMParser.js';
 import TuyaMessage from '../negotiators/TuyaMessage.js';
-import TuyaEncryptor from '../negotiators/TuyaEncryptor.js';
+import { TuyaEncryptor } from '../negotiators/TuyaEncryptor.js';
 import crypto from 'node:crypto';
 import TuyaEncryption from '../negotiators/TuyaEncryption.js';
 
